@@ -1,8 +1,10 @@
 function raster_sdf(sptimes,timewindow,sigma,line_color,sem_shade)
-% 
-% Inputs:
-% sptimes --> 1 x D cell array (D = number of neurons)
-   % sptimes{d} = N x 1 double array (N = number of trials)
+
+% raster for a single neuron (each row is a trial, each col is a spike time) 
+
+%%%%%%%%%% Inputs: %%%%%%%%%%%%%
+% sptimes --> 1 x N cell array (N = number of trials)
+   % sptimes{n} = spike times in specified window
 % timewindow --> time points (not indices) to include (e.g. [-100 300])
 % sigma --> width of gaussian/window [ms] (e.g. 5)
 % line_color --> color of lines (e.g. [0 0 0]./255)
