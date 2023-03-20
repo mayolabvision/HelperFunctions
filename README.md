@@ -8,9 +8,10 @@ In this repository, members from the lab share their MATLAB scripts/functions fo
 | `structure`        | MATLAB data type that groups related data using data containers called fields   | 
 | `command window`   | enables you to enter individual statements at the MATLAB command line, indicated by the prompt (>>)         | 
 | `workspace`   | contains variables that you create or import into MATLAB from data files or other programs        | 
-| `trial`   | single instance of the monkey completing a task (of a given condition), is repeated hundreds of times to form an entire session       | 
+| `trial`   | repetitive episode in an experiment, where the same motor task is performed again and again so that a changing behavioral response can be identified with a learning process      | 
 | `session`   | a day of recording that makes up one .mat file, consists of hundreds to thousands of trials   | 
-| `unit`   | isolated data recorded from an electrode contact, can be estimated to a "neuron"  |
+| `unit`   | isolated data recorded from an electrode contact, can be estimated to a "neuron"; there can be multiple units on one contact, thus the naming convention ("1a", "1b", "3a", etc...) |
+| `signal-to-noise ratio (SNR)`  | main feature that characterizes an ideal extracellular microelectrode for recording brain signals, which is a measure of the fidelity of the received message for the whole frequency band containing useful neural information |
 
 --- 
 ### You have a dataset... now what?
@@ -40,4 +41,6 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 <img width="349" alt="Screen Shot 2023-03-20 at 6 49 07 PM" src="https://user-images.githubusercontent.com/37158560/226482911-915c79b3-edf4-4d3a-8e69-0e5882f9dfca.png">
 
 > **expName** - name of session, same as file name <br />
-> **units** - names of all recorded units 
+> **units** - names of all recorded units (57 in this case) in alphabetical order
+> **rotFactor** - degree to which the target directions are rotated
+> **SNRs** - 
