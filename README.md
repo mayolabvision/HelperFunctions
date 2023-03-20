@@ -10,6 +10,7 @@ In this repository, members from the lab share their MATLAB scripts/functions fo
 | `workspace`   | contains variables that you create or import into MATLAB from data files or other programs        | 
 | `trial`   | single instance of the monkey completing a task (of a given condition), is repeated hundreds of times to form an entire session       | 
 | `session`   | a day of recording that makes up one .mat file, consists of hundreds to thousands of trials   | 
+| `unit`   | isolated data recorded from an electrode contact, can be estimated to a "neuron"  |
 
 --- 
 ### You have a dataset... now what?
@@ -33,3 +34,10 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 > In the following example, there is data from **2466 trials**
 
 <img width="371" alt="Screen Shot 2023-03-20 at 6 08 09 PM" src="https://user-images.githubusercontent.com/37158560/226476313-8a26af15-191d-4cf5-a3f4-618eb04c5684.png">
+
+**exp.info**
+
+<img width="349" alt="Screen Shot 2023-03-20 at 6 49 07 PM" src="https://user-images.githubusercontent.com/37158560/226482911-915c79b3-edf4-4d3a-8e69-0e5882f9dfca.png">
+
+> **expName** - name of session, same as file name <br />
+> **units** - names of all recorded units 
