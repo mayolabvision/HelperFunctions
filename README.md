@@ -62,5 +62,11 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 ## What are the first steps you should take for preprocessing the data? 
 
 #### 1. Remove empty trials, trials missing important fields, and units that are dropped over the course of a session
+```buildoutcfg
+# After loading in a exp datafile, run the struct_clean.m function from the \preprocessing folder
 
+exp_clean = struct_clean(exp);
+    
+# A variable called "exp_clean" should appear in your workspace
+```
 
