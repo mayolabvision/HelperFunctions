@@ -14,7 +14,7 @@ In this repository, members from the lab share their MATLAB scripts/functions fo
 | `signal-to-noise ratio (SNR)`  | main feature that characterizes an ideal extracellular microelectrode for recording brain signals, which is a measure of the fidelity of the received message for the whole frequency band containing useful neural information |
 
 --- 
-### You have a dataset... now what?
+## You have a dataset... now what?
 
 #### Let's start by figuring out what is included in the dataset, which is formatted as a MATLAB *structure*.
 
@@ -57,4 +57,10 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 > **mstEye** - contains horizontal and vertical eye positions and velocities for entire length of trial (at each ms) <br />
 > **tagSection** - contains timing info for trial (stTimeMS = stimulus onset, durMS = length of time after stim onset) <br />
 > **units** - spike times for each unit recorded during that trial, relative to trial onset <br />
- 
+
+---
+## What are the first steps you should take for preprocessing the data? 
+
+#### 1. Remove empty trials, trials missing important fields, and units that are dropped over the course of a session
+
+
