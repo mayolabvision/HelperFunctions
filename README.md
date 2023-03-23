@@ -55,3 +55,4 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 > **SNRs** - signal-to-noise ratio for each unit, sorted from highest to lowest <br />
 > **channels** - names of recorded units, in same order as SNRs <br />
  
+<img width="1317" alt="Screen Shot 2023-03-23 at 2 42 38 PM" src="https://user-images.githubusercontent.com/37158560/227317086-bb9f4f8b-105f-48e6-81ee-d0ac586aa52c.png">
