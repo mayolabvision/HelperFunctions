@@ -41,6 +41,17 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 <img width="349" alt="Screen Shot 2023-03-20 at 6 49 07 PM" src="https://user-images.githubusercontent.com/37158560/226482911-915c79b3-edf4-4d3a-8e69-0e5882f9dfca.png">
 
 > **expName** - name of session, same as file name <br />
-> **units** - names of all recorded units (57 in this case) in alphabetical order
-> **rotFactor** - degree to which the target directions are rotated
-> **SNRs** - 
+> **units** - names of all recorded units (57 in this case) in alphabetical order <br />
+> **rotFactor** - degree to which the target directions are rotated <br />
+> **SNRs** - signal-to-noise ratio for each unit, sorted from highest to lowest <br />
+> **channels** - names of recorded units, in same order as SNRs <br />
+
+**exp.dataMaestroPlx**
+
+
+> **expName** - name of session, same as file name <br />
+> **units** - names of all recorded units (57 in this case) in alphabetical order <br />
+> **rotFactor** - degree to which the target directions are rotated <br />
+> **SNRs** - signal-to-noise ratio for each unit, sorted from highest to lowest <br />
+> **channels** - names of recorded units, in same order as SNRs <br />
+ 
