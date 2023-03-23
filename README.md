@@ -48,11 +48,13 @@ load('-mat',sprintf('%s/%s',dataFolder,fileName)); % raw structure
 
 **exp.dataMaestroPlx**
 
-
-> **expName** - name of session, same as file name <br />
-> **units** - names of all recorded units (57 in this case) in alphabetical order <br />
-> **rotFactor** - degree to which the target directions are rotated <br />
-> **SNRs** - signal-to-noise ratio for each unit, sorted from highest to lowest <br />
-> **channels** - names of recorded units, in same order as SNRs <br />
- 
 <img width="1317" alt="Screen Shot 2023-03-23 at 2 42 38 PM" src="https://user-images.githubusercontent.com/37158560/227317086-bb9f4f8b-105f-48e6-81ee-d0ac586aa52c.png">
+
+*Each field (row) of the structure is a single trial*
+
+> **trName** - name of trial: [1] = experimenter (e.g. "P" = "Patrick"), [2] = monkey (e.g. "A" = "Aristotle"), [3:4] = session number, [end-3:end] = trial number <br />
+> **trType** - condition type, specific to experiment (e.g. p\_d180\_c100\_sp10 = "pursuit"\_"direction"\_"contrast"\_"speed") <br />
+> **mstEye** - contains horizontal and vertical eye positions and velocities for entire length of trial (at each ms) <br />
+> **tagSection** - contains timing info for trial (stTimeMS = stimulus onset, durMS = length of time after stim onset) <br />
+> **units** - spike times for each unit recorded during that trial, relative to trial onset <br />
+ 
