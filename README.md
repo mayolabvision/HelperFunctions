@@ -70,3 +70,5 @@ exp_clean = struct_clean(exp);
 # A variable called "exp_clean" should appear in your workspace
 ```
 
+*The data in exp_clean is structured in the same way as exp, but now there are no empty fields/trials or trials missing important information (like stimulus onset time). Trials are also thrown out if the mean firing rate of the neurons in that trial exceeds 3 standard deviations from the mean and units that drop off over the course of the trial are removed. The units are also now numerically/alphabetically ordered in both exp_clean.dataMaestroPlx(:).units and exp_clean.info.channels.*
+
