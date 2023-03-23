@@ -72,3 +72,29 @@ exp_clean = struct_clean(exp);
 
 *The data in exp_clean is structured in the same way as exp, but now there are no empty fields/trials or trials missing important information (like stimulus onset time). Trials are also thrown out if the mean firing rate of the neurons in that trial exceeds 3 standard deviations from the mean and units that drop off over the course of the trial are removed. The units are also now numerically/alphabetically ordered in both exp_clean.dataMaestroPlx(:).units and exp_clean.info.channels.*
 
+#### 2. If microsaccades aren't relevant towards your project, remove trials where they occur around stimulus onset
+```buildoutcfg
+# Run the detect_msTrials.m function from the \preprocessing folder on the exp_clean structure
+# This runs for a single trial and outputs whether a saccade was detected, but you can use cellfun or a for loop to go through all of the trials
+# Inputs include stimulus onset time, size of window around stimulus onset to analyze, and thresholds (acceleration and velocity)
+
+exp_clean.dataMaestroPlx(logical(cellfun(@(q) detect_msTrials(struct2cell(q),motionStart,50,100,750,50), {exp_clean.dataMaestroPlx.mstEye}.', 'uni', 1))) = [];
+    
+# This will reduce the number of trials in "exp_clean"
+```
+
+#### 3. Remove trials with conditions you don't want to analyze in this project
+```buildoutcfg
+# Run the struct_pullConditions.m function from the \preprocessing folder on the exp_clean structure
+# Inputs include which columns you want to prune the conditions for, what conditions you want to keep from those columns, and what columns you want to use to label the trial
+
+extract_conditions = {'1fXXX','2fXXX'};
+extract_columns = [3 4];
+define_columns = 1;
+
+[exp_clean,condition_names] = struct_pullConditions(exp_clean,extract_conditions,extract_columns,define_columns);
+
+# This will reduce the number of trials in "exp_clean"
+```
+
+

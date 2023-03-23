@@ -1,4 +1,12 @@
 function exp_clean = struct_clean(exp)
+% OBJECTIVE:
+% clean up struct to not include empty trials or bad units, and reorder unit names to consistent across trials
+%
+% INPUTS:
+% exp = where data in rows of exp.dataMaestroPlx are individual trials
+%
+% OUTPUTS:
+% exp_clean = new exp including trials w/ specified conditions
 
 exp_clean = exp;
 

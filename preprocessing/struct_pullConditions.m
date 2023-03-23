@@ -1,23 +1,21 @@
-function [exp_clean,condition_names] = struct_pullConditions(exp,extract_conditions,extract_columns,define_columns)
+function [exp_clean,unique_conditions] = struct_pullConditions(exp,extract_conditions,extract_columns,define_columns)
 % OBJECTIVE:
-% determine if nhp made microsaccade around stimulus onset in given trial
+% pull out trials with particular conditions, based on trType field
 %
 % INPUTS:
-% eye = 4x1 cell array w/ (HEPos, VEPos, HEVel, VEVel)
-% stimOnset = time of target motion onset or other stimulus onset
-% preint = time before stimOnset you want to include 
-% postint = time after stimOnset you want to include
-% accThresh = acceleration threshold for microsacc detection (e.g. 750 deg/s^2)
-% velThresh = velocity threshold for microsacc detection (e.g. 50 deg/s)
+% exp = where data in rows of exp.dataMaestroPlx are individual trials
+% extract_conditions = the names of conditions you want to keep, in columns where you want to exclude some of the conditions
+%                      e.g. {'1fXXX','2fXXX'}
+% extract_columns = indices of columns that "extract_conditions" come from
+%                      e.g. [3 4]
+% define_columns = indices of columns you want to label trials with 
+%                      e.g. [1 2 5]
 %
 % OUTPUTS:
-% msFlag = 1 if microsacc detected, 0 if not detected
+% exp_clean = new exp including trials w/ specified conditions
+% unique_conditions = based on the "define columns", the conditions you have
+%                     e.g. {'d000';'d090';'d180';'d270'}
 
-% if nargin < 3
-%     preint = 50; postint = 50; accThresh = 750; velThresh = 50;
-% elseif nargin < 5
-%     accThresh = 750; velThresh = 50;
-% end
 exp_clean = exp;
 
 % pull out conditions of interest
@@ -33,23 +31,22 @@ trTypes_all  =  {exp_clean.dataMaestroPlx.trType}.';
 trTypes  =  cellfun(@(x) cellstr(strsplit(x, '_')), trTypes_all, 'uni', 0);
 trTypes  =  vertcat(trTypes{:});
 
+if nargin < 4
+    define_columns = 1:size(trTypes,1);
+end 
+
 conditions = trTypes(:,define_columns);
-
-if length(define_columns)==1
-    [exp_clean.dataMaestroPlx.condition_name] = conditions{:};
-else
-    
+combine_conditions = cell(size(conditions,1),1);
+for c=1:size(conditions,2)
+    if c==1
+        combine_conditions = cellfun(@(x,y)[x,y], combine_conditions,conditions(:,c),'uni',0); 
+    else
+        combine_conditions = cellfun(@(x,y)[x,'_',y], combine_conditions,conditions(:,c),'uni',0); 
+    end
 end
 
-if length(conditionName_columns)==1
-    conditions = trTypes(:,conditionName_columns);
-elseif length(conditionName_columns)==2
-    conditions = cellfun(@(x,y)[x,'_',y], trTypes(:,conditionName_columns(1)),trTypes(:,conditionName_columns(2)),'uni',1);
-elseif length(conditionName_columns)==3
-    conditions = cellfun(@(x,y,z)[x,'_',y,'_',z], trTypes(:,conditionName_columns(1)),trTypes(:,conditionName_columns(2)),trTypes(:,conditionName_columns(3)),'uni',1);
-end
-    
-unique_conditions = unique(conditions);
+[exp_clean.dataMaestroPlx.condition_name] = combine_conditions{:};
+unique_conditions = unique(combine_conditions);
 
 end
 
