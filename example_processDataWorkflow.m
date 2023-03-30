@@ -20,7 +20,7 @@ motionStart  =  1250; % constant across trials
 types        =  {'pure','forward','backward'}; % types of trials 
 
 %%
-%parpool('local',8);
+parpool('local',8);
 warning('off')
 [final_table] = cell(length(sessions),5);
 parfor s=1:length(sessions) % loop through each session
@@ -47,7 +47,7 @@ parfor s=1:length(sessions) % loop through each session
     end
 
     % clean up struct
-    [msFlag,eye_adjust] = cellfun(@(q,m) detect_msTrials(struct2cell(q),m,100,50,750,50), {exp_clean.dataMaestroPlx.mstEye}.', stimOnsets, 'uni', 0);
+    [msFlag,eye_adjust] = cellfun(@(q,m) detect_msTrials(struct2cell(q),m,50,100,750,50), {exp_clean.dataMaestroPlx.mstEye}.', stimOnsets, 'uni', 0);
     exp_clean.dataMaestroPlx(logical(cell2mat(msFlag))) = []; eye_adjust = eye_adjust(~logical(cell2mat(msFlag))); 
     [exp_clean.dataMaestroPlx.mstEye] = eye_adjust{:};
 
@@ -67,7 +67,7 @@ parfor s=1:length(sessions) % loop through each session
     exp_clean.dataMaestroPlx(isnan(cell2mat(rxnTimes))) = []; pursuitOnsets(isnan(cell2mat(rxnTimes))) = []; stimOnsets(isnan(cell2mat(rxnTimes))) = []; rxnTimes(isnan(cell2mat(rxnTimes))) = []; 
 
     motionDirs = cellfun(@(q) str2double(q(2:4)), {exp_clean.dataMaestroPlx.trType}.', 'uni', 0);
-    [csTypes,ipt,saccProps] = cellfun(@(q,p,d) detect_catchupSaccade(struct2cell(q),p,d,10,100,750,30), {exp_clean.dataMaestroPlx.mstEye}.', pursuitOnsets, motionDirs, 'uni', 0);
+    [csTypes,ipt,saccProps] = cellfun(@(q,p,d) detect_catchupSaccade(struct2cell(q),p,d,1,200,750,30), {exp_clean.dataMaestroPlx.mstEye}.', pursuitOnsets, motionDirs, 'uni', 0);
     exp_clean.dataMaestroPlx(cell2mat(csTypes)==0) = []; pursuitOnsets(cell2mat(csTypes)==0) = []; stimOnsets(cell2mat(csTypes)==0) = []; rxnTimes(cell2mat(csTypes)==0) = []; motionDirs(cell2mat(csTypes)==0) = []; ipt(cell2mat(csTypes)==0) = []; saccProps(cell2mat(csTypes)==0) = []; csTypes(cell2mat(csTypes)==0) = [];
     new_condition = cellfun(@(x,y)[x,'_',types{y}], {exp_clean.dataMaestroPlx.condition_name}.',csTypes,'uni',0);
     [exp_clean.dataMaestroPlx.condition_name] = new_condition{:};
@@ -106,7 +106,7 @@ varNames = ["Monkey","Session","Trials","Units","DataHigh"];
 final_table = cell2table(final_table,"VariableNames",varNames);
 final_table.Monkey = categorical(final_table.Monkey); final_table.Session = categorical(final_table.Session);
 
-save(sprintf('%s/ftbl-n1.mat',tableFolder),'final_table','-v7.3');
+save(sprintf('%s/ftbl-n2.mat',tableFolder),'final_table','-v7.3');
 
 toc
 load gong.mat

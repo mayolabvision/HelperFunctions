@@ -22,8 +22,8 @@ elseif nargin < 5
 end
 
 % smooth velocities
-hVel = smoothdata(eye_new{3},'gaussian',20); hVel = hVel - min(hVel(stimOnset-100:stimOnset)); 
-vVel = smoothdata(eye_new{4},'gaussian',20); vVel = vVel - min(vVel(stimOnset-100:stimOnset));
+hVel = smoothdata(eye_new{3},'gaussian',20); hVel = hVel - hVel(stimOnset); 
+vVel = smoothdata(eye_new{4},'gaussian',20); vVel = vVel - vVel(stimOnset);
 [thVel,rhVel] = cart2pol(hVel,vVel);
 
 x = (1:length(rhVel));
