@@ -25,7 +25,7 @@ stdsBase = (rVel - baseVel)./baseVelstd; % for each time point, calculate stddev
 stdsBase(1:stimOnset+minRT) = NaN;
 stdsBase(stimOnset+maxRT:end) = [];
 
-pursuitOnset = find((stdsBase > baseVel+(baseVelstd*2))==0,1,'last') + 1; % Find last instance eye velocity doesn't exceeds 4 standard deviations
+pursuitOnset = find((stdsBase > baseVel+(baseVelstd*4))==0,1,'last') + 1; % Find last instance eye velocity doesn't exceeds 4 standard deviations
 rxnTime = pursuitOnset - stimOnset;
 
 if rxnTime>250

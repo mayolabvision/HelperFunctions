@@ -106,7 +106,7 @@ varNames = ["Monkey","Session","Trials","Units","DataHigh"];
 final_table = cell2table(final_table,"VariableNames",varNames);
 final_table.Monkey = categorical(final_table.Monkey); final_table.Session = categorical(final_table.Session);
 
-save(sprintf('%s/ftbl-n2.mat',tableFolder),'final_table','-v7.3');
+save(sprintf('%s/ftbl-n3.mat',tableFolder),'final_table','-v7.3');
 
 toc
 load gong.mat

@@ -33,8 +33,8 @@ for t=1:length(exp_clean.dataMaestroPlx)
     spk_cnts(t) = mean(cellfun(@length, sptimes));
 
     % replace condition w/ "rotated" direction
-    newdir = str2double(exp_clean.dataMaestroPlx(t).trType(2:4))-(-1*double(exp_clean.info.rotfactor));
-    exp_clean.dataMaestroPlx(t).trType = strrep(exp_clean.dataMaestroPlx(t).trType,exp_clean.dataMaestroPlx(t).trType(2:4),sprintf('%03d',newdir));
+    newdir = str2double(exp_clean.dataMaestroPlx(t).trType(strfind(exp_clean.dataMaestroPlx(t).trType,'d')+1:strfind(exp_clean.dataMaestroPlx(t).trType,'d')+3))-(-1*double(exp_clean.info.rotfactor));
+    exp_clean.dataMaestroPlx(t).trType = strrep(exp_clean.dataMaestroPlx(t).trType,exp_clean.dataMaestroPlx(t).trType(strfind(exp_clean.dataMaestroPlx(t).trType,'d')+1:strfind(exp_clean.dataMaestroPlx(t).trType,'d')+3),sprintf('%03d',newdir));
 end
 
 % remove trials where the mean spike count exceeded 3 standard deviations from mean spike count
