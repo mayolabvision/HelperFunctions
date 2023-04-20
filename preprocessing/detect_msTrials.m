@@ -32,11 +32,11 @@ rAcc = (gradient(rhVel(:)) ./ gradient(x(:)./1000));
 % Detect saccades occurring in the window [-preint postint], where 0 = stim onset
 if sum(abs(rAcc(stimOnset-preint:stimOnset+postint))>accThresh | abs(rhVel(stimOnset-preint:stimOnset+postint))'>velThresh)
     msFlag = 1; 
-    eye_new = cell2struct(eye_new,{'HEPos','VEPos','HEVel','VEVel'});
+    %eye_new = cell2struct(eye_new,{'HEPos','VEPos','HEVel','VEVel'});
 else
     msFlag = 0;
     eye_new{3} = hVel; eye_new{4} = vVel; eye_new{5} = thVel; eye_new{6} = rhVel; eye_new{7} = rAcc';
-    eye_new = cell2struct(eye_new,{'HEPos','VEPos','HEVel','VEVel','THVel','RHVel','RHAcc'});
+    %eye_new = cell2struct(eye_new,{'HEPos','VEPos','HEVel','VEVel','THVel','RHVel','RHAcc'});
 end
 
 
