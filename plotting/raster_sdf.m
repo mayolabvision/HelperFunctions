@@ -26,9 +26,9 @@ nexttile(ax)
 for iTrial = 1:length(sptimes)
                   
     spks            = sptimes{iTrial}';         % Get all spikes of respective trial 
-    if size(spks,1)==1
-        spks = spks';
-    end
+%     if size(spks,1)==1
+%         spks = spks';
+%     end
     xspikes         = repmat(spks,3,1);         % Replicate array
     yspikes      	= nan(size(xspikes));       % NaN array
     
@@ -47,7 +47,7 @@ ylim([0 length(sptimes)])
 yticks([0 length(sptimes)])
 %xticks([min(timewindow) 0 max(timewindow)])
 
-ylabel('trials')
+%ylabel('trials')
 %title(ax,[sprintf('%d',condition) char(176)],'fontweight','bold','fontsize',14)
 
 prettyFig;
@@ -88,7 +88,7 @@ end
 
 % Average response
 ax1 = nexttile(ax);
-x = (1:size(sdf,2)) + timewindow(1);
+x = ((1:size(sdf,2)) + timewindow(1));
 fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle','none','FaceAlpha',0.5)
 hold on
 plot(x,mn, 'Color', line_color, 'LineWidth', 1.5)
@@ -96,10 +96,11 @@ xline(0,'k--','linewidth',1)
 mVal = max(yu) + round(max(yu)*.1);
 
 xlim(timewindow)
-ylim([0 mVal])
+%ylim([0 mVal])
+ylim([0 60])
 %xticks([min(timewindow) max(timewindow)])
 
-ylabel('FR [Hz]')
+%ylabel('FR [Hz]')
 prettyFig;
 
 end

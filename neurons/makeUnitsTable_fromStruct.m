@@ -1,4 +1,4 @@
-function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,stimOnsets,postint)
+function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -12,20 +12,30 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,stimOnsets,postint)
     brainareas(unitNum==0,1)  =  {'FEF'};
 
     dirsdeg = sort(unique(trialTbl.Direction));
+    speeds = sort(unique(trialTbl.Speed));
 
     spks = cellfun(@(q) struct2cell(q), {exp.dataMaestroPlx.units}.','uni', 0);
     spks = horzcat(spks{:});
 
     % pull out pure pursuit trials only
-    unitsTbl = cell(length(unitnames),13);
+    unitsTbl = cell(length(unitnames),15);
     for u=1:length(unitnames)
         spkcnts = cell(1,length(dirsdeg));
         for d=1:length(dirsdeg)
-            spkcnts{d} = cellfun(@(q,s) (sum(q>=s & q<s+postint)), spks(u,trialTbl.Direction==dirsdeg(d) & trialTbl.Type=='pure'), stimOnsets(trialTbl.Direction==dirsdeg(d) & trialTbl.Type=='pure')','uni', 1);
-        end 
+            spkcnts{d} = cellfun(@(q,s) (sum(q>=s & q<s+postint)), spks(u,trialTbl.Direction==dirsdeg(d)), num2cell(trialTbl.TargetMotionOnset(trialTbl.Direction==dirsdeg(d))'),'uni', 1); 
+        end
+        spkcnts_bySpeeds = cell(1,length(speeds));
+        for s=1:length(speeds)
+            spkcnts_bySpeeds{s} = cellfun(@(q,s) (sum(q>=s & q<s+postint)), spks(u,trialTbl.Speed==speeds(s)), num2cell(trialTbl.TargetMotionOnset(trialTbl.Speed==speeds(s))'),'uni', 1); 
+        end
+
         mnFRByDir= cellfun(@nanmean, spkcnts);
-        [~,m] = max(mnFRByDir);
+        varFRByDir= cellfun(@(q) var(q,'omitnan'), spkcnts, 'uni', 1);
+        [mnFR_bestDir,m] = max(mnFRByDir);
         bestDir = dirsdeg(m);
+        varFR_bestDir = varFRByDir(m);
+
+        mnFRBySp= cellfun(@nanmean, spkcnts_bySpeeds);
 
         if m==1
             n = 3;
@@ -69,6 +79,6 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,stimOnsets,postint)
         end
         
         %%%%%%%%%%%%%
-        unitsTbl(u,:) = {unitnames{u}, [exp.info.expName,'_',unitnames{u}], brainareas{u}, snrs(u), bestDir, nullDir, prefdirfit, depthMod, seldir, DI, SI, signiffl, {spks(u,:)}};
+        unitsTbl(u,:) = {unitnames{u}, [exp.info.expName,'_',unitnames{u}], brainareas{u}, snrs(u), bestDir, nullDir, prefdirfit, mnFR_bestDir, varFR_bestDir, depthMod, seldir, DI, SI, signiffl, {spks(u,:)}};
     end
 end
