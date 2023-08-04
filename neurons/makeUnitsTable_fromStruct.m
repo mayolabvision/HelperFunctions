@@ -37,14 +37,22 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
 
         mnFRBySp= cellfun(@nanmean, spkcnts_bySpeeds);
 
-        if m==1
-            n = 3;
-        elseif m==2
-            n = 4;
-        elseif m==3
-            n = 1;
-        elseif m==4
-            n = 2;
+        if length(dirsdeg)==4
+            if m==1
+                n = 3;
+            elseif m==2
+                n = 4;
+            elseif m==3
+                n = 1;
+            elseif m==4
+                n = 2;
+            end
+        elseif length(dirsdeg)==2
+            if m==1
+                n = 2;
+            elseif m==2
+                n = 1;
+            end
         end
 
         nullDir = dirsdeg(n);
@@ -55,7 +63,11 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
         [seldir, prefdirfit] = tuningbias(dirsdeg, mnFRByDir); % Matt Smith's 'tuningbias' function to estimate best direction; prefdir must be in DEGREES
    
         % Selectivity Index (SI):
-        resp_ang = num2cell([horzcat(spkcnts{:})' [repmat(dirsdeg(1),1,length(spkcnts{1})),repmat(dirsdeg(2),1,length(spkcnts{2})),repmat(dirsdeg(3),1,length(spkcnts{3})),repmat(dirsdeg(4),1,length(spkcnts{4}))]'],2);
+        if length(dirsdeg)==4
+            resp_ang = num2cell([horzcat(spkcnts{:})' [repmat(dirsdeg(1),1,length(spkcnts{1})),repmat(dirsdeg(2),1,length(spkcnts{2})),repmat(dirsdeg(3),1,length(spkcnts{3})),repmat(dirsdeg(4),1,length(spkcnts{4}))]'],2);
+        elseif length(dirsdeg)==2
+            resp_ang = num2cell([horzcat(spkcnts{:})' [repmat(dirsdeg(1),1,length(spkcnts{1})),repmat(dirsdeg(2),1,length(spkcnts{2}))]'],2);
+        end
         SI = sqrt(((sum(cellfun(@(y) y(1)*sin(deg2rad(y(2))), resp_ang, 'uni', 1)))^2) + ((sum(cellfun(@(z) z(1)*cos(deg2rad(z(2))), resp_ang, 'uni', 1)))^2))/sum(cellfun(@(q) q(1), resp_ang,'uni',1));
        
         % Generate randomized index of stimrate values, WITH REPLACEMENT
