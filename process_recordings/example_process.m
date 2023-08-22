@@ -4,12 +4,13 @@ clc
 addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 
 datafolder = '/Users/kendranoneman/Projects/mayo/local_data/rig_setup';
-figfolder = '/Users/kendranoneman/Figures/patrick_r01';
 datafile = 'sb05pursA65650033';
 kernel = 50;
 
+figfolder = '/Users/kendranoneman/Figures/patrick_r01';
 tbl = extract_eyeTraces(datafolder,datafile,kernel);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Detect pursuit onset, pursuit offset, catch-up saccades
 
 data = tbl(tbl.trialOutcome=="CORRECT",:);

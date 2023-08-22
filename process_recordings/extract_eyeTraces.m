@@ -7,7 +7,6 @@ addpath(genpath('/Users/kendranoneman/Packages'))
 %%%%%%%%%% INPUTS %%%%%%%%%%%
 % datafolder = string/char of full path where data is stored
 % datafile = datafile name
-% eventNames = cell array of eventNames you want to store the times of
 % kernel = how much to smooth eye position before calculating vel/acc
 
 %%%%%%%%%% OUTPUTS %%%%%%%%%%%
@@ -25,8 +24,7 @@ addpath(genpath('/Users/kendranoneman/Packages'))
 %%%%%%%%%% EXAMPLE %%%%%%%%%%%
 % e.g. datafolder = '/Users/kendranoneman/Projects/mayo/HelperFunctions/process_recordings/example_data';
 %      datafile = 'sb01pursA65650026';
-%      eventNames = {'START_TRIAL','FIX_ON','FIX_OFF','REWARD','TARG_ON','FIXATE','IGNORED','BROKE_FIX','BROKE_TARG'}
-% tbl = extract_eyeTraces(datafolder,datafile,eventNames,kernel)
+% tbl = extract_eyeTraces(datafolder,datafile,kernel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 1. 'nevutils' package (downloaded from Mayo Lab GitHub, forked from Smith
