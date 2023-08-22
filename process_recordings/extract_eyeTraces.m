@@ -1,4 +1,7 @@
-function tbl = extract_eyeTraces(datafolder,datafile,eventNames,kernel)
+function tbl = extract_eyeTraces(datafolder,datafile,kernel)
+
+addpath(genpath('/Users/kendranoneman/Packages'))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function for extracting and preprocessing eye traces from .ns5 files
 %%%%%%%%%% INPUTS %%%%%%%%%%%
@@ -41,7 +44,7 @@ conditions = vertcat(conditions{:}); conditions = conditions(:,2:5);
 eye = {dat.eyedata}.'; % 3 x N (HE,VE,DI) x (N time points)
 trialcodes = {dat.trialcodes}.'; % C x 3 (codes) x (chan,code,time)
 results = {dat.result}.';
-results(cellfun(@isnan, results)) = {150}; % temporary fix for no correct
+%results(cellfun(@isnan, results)) = {150}; % temporary fix for no correct
 resultNames = convertBetween_eventCodes_eventNames(results);
 
 % 5. Make array of times using start/end time of each trial, helpful for
@@ -52,7 +55,10 @@ times = cellfun(@(q) round(q(1)*1000:q(2)*1000), {dat.time}.', 'uni', 0);
 % onset, etc...), pull out eye traces around that point (preint, postint)
 trialStarts = cellfun(@(q,r) find(q == round(r(r(:,2)==1,3)*1000)), times, trialcodes, 'uni', 0);
 
-eventCodes = convertBetween_eventCodes_eventNames(eventNames);
+eventCodes = {dat.trialcodes}.'; eventCodes = vertcat(eventCodes{:});
+eventCodes = num2cell(sort(unique(eventCodes(:,2))))';
+
+eventNames = convertBetween_eventCodes_eventNames(eventCodes);
 trialMarkers = cellfun(@(t) cellfun(@(q,r) find(q == round(r(r(:,2)==t,3)*1000)), times, trialcodes, 'uni', 0), eventCodes, 'uni', 0)';
 trialMarkers = horzcat(trialMarkers{:});
 trialMarkers(cellfun('isempty',trialMarkers)) = {NaN};
@@ -65,7 +71,7 @@ eyeVel = cellfun(@(q,x) [gradient(q(1,:)') ./ gradient(x(:)./1000),  gradient(q(
 eyeAcc = cellfun(@(q,x) [gradient(q(1,:)') ./ gradient(x(:)./1000),  gradient(q(2,:)') ./ gradient(x(:)./1000)]', eyeVel, X, 'uni', 0);
 
 % 8. Save conditions and eye traces for each trial to a table
-columnNames = ["trialName","trialOutcome","fixDuration","pursuitSpeed","angle","jumpSize",string(eventNames),"eyePos","eyeVel","eyeAcc"];
+columnNames = ["trialName","trialOutcome","fixDuration","pursuitSpeed","angle","jumpSize",string(eventNames)',"eyePos","eyeVel","eyeAcc"];
 tbl = cell2table([trialNames resultNames conditions trialMarkers cellfun(@(x){x},eyePos) cellfun(@(x){x},eyeVel) cellfun(@(x){x},eyeAcc)],'VariableNames',columnNames);
 tbl.trialName = categorical(string(tbl.trialName)); tbl.trialOutcome = categorical(string(tbl.trialOutcome));
 

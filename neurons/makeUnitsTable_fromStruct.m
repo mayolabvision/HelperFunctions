@@ -6,7 +6,11 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
     snrs = exp.info.SNRs;
 
     % If >24 then MT, <24 then FEF
-    unitNum     =  cellfun(@(y) sscanf(y,'unit%d')>24, unitnames,'uni',1);
+    if isequal(trialTbl.Monkey(1),'aristotle')
+        unitNum     =  cellfun(@(y) sscanf(y,'unit%d')>24, unitnames,'uni',1);
+    else
+        unitNum     =  cellfun(@(y) sscanf(y,'unit%d')>0, unitnames,'uni',1);
+    end
     brainareas  =  cell(length(unitNum),1);
     brainareas(unitNum==1,1)  =  {'MT'};
     brainareas(unitNum==0,1)  =  {'FEF'};

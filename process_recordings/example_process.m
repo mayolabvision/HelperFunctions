@@ -1,11 +1,205 @@
 clear
 clc
 
-addpath(genpath('/Users/kendranoneman/Projects/mayo/packages/nevutils'))
-datafolder = '/Users/kendranoneman/Projects/mayo/HelperFxns/process_recordings/example_data';
+addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 
-datafile = 'sb01pursA65650026';
-[dat,hdr] = nev2dat(sprintf('%s/%s',datafolder,datafile),'readNS5',true,'convertEyes',true);
+datafolder = '/Users/kendranoneman/Projects/mayo/local_data/rig_setup';
+figfolder = '/Users/kendranoneman/Figures/patrick_r01';
+datafile = 'sb05pursA65650033';
+kernel = 50;
+
+tbl = extract_eyeTraces(datafolder,datafile,kernel);
+
+%% Detect pursuit onset, pursuit offset, catch-up saccades
+
+data = tbl(tbl.trialOutcome=="CORRECT",:);
+dirs = sort(unique(data.angle));
+
+preint = 350;
+x1 = (1:preint+1);
+x2 = (1:preint+1) - preint;
+
+f1a = figure;
+f1a.Position = [100 100 1400 900];
+tl = tiledlayout(3,2);
+tl.TileSpacing = 'loose'; 
+tl.Padding = 'compact';
+
+one_dir = data; %(data.angle==dirs(d),:);
+[~,Rbeg] = cellfun(@(q,r) cart2pol(q(1,r+100:r+350),q(2,r+100:r+350)), one_dir.eyeAcc,num2cell(one_dir.TARG_ON), 'uni', 0);
+[~,Rend] = cellfun(@(q,r) cart2pol(q(1,r-350:r),q(2,r-350:r)), one_dir.eyeAcc,num2cell(one_dir.REWARD), 'uni', 0);
+
+saccBeg = cellfun(@(q) sum(q>=1000,2)>0, Rbeg, 'uni', 1);
+saccEnd = cellfun(@(q) sum(q>=1000,2)>0, Rend, 'uni', 1);
+
+% POSITION
+a(1) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(one_dir.eyePos{t}(1,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint),one_dir.eyePos{t}(2,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint));
+
+    if saccBeg(t)==0
+        plot(x1,R,'k-')
+    %else
+        %plot(x1,R,'b-')
+    end
+    hold on
+end
+xlim([100 preint])
+xline(100,'k--')
+xline(200,'k--')
+title([sprintf('%2.0f',(sum(saccBeg)/length(saccBeg))*100),'% trials'])
+prettyFig;
+
+aa(1) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(one_dir.eyePos{t}(1,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),one_dir.eyePos{t}(2,one_dir.REWARD(t)-preint:one_dir.REWARD(t)));
+
+    if saccEnd(t)==0
+        plot(x2,R,'k-')
+%     else
+%         plot(x2,R,'b-')
+    end
+    hold on
+end
+xlim([-preint -100])
+xline(-300,'k--')
+xline(100,'k--')
+title([sprintf('%2.0f',(sum(saccEnd)/length(saccEnd))*100),'% trials'])
+prettyFig;
+
+% VELOCITY
+a(2) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(smoothdata(one_dir.eyeVel{t}(1,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint),'gaussian',50),smoothdata(one_dir.eyeVel{t}(2,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint),'gaussian',50));
+
+    if saccBeg(t)==0
+        plot(x1,R,'k-')
+%     else
+%         plot(x1,R,'b-')
+    end
+    hold on
+end
+xlim([100 preint])
+ylim([0 20])
+xline(100,'k--')
+xline(200,'k--')
+prettyFig;
+
+aa(2) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(smoothdata(one_dir.eyeVel{t}(1,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50),smoothdata(one_dir.eyeVel{t}(2,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50));
+
+    if saccEnd(t)==0
+        plot(x2,R,'k-')
+%     else
+%         plot(x2,R,'b-')
+    end
+    hold on
+end
+xlim([-preint -100])
+ylim([0 20])
+xline(-300,'k--')
+xline(100,'k--')
+prettyFig;
+
+% ACCELERATION
+a(3) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(one_dir.eyeAcc{t}(1,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint),one_dir.eyeAcc{t}(2,one_dir.TARG_ON(t):one_dir.TARG_ON(t)+preint));
+
+    if saccBeg(t)==0
+        plot(x1,R,'k-')
+%     else
+%         plot(x1,R,'b-')
+    end
+    hold on
+end
+xlim([100 preint])
+xline(100,'k--')
+xline(200,'k--')
+xlabel('time aligned to target motion onset (ms)')
+prettyFig;
+
+aa(3) = nexttile;
+for t=1:height(one_dir)
+    [~,R] = cart2pol(one_dir.eyeAcc{t}(1,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),one_dir.eyeAcc{t}(2,one_dir.REWARD(t)-preint:one_dir.REWARD(t)));
+
+    if saccEnd(t)==0
+        plot(x2,R,'k-')
+%     else
+%         plot(x2,R,'b-')
+    end
+    hold on
+end
+xlim([-preint -100])
+xline(-300,'k--')
+xline(100,'k--')
+xlabel('time aligned to target offset (ms)')
+prettyFig;
+
+linkaxes(a,'x')
+linkaxes(aa,'x')
+title(tl,sprintf('8 directions (%d trials)',length(saccBeg)),'fontsize',16)
+
+savebigPDF(f1a, sprintf('%s/alldirs_catchupSaccades_justPurePursuit_smoothed.pdf',figfolder))
+
+
+%%
+data = tbl(tbl.trialOutcome=="CORRECT",:);
+dirs = sort(unique(data.angle));
+
+one_dir = data; %(data.angle==dirs(d),:);
+
+preints = [450,425,400,375,350,317,300];
+
+f1a = figure;
+f1a.Position = [100 100 1400 1400];
+tl = tiledlayout(length(preints),2);
+tl.TileSpacing = 'loose'; 
+tl.Padding = 'compact';
+
+for p=1:length(preints)
+    preint = preints(p);
+    x2 = (1:preint+1) - preint;
+    postint = 0;
+    
+    [~,Rend] = cellfun(@(q,r) cart2pol(q(1,r-preint:r+postint),q(2,r-preint:r+postint)), one_dir.eyeAcc,num2cell(one_dir.REWARD), 'uni', 0);
+    saccEnd = cellfun(@(q) sum(q>=1000,2)>0, Rend, 'uni', 1);
+    
+    nexttile
+    for t=1:height(one_dir)
+        [~,R] = cart2pol(smoothdata(one_dir.eyeVel{t}(1,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50),smoothdata(one_dir.eyeVel{t}(2,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50));
+    
+        if saccEnd(t)==0
+            plot(x2,R,'k-')
+        else
+            plot(x2,R,'b-')
+        end
+        hold on
+    end
+    xlim([-preint 0])
+    title([sprintf('%2.0f',(sum(saccEnd)/length(saccEnd))*100), '%'],'fontsize',10)
+    prettyFig;
+    
+    nexttile
+    for t=1:height(one_dir)
+        [~,R] = cart2pol(smoothdata(one_dir.eyeVel{t}(1,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50),smoothdata(one_dir.eyeVel{t}(2,one_dir.REWARD(t)-preint:one_dir.REWARD(t)),'gaussian',50));
+    
+        if saccEnd(t)==0
+            plot(x2,R,'k-')
+    %     else
+    %         plot(x2,R,'b-')
+        end
+        hold on
+    end
+    xlim([-preint 0])
+    title([sprintf('%2.0f',length(saccEnd)-sum(saccEnd)), ' pure trials'],'fontsize',10)
+    ylim([0 20])
+    prettyFig;
+end
+%title(tl,sprintf('8 directions (%d trials)',length(saccBeg)),'fontsize',16)
+
+savebigPDF(f1a, sprintf('%s/alldirs_catchupSaccades_differentWindowSizes.pdf',figfolder))
 
 %% Simplifying data struct
 preint = 200; % how many seconds before targ onset
