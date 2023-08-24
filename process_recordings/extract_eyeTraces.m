@@ -1,6 +1,6 @@
 function tbl = extract_eyeTraces(datafolder,datafile,kernel)
 
-addpath(genpath('/Users/kendranoneman/Packages'))
+addpath(genpath('/Users/kendranoneman/Packages')) % add nevUtils and HelperFunctions to path
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function for extracting and preprocessing eye traces from .ns5 files
@@ -34,9 +34,14 @@ addpath(genpath('/Users/kendranoneman/Packages'))
 [dat,~] = nev2dat(sprintf('%s/%s',datafolder,datafile),'readNS5',true,'convertEyes',true);
 trialNames = cellfun(@(q) [datafile,char('.'),char(string(q))], num2cell(1:length(dat))','uni',0);
 
+condNames = {dat.text}';
+pattern = '([^0-9;]+)(?==)';
+matches = cellfun(@(q) regexp(q, pattern, 'match'), condNames, 'uni', 0);
+cols = matches{1};
+
 % 3. Pull out conditions from trial names, separated by ';' delimeter
 conditions = cellfun(@(x) cellfun(@(q,r) str2double(x(q+1:r-1)), num2cell(strfind(x,'=')), num2cell(strfind(x,';')), 'uni', 0), {dat.text}.', 'uni', 0);
-conditions = vertcat(conditions{:}); conditions = conditions(:,2:5);
+conditions = vertcat(conditions{:}); %conditions = conditions(:,2:5);
 
 % 4. Pull eye traces and trial codes for each trial (cell for each trial)
 eye = {dat.eyedata}.'; % 3 x N (HE,VE,DI) x (N time points)
@@ -55,6 +60,7 @@ trialStarts = cellfun(@(q,r) find(q == round(r(r(:,2)==1,3)*1000)), times, trial
 
 eventCodes = {dat.trialcodes}.'; eventCodes = vertcat(eventCodes{:});
 eventCodes = num2cell(sort(unique(eventCodes(:,2))))';
+eventCodes = eventCodes(cell2mat(eventCodes)<2000);
 
 eventNames = convertBetween_eventCodes_eventNames(eventCodes);
 trialMarkers = cellfun(@(t) cellfun(@(q,r) find(q == round(r(r(:,2)==t,3)*1000)), times, trialcodes, 'uni', 0), eventCodes, 'uni', 0)';
@@ -69,9 +75,17 @@ eyeVel = cellfun(@(q,x) [gradient(q(1,:)') ./ gradient(x(:)./1000),  gradient(q(
 eyeAcc = cellfun(@(q,x) [gradient(q(1,:)') ./ gradient(x(:)./1000),  gradient(q(2,:)') ./ gradient(x(:)./1000)]', eyeVel, X, 'uni', 0);
 
 % 8. Save conditions and eye traces for each trial to a table
-columnNames = ["trialName","trialOutcome","fixDuration","pursuitSpeed","angle","jumpSize",string(eventNames)',"eyePos","eyeVel","eyeAcc"];
+
+% rewrite column names based on text in dat.text
+columnNames = ["trialName","trialOutcome",cols,string(eventNames)',"eyePos","eyeVel","eyeAcc"];
+
+%columnNames = ["trialName","trialOutcome","fixDuration","pursuitSpeed","angle","jumpSize",string(eventNames)',"eyePos","eyeVel","eyeAcc"];
 tbl = cell2table([trialNames resultNames conditions trialMarkers cellfun(@(x){x},eyePos) cellfun(@(x){x},eyeVel) cellfun(@(x){x},eyeAcc)],'VariableNames',columnNames);
 tbl.trialName = categorical(string(tbl.trialName)); tbl.trialOutcome = categorical(string(tbl.trialOutcome));
+if ismember('emptyCnd', tbl.Properties.VariableNames)
+    % Column exists, so remove it
+    tbl = removevars(tbl, 'emptyCnd');
+end
 
 % 9. Save the table if you wish
 save(sprintf('%s/%s_processed.mat',datafolder,datafile),'tbl','-v7');

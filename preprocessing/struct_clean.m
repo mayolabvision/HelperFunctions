@@ -20,7 +20,7 @@ if sum(cellfun(@(q) isempty(q), {tagS.stTimeMS}.', 'uni', 1))~=length(tagS) % ch
 end
 
 % find names of units that don't drop over course of session
-[unitnames,snrs] = findConsistentUnits_fromStruct(exp_clean);
+[unitnames,snrs,exp_clean] = findConsistentUnits_fromStruct(exp_clean);
 exp_clean.info.channels = unitnames; exp_clean.info.SNRs = snrs; % replace channels/snrs with new names/order
 
 % toss out "bad" units and sort units in numerical/alphabetical order
