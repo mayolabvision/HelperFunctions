@@ -1,4 +1,4 @@
-function raster_sdf(sptimes,timewindow,sigma,line_color,sem_shade)
+function raster_sdf(sptimes,timewindow,sigma,inds,line_color,sem_shade)
 
 % raster for a single neuron (each row is a trial, each col is a spike time) 
 
@@ -37,7 +37,11 @@ for iTrial = 1:length(sptimes)
         yspikes(2,:) = iTrial;
     end
     
-    plot(xspikes, yspikes, 'Color', line_color , 'LineWidth', 2)
+    if inds(iTrial)==1
+        plot(xspikes, yspikes, 'Color', line_color{1} , 'LineWidth', 3)
+    else
+        plot(xspikes, yspikes, 'Color', line_color{2} , 'LineWidth', 3)
+    end
     hold on
 end
 %xline(0,'k--','linewidth',1)
@@ -87,23 +91,18 @@ for iTrial = 1:length(sptimes)
     end
 end
 
-[mn,~,yu,yl] = sem_errorbar(sdf.*1000);
-% 
-% % Average response
-% ax1 = nexttile(ax);
 x = ((1:size(sdf,2)) + timewindow(1));
-fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle','none','FaceAlpha',0.5)
+
+[mn,~,yu,yl] = sem_errorbar(sdf(inds==1,:).*1000);
+fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{1}, 'linestyle','none','FaceAlpha',0.5)
 hold on
-plot(x,mn,'-','Color', line_color, 'LineWidth', 2)
-%xline(0,'k--','linewidth',1)
-%mVal = max(yu) + round(max(yu)*.1);
+plot(x,mn,'-','Color', line_color{1}, 'LineWidth', 2)
 
-%xlim(timewindow)
-%ylim([0 mVal])
-%ylim([0 60])
-%xticks([min(timewindow) max(timewindow)])
+[mn,~,yu,yl] = sem_errorbar(sdf(inds==2,:).*1000);
+fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{2}, 'linestyle','none','FaceAlpha',0.5)
+hold on
+plot(x,mn,'-','Color', line_color{2}, 'LineWidth', 2)
 
-%ylabel('FR [Hz]')
 prettyFig;
 
 end

@@ -6,7 +6,7 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
     snrs = exp.info.SNRs;
 
     % If >24 then MT, <24 then FEF
-    if isequal(trialTbl.Monkey(1),'aristotle')
+    if isequal(exp.info.expName(2),'a')
         unitNum     =  cellfun(@(y) sscanf(y,'unit%d')>24, unitnames,'uni',1);
     else
         unitNum     =  cellfun(@(y) sscanf(y,'unit%d')>0, unitnames,'uni',1);
@@ -26,7 +26,7 @@ function [unitsTbl] = makeUnitsTable_fromStruct(exp,trialTbl,postint)
     for u=1:length(unitnames)
         spkcnts = cell(1,length(dirsdeg));
         for d=1:length(dirsdeg)
-            spkcnts{d} = cellfun(@(q,s) (sum(q>=s & q<s+postint)), spks(u,trialTbl.Direction==dirsdeg(d)), num2cell(trialTbl.TargetMotionOnset(trialTbl.Direction==dirsdeg(d))'),'uni', 1); 
+            spkcnts{d} = cellfun(@(q,s) (sum(q>=s & q<s+postint))*(1000/postint), spks(u,trialTbl.Direction==dirsdeg(d)), num2cell(trialTbl.TargetMotionOnset(trialTbl.Direction==dirsdeg(d))'),'uni', 1); 
         end
         spkcnts_bySpeeds = cell(1,length(speeds));
         for s=1:length(speeds)
