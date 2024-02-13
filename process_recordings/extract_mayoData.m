@@ -21,7 +21,7 @@ function tbl = extract_mayoData(datafolder,datafile)
 %%%%%%%%%% EXAMPLE %%%%%%%%%%%
 % e.g. datafolder = '/Users/kendranoneman/Projects/mayo/HelperFunctions/process_recordings/example_data';
 %      datafile = 'sb01pursA65650026';
-% tbl = extract_eyeTraces(datafolder,datafile)
+% tbl = extract_mayoData(datafolder,datafile)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%% CHANGE FOR YOUR PATH %%%%%%%%%%%%%%%%%%%

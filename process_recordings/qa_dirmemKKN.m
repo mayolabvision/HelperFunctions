@@ -9,7 +9,7 @@ function qa_dirmemKKN(datafolder, datafile, alignType)
 %%%%%%%%%% EXAMPLE %%%%%%%%%%%
 % e.g. datafolder = '/Users/kendranoneman/Projects/mayo/HelperFunctions/process_recordings/example_data';
 %      datafile = 'sb01pursA65650026';
-% tbl = extract_eyeTraces(datafolder,datafile)
+% tbl = qa_dirmemKKN(datafolder,datafile,'stim')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set default parameters
 sigma = 10; % spike density function 
