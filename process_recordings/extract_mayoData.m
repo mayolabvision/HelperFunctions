@@ -1,4 +1,4 @@
-function tbl = extract_eyeTraces(datafolder,datafile)
+function tbl = extract_mayoData(datafolder,datafile)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function for extracting and preprocessing eye traces from .ns5 files
 %%%%%%%%%% INPUTS %%%%%%%%%%%

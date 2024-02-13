@@ -1,4 +1,16 @@
 function qa_dirmemKKN(datafolder, datafile, alignType)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function for extracting and preprocessing eye traces from .ns5 files
+%%%%%%%%%% INPUTS %%%%%%%%%%%
+% datafolder = string/char of full path where data is stored
+% datafile = datafile name
+% alignType = 'stim' or 'saccade'
+
+%%%%%%%%%% EXAMPLE %%%%%%%%%%%
+% e.g. datafolder = '/Users/kendranoneman/Projects/mayo/HelperFunctions/process_recordings/example_data';
+%      datafile = 'sb01pursA65650026';
+% tbl = extract_eyeTraces(datafolder,datafile)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set default parameters
 sigma = 10; % spike density function 
 preint = 300; % time before t=0 to plot
@@ -101,6 +113,6 @@ xlabel(tl, xlab, 'FontSize', 18)
 title(tl, sprintf('%s (%s-aligned)', datafile, alignType), 'fontsize', 20, 'Interpreter', 'none')
 
 % Save figure
-saveas(fig, sprintf('%s/%s_rasterSDF_%s.png', datafolder, datafile, alignType))
+%saveas(fig, sprintf('%s/%s_rasterSDF_%s.png', datafolder, datafile, alignType))
 
 end
