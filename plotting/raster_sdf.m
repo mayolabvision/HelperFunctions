@@ -1,4 +1,4 @@
-function raster_sdf(sptimes,timewindow,sigma,inds,line_color,sem_shade)
+function raster_sdf(sptimes,timewindow,sigma,line_color,sem_shade)
 
 % raster for a single neuron (each row is a trial, each col is a spike time) 
 
@@ -11,8 +11,9 @@ function raster_sdf(sptimes,timewindow,sigma,inds,line_color,sem_shade)
 % shade_color --> shade of lines (e.g. [153 153 153]./255)
 
 if nargin < 4
-    line_color = [0 0 0]./255;
-    sem_shade = [153 153 153]./255;
+    line_color = [0 0 255]./255;
+    sem_shade = [178,178,255]./255;
+    rast_shade = [166,166,166]./255;
 end
 
 % f = figure; %figure('Units','normalized','Position',[0 0 .3 1])
@@ -21,7 +22,6 @@ end
 % ax.TileSpacing = 'compact';
 % ax.Padding = 'compact';
 
-% nexttile(ax)
 % For all trials...
 for iTrial = 1:length(sptimes)
                   
@@ -37,21 +37,18 @@ for iTrial = 1:length(sptimes)
         yspikes(2,:) = iTrial;
     end
     
-    if inds(iTrial)==1
-        plot(xspikes, yspikes, 'Color', line_color{1} , 'LineWidth', 3)
-    else
-        plot(xspikes, yspikes, 'Color', line_color{2} , 'LineWidth', 3)
-    end
+    
+    plot(xspikes, yspikes, 'Color', rast_shade , 'LineWidth', 3)
     hold on
 end
-%xline(0,'k--','linewidth',1)
+xline(0,'k-','linewidth',2)
 
-%xlim(timewindow)
+xlim(timewindow)
 ylim([0 length(sptimes)])
 yticks([0 length(sptimes)])
 %xticks([min(timewindow) 0 max(timewindow)])
 
-%ylabel('trials')
+ylabel('trials')
 %title(ax,[sprintf('%d',condition) char(176)],'fontweight','bold','fontsize',14)
 
 prettyFig;
@@ -93,15 +90,18 @@ end
 
 x = ((1:size(sdf,2)) + timewindow(1));
 
-[mn,~,yu,yl] = sem_errorbar(sdf(inds==1,:).*1000);
-fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{1}, 'linestyle','none','FaceAlpha',0.5)
+[mn,~,yu,yl] = sem_errorbar(sdf.*1000);
+fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle','none','FaceAlpha',0.5)
 hold on
-plot(x,mn,'-','Color', line_color{1}, 'LineWidth', 2)
+plot(x,mn,'-','Color', line_color, 'LineWidth', 2)
 
-[mn,~,yu,yl] = sem_errorbar(sdf(inds==2,:).*1000);
-fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{2}, 'linestyle','none','FaceAlpha',0.5)
-hold on
-plot(x,mn,'-','Color', line_color{2}, 'LineWidth', 2)
+ylabel('firing rate (Hz)', 'Rotation', 270)
+%set(gca, 'YDir', 'reverse')
+
+% [mn,~,yu,yl] = sem_errorbar(sdf(inds==2,:).*1000);
+% fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{2}, 'linestyle','none','FaceAlpha',0.5)
+% hold on
+% plot(x,mn,'-','Color', line_color{2}, 'LineWidth', 2)
 
 prettyFig;
 

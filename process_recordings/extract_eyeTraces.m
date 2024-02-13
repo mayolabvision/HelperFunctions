@@ -53,7 +53,6 @@ trialcodes = {dat.trialcodes}.'; % C x 3 (codes) x (chan,code,time)
 results = {dat.result}.';
 resultNames = convertBetween_eventCodes_eventNames(results);
 
-
 % 5. Make array of times using start/end time of each trial, helpful for
 % aligning with trial codes and indexing eye data
 times = cellfun(@(q) round(q(1)*1000:q(2)*1000), {dat.time}.', 'uni', 0);

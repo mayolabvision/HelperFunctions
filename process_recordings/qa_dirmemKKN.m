@@ -1,0 +1,106 @@
+function qa_dirmemKKN(datafolder, datafile, alignType)
+% Set default parameters
+sigma = 10; % spike density function 
+preint = 300; % time before t=0 to plot
+postint = 500; % time after t=0 to plot
+num_angGroups = 8; % how many groups to bin directions in (2, 4, or 8)
+
+% Process data in with functions in nevutils and helperfunctions
+tbl = extract_eyeTraces(datafolder, datafile);
+
+%% Seperating by condition
+% Sort and get unique angles
+angs = sort(unique(tbl.angle));
+
+% Calculate the angular range for each group
+start_angles = mod(-45 + (0:num_angGroups-1) * 360 / num_angGroups, 360);
+end_angles = mod(-45 + (1:num_angGroups) * 360 / num_angGroups, 360);
+ranges = [start_angles', end_angles'];
+
+% Initialize cell array to store groups
+ang_groups = cell(num_angGroups, 1);
+
+% Iterate over each range
+for i = 1:num_angGroups
+    % Find indices of values within the current range
+    if ranges(i, 1) < ranges(i, 2)
+        indices = find(angs >= ranges(i, 1) & angs < ranges(i, 2));
+    else
+        indices = find(angs >= ranges(i, 1) | angs < ranges(i, 2));
+    end
+    % Store values within the current range
+    ang_groups{i} = angs(indices);
+end
+
+%% Plot figures
+% Create figure
+fig = figure;
+fig.Position = [100 100 1500 800];
+
+% Create tiled layout based on number of angular groups
+if num_angGroups == 2
+    tl = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'Compact');
+    positions = [3, 1];
+    centPos = 2;
+elseif num_angGroups == 4 || num_angGroups == 8
+    tl = tiledlayout(3, 3, 'TileSpacing', 'Compact', 'Padding', 'Compact');
+    if num_angGroups == 4
+        positions = [6, 2, 4, 8];
+    else
+        positions = [6, 3, 2, 1, 4, 7, 8, 9];
+    end
+    centPos = 5;
+end
+
+% Initialize an array to store the axes handles
+axes_handles = gobjects(1, num_angGroups);
+
+% Plot data in each subplot
+for a = 1:num_angGroups
+    thesetrials = tbl(tbl.trialOutcome == "CORRECT" & ismember(tbl.angle, ang_groups{a}), :);
+
+    % Create the subplot
+    ax = nexttile(tl, positions(a));
+    
+    % Determine spike times based on alignment type
+    if isequal(alignType, 'stim')
+        sptimes = cellfun(@(s, d) s - d(1), thesetrials.spks, thesetrials.TARG_ON, 'uni', 0);
+        xlab = 'Time Aligned to Stim Onset (ms)';
+    elseif isequal(alignType, 'saccade')
+        sptimes = cellfun(@(s, a) s - a(1), thesetrials.spks, num2cell(thesetrials.SACCADE), 'uni', 0);
+        xlab = 'Time Aligned to Saccade Onset (ms)';
+    end
+
+    % Plot raster plot and SDF
+    raster_sdf(sptimes, [-preint, postint], sigma)
+    prettyFig;
+    
+    % Set title for subplot
+    title(sprintf('[%d-%d] deg', ang_groups{a}(1), ang_groups{a}(end)), 'fontsize', 16, 'fontweight', 'bold')
+    
+    % Store axes handle
+    axes_handles(a) = ax;
+end
+
+% Create subplot for center circle, can replace with tuning polar plot
+nexttile(tl, centPos);
+axx = gca;
+axx.Visible = 'off';
+hold on;
+
+% Plot unit circle
+t = linspace(0, 2*pi, 100);
+x = cos(t);
+y = sin(t);
+plot(x, y, 'k');  % Plot unit circle
+axis equal;
+hold off;
+
+linkaxes(axes_handles, 'y')
+xlabel(tl, xlab, 'FontSize', 18)
+title(tl, sprintf('%s (%s-aligned)', datafile, alignType), 'fontsize', 20, 'Interpreter', 'none')
+
+% Save figure
+saveas(fig, sprintf('%s/%s_rasterSDF_%s.png', datafolder, datafile, alignType))
+
+end
