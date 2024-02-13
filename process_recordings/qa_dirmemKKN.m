@@ -6,7 +6,7 @@ postint = 500; % time after t=0 to plot
 num_angGroups = 8; % how many groups to bin directions in (2, 4, or 8)
 
 % Process data in with functions in nevutils and helperfunctions
-tbl = extract_eyeTraces(datafolder, datafile);
+tbl = extract_mayoData(datafolder, datafile);
 
 %% Seperating by condition
 % Sort and get unique angles
