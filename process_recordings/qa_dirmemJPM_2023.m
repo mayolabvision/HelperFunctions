@@ -14,11 +14,11 @@ function [visdp, visds, sacdp, sacds, vmi, STI, baseFR] = qa_dirmemJPM_2023(file
 % h is an optional figure handle. If h is -1, this doesn't plot and
 % instead just spits out the results
 
-if (nargin < 2)
+if (nargin < 3)
     sortcode = 1;
 end
 
-if (nargin < 3)
+if (nargin < 4)
     h=figure;
     hb=figure;
 else

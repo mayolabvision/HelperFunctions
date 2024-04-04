@@ -21,7 +21,7 @@ end
 %     pause
 %     nev = readNEVMulti(filename);
 % else
-    nev = read_nev(filename); % Updated Feb 2024 to *not* use readNEV
+    [nev,~] = read_nev(filename); % Updated Feb 2024 to *not* use readNEV
 % end
 
 if (isempty(nev))
