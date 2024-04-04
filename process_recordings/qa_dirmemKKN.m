@@ -13,8 +13,13 @@ function qa_dirmemKKN(datafolder, datafile, alignType)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set default parameters
 sigma = 10; % spike density function 
-preint = 300; % time before t=0 to plot
-postint = 500; % time after t=0 to plot
+if isequal(alignType,'stim')
+    preint = 200; % time before t=0 to plot
+    postint = 1000; % time after t=0 to plot
+else
+    preint = 500; % time before t=0 to plot
+    postint = 450; % time after t=0 to plot
+end
 num_angGroups = 8; % how many groups to bin directions in (2, 4, or 8)
 
 % Process data in with functions in nevutils and helperfunctions
@@ -59,7 +64,7 @@ elseif num_angGroups == 4 || num_angGroups == 8
     if num_angGroups == 4
         positions = [6, 2, 4, 8];
     else
-        positions = [6, 3, 2, 1, 4, 7, 8, 9];
+        positions = [9, 6, 3, 2, 1, 4, 7, 8];
     end
     centPos = 5;
 end
@@ -113,6 +118,6 @@ xlabel(tl, xlab, 'FontSize', 18)
 title(tl, sprintf('%s (%s-aligned)', datafile, alignType), 'fontsize', 20, 'Interpreter', 'none')
 
 % Save figure
-%saveas(fig, sprintf('%s/%s_rasterSDF_%s.png', datafolder, datafile, alignType))
+saveas(fig, sprintf('%s/%s_rasterSDF_%s.png', datafolder, datafile, alignType))
 
 end
