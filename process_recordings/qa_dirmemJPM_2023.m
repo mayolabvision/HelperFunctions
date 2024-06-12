@@ -29,7 +29,7 @@ else
     end
 end
 
-a = qa_extract_data_1chan(filename,sortcode,channel); 
+a = qa_extract_data_1chan(filename,sortcode,channel);
 
 %%%%%%%
 % Generate two raster/PSTH plots - stim-aligned and sac-aligned
@@ -53,11 +53,17 @@ if (h > 0)
         rasters = showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); % JPM added
         set(get(gca,'Children'),'linewidth',psthline);
         if I==1  % if-statement added by JPM, June 25 2013
-            ylabel(['CND: ',num2str(I), ' RIGHT']);
+            ylabel('[-30,30)');
+        elseif I==2
+            ylabel('[30,90)');
         elseif I==3
-            ylabel(['CND: ',num2str(I), ' UP']);
+            ylabel('[90,150)');
+        elseif I==4
+            ylabel('[150,-150)');
+        elseif I==5
+            ylabel('[-150,-90)');
         else
-            ylabel(['CND: ',num2str(I)]);
+            ylabel('[-90,-30)');
         end
         if (I==1)
             title('Aligned to Stim Onset');
@@ -67,6 +73,7 @@ if (h > 0)
         else
             xlabel('Time (s)');
         end
+
     end
 
     % sac-aligned
@@ -84,6 +91,7 @@ if (h > 0)
         else
             xlabel('Time (s)');
         end
+
     end
     
     % set same ylimits on both axes
@@ -100,24 +108,23 @@ if (h > 0)
         holdrasters=[];
     for I=1:size(a.STIMEVENTS,1)
         subplot(size(a.STIMEVENTS,1),2,pcount(I));
-        ylim([min(yl(:,1)) max(yl(:,2))]);
+        %ylim([min(yl(:,1)) max(yl(:,2))]);
         hold on
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
-        plot([0 0],[0 max(yl(:,2))],'r');
+        xline(0, 'r-')
         hold off
     end
     
     pcount = [2:2:length(a.CND)*2];    
     for I=1:size(a.SACEVENTS,1)
         subplot(size(a.SACEVENTS,1),2,pcount(I));
-        ylim([min(yl(:,1)) max(yl(:,2))]);    
+        %ylim([min(yl(:,1)) max(yl(:,2))]);    
         hold on
         overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
-        plot([0 0],[0 max(yl(:,2))],'r');
+        xline(0, 'r-')
         hold off
     end
 end
-
 
 %%%% calculate some statistics
 % spike counting windows
@@ -244,27 +251,27 @@ if (h > 0)
 %     set(h2,'xdata',txd(1),'ydata',tyd(1));
 %     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
     title(['VisDir: ',dpt,', Sel: ',dst,', VMI: ',vmit]);
-    prettyFigSGL
+    prettyFig
     
     subplot(1,2,2);
     rho = nanmean(sacrate);
     dst = sprintf('%0.2f',sacds);
     dpt = sprintf('%0.2f',sacdp);
-    h1=polplot(theta,rho,'ro-'); hold on;
+    h1=polarplot(theta,rho,'ro-'); hold on;
     set(h1,'markerfacecolor','r');
-    polplot(theta,rhoLsc,'go--'); hold on; % JPM
-    polplot(theta,rhoUsc,'go--'); hold on; % JPM   
-    h2=polplot(sacdp,max(rho),'k^');
-    txd = get(h2,'xdata');
-    tyd = get(h2,'ydata');
-    set(h2,'xdata',txd(1),'ydata',tyd(1));
+    polarplot(theta,rhoLsc,'go--'); hold on; % JPM
+    polarplot(theta,rhoUsc,'go--'); hold on; % JPM   
+    h2=polarplot(sacdp,max(rho),'k^');
+    txd = get(h2,'ThetaData');
+    tyd = get(h2,'RData');
+    set(h2,'ThetaData',txd(1),'RData',tyd(1));
     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
     title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
-    prettyFigSGL
+    prettyFig
 end
 end
 
-function [all] = merge_raster( rasters, onemax)
+function [all] = merge_raster(rasters, onemax)
 
 if nargin < 2
     onemax = 0;

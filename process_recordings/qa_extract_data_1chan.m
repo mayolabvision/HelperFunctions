@@ -55,6 +55,35 @@ tstops = find(dat(:,2)==255);
 cnd=dat(tstarts+1,2)-2^15;
 ncnd = length(unique(cnd));
 
+%%%%%%%%%%%%%%%%% temporary add by Kendra to narrow down conditions
+sets = {[125:25:400],[0:10:350]};
+[xs,ys] = ndgrid(sets{:});
+cartProd = [xs(:) ys(:)];
+
+% Define conditions for each group
+conditions = {[0,10,20,330,340,350], [30,40,50,60,70,80], [90,100,110,120,130,140], ...
+              [150,160,170,180,190,200], [210,220,230,240,250,260], [270,280,290,300,310,320]};
+
+% Initialize cell arrays to store groups
+groups = cell(1, numel(conditions));
+
+% Iterate over each condition and assign indices to groups
+for i = 1:numel(conditions)
+    % Find indices satisfying the condition
+    indices = ismember(cartProd(:,2), conditions{i});
+    % Assign indices to the corresponding group
+    groups{i} = find(indices);
+end
+
+new_cnd = zeros(size(cnd));
+for ii = 1:numel(cnd)
+    new_cnd(ii) =  find(cellfun(@(x) ismember(cnd(ii),x), groups)); 
+end
+
+cnd=new_cnd;
+ncnd = length(unique(cnd));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %EVENTS = cell X cnd X repeat
 a = struct();
 
