@@ -75,9 +75,6 @@ groups = arrayfun(@(i) find(ismember(cartProd(:,2), conditions{i})), 1:num_group
 % Update the cnd array based on the new groupings
 new_cnd = arrayfun(@(x) find(cellfun(@(y) ismember(x, y), groups)), cnd);
 
-% Update cnd and ncnd
-cnd = new_cnd;
-ncnd = length(unique(cnd));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %EVENTS = cell X cnd X repeat
 a = struct();
