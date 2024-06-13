@@ -1,3 +1,14 @@
+% June 12, 2024. Updated code to be more than minimally useful. JPM
+    % Changes: 
+        % 1) Fixed sacc-aligned polar plot so that is actually shows
+        % something now.
+        % 2) Fixed black triangle plot so it now shows fitted 'best'
+        % direction. WARNING: STILL NOT WORKING FOR SACC ALIGN
+        % 3) changed color scheme from red-green to black-green.
+        % 4) made linewidths larger in polar plots because I'm getting old
+        % 5) added filename to plot
+
+
 % May 5, 2023. My triumphant return to and updating of this code that 
 % I apparently wrote over 10 years ago. Goal is to make the plots pretty
 % and immediately legible, unlike whatever pile of shit that is currently
@@ -45,86 +56,69 @@ sigma = 10;  % For spike density functions.
 if (h > 0)
     figure(h); clf;
     % stim-aligned first
-    pcount = [1:2:length(a.CND)*2];
-    
+
     for I=1:size(a.STIMEVENTS,1)
-        subplot(size(a.STIMEVENTS,1),2,pcount(I));
+        if I == 1
+            subplot(3,3,I+5)
+        elseif I == 3 || I == 5
+            subplot(3,3,I-1)
+        elseif I == 4
+            subplot(3,3,I-3)
+        else % plotd = 2, 6-8
+            subplot(3,3,I+1)
+        end
+
         showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
-        rasters = showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); % JPM added
-        set(get(gca,'Children'),'linewidth',psthline);
-        if I==1  % if-statement added by JPM, June 25 2013
-            ylabel('[-30,30)');
-        elseif I==2
-            ylabel('[30,90)');
-        elseif I==3
-            ylabel('[90,150)');
-        elseif I==4
-            ylabel('[150,-150)');
-        elseif I==5
-            ylabel('[-150,-90)');
-        else
-            ylabel('[-90,-30)');
-        end
-        if (I==1)
-            title('Aligned to Stim Onset');
-        end
-        if (I<size(a.STIMEVENTS,1))
-            set(gca,'xticklabel','');
-        else
-            xlabel('Time (s)');
-        end
-
-    end
-
-    % sac-aligned
-    pcount = [2:2:length(a.CND)*2];
-    for I=1:size(a.SACEVENTS,1)
-        subplot(size(a.SACEVENTS,1),2,pcount(I));
-        showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;  
-        set(get(gca,'Children'),'linewidth',psthline);    
-        %ylabel(['CND: ',num2str(I)]);
-        if (I==1)
-            title('Aligned to Saccade Onset');
-        end
-        if (I<size(a.SACEVENTS,1))
-            %set(gca,'xticklabel','');
-        else
-            xlabel('Time (s)');
-        end
-
-    end
-    
-    % set same ylimits on both axes
-    pc = get(gcf,'children');
-    for I=1:length(pc)
-        yl(I,:) = get(pc(I),'ylim');
-    end
-    for I=1:length(pc)
-        set(pc(I),'ylim',[0 max(yl(:,2))]);        
-    end
-    
-    % overlay rasters for stim-aligned and sac-aligned
-    pcount = [1:2:length(a.CND)*2]; 
-        holdrasters=[];
-    for I=1:size(a.STIMEVENTS,1)
-        subplot(size(a.STIMEVENTS,1),2,pcount(I));
-        %ylim([min(yl(:,1)) max(yl(:,2))]);
-        hold on
+      %  hold on
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
-        hold off
+        set(get(gca,'Children'),'linewidth',psthline);
+
+        % hard coded kludge; I==4
+        if (I==4)
+            xlabel('Aligned to Stim Onset. (s)');
+            title (filename, 'Interpreter','none')
+        end
+
+        if (I<size(a.STIMEVENTS,1))
+
+        else
+            xlabel('Time (s)');
+        end
     end
-    
-    pcount = [2:2:length(a.CND)*2];    
-    for I=1:size(a.SACEVENTS,1)
-        subplot(size(a.SACEVENTS,1),2,pcount(I));
-        %ylim([min(yl(:,1)) max(yl(:,2))]);    
+    set(gcf,'color','w')
+
+
+    figure(hb)
+    for I=1:size(a.STIMEVENTS,1)
+        if I == 1
+            subplot(3,3,I+5)
+        elseif I == 3 || I == 5
+            subplot(3,3,I-1)
+        elseif I == 4
+            subplot(3,3,I-3)
+        else % plotd = 2, 6-8
+            subplot(3,3,I+1)
+        end
+        
+        showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
         hold on
         overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
-        hold off
+        set(get(gca,'Children'),'linewidth',psthline);
+
+        if (I==4)
+            xlabel('Aligned to Sacc Onset. (s)');
+            title (filename, 'Interpreter','none')
+        end
+
+        if (I<size(a.SACEVENTS,1))
+        else
+            xlabel('Time (s)');
+        end
     end
-end
+    set(gcf,'color','w')
+ end
 
 %%%% calculate some statistics
 % spike counting windows
@@ -158,7 +152,6 @@ sacrate = sacrate' ./ diff(sacwin);
 
 theta = 0:360/length(a.CND):360; theta(end)=[];
 
-% JPM Aug 15, 2012 modifying previous version of qa_dirrem to
 % permute/bootstrap orig firing rates 
 
 % Generate randomized index of stimrate values, WITH REPLACEMENT
@@ -228,43 +221,51 @@ dsti = sprintf('%0.2f',STI);
 [visds, visdp] = tuningbias(theta,nanmean(stimrate));
 [sacds, sacdp] = tuningbias(theta,nanmean(sacrate));
 
+
+% Generate polar plots
 if (h > 0)
-    % polar plots
-    figure(hb); clf;
+   % figure(hb); clf;
+   figure(h)
+   subplot(3,3,5); 
     
  %   plim = max([nanmean(stimrate),nanmean(sacrate)]); 
     % can multiple * 1.1 to expand axes a bit
     
-    subplot(1,2,1);
+    % Plot stimulus onset aligned activity
+ %   subplot(1,2,1); 
     rho = nanmean(stimrate);
     dst = sprintf('%0.2f',visds);
     dpt = sprintf('%0.2f',visdp);
-    polarplot(deg2rad([theta 0]),[rho rho(1)],'ro-',...
-        'markerfacecolor','r','linewidth',2)
+    polarplot(deg2rad([theta 0]),[rho rho(1)],'ko-',...
+        'markerfacecolor','k','linewidth',3)
     hold on
-    polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'go--');
-    polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'go--');   
-    %set(hP,'markerfacecolor','g');  % JPM
-    h2=polarplot(deg2rad(visdp),max(rho),'k^');
-%     txd = get(h2,'xdata');
-%     tyd = get(h2,'ydata');
-%     set(h2,'xdata',txd(1),'ydata',tyd(1));
-%     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
+    polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'go--',LineWidth=2);
+    polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'go--',LineWidth=2);   
+    
+    h1=polarplot(deg2rad(visdp),max(rho),'k^'); % Plot black triangle at best dir
+    txd1 = get(h1,'ThetaData');
+    tyd1 = get(h1,'RData');
+    set(h1,'ThetaData',txd1(1),'RData',tyd1(1));
+    set(h1,'markersize',10,'markerfacecolor','k'); hold off;
     title(['VisDir: ',dpt,', Sel: ',dst,', VMI: ',vmit]);
     prettyFig
     
-    subplot(1,2,2);
-    rho = nanmean(sacrate);
+    % Plot saccade-aligned responses
+    figure(hb)
+    subplot(3,3,5); 
+    rho2 = nanmean(sacrate);
     dst = sprintf('%0.2f',sacds);
     dpt = sprintf('%0.2f',sacdp);
-    h1=polarplot(theta,rho,'ro-'); hold on;
-    set(h1,'markerfacecolor','r');
-    polarplot(theta,rhoLsc,'go--'); hold on; % JPM
-    polarplot(theta,rhoUsc,'go--'); hold on; % JPM   
-    h2=polarplot(sacdp,max(rho),'k^');
-    txd = get(h2,'ThetaData');
-    tyd = get(h2,'RData');
-    set(h2,'ThetaData',txd(1),'RData',tyd(1));
+    polarplot(deg2rad([theta 0]),[rho2 rho2(1)],'ko-',...
+        'markerfacecolor','k','linewidth',3)
+    hold on
+    polarplot(deg2rad([theta 0]),[rhoLsc rhoLsc(1)],'go--',LineWidth=2);
+    polarplot(deg2rad([theta 0]),[rhoUsc rhoUsc(1)],'go--',LineWidth=2);
+
+    h2=polarplot(sacdp,max(rho2),'k^'); % Plot black triangle at best dir
+    txd2 = get(h2,'ThetaData');
+    tyd2 = get(h2,'RData');
+    set(h2,'ThetaData',txd2(1),'RData',tyd2(1));
     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
     title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
     prettyFig
