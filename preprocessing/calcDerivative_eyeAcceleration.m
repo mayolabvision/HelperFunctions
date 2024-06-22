@@ -43,7 +43,7 @@ elseif isequal(class(eyeVel),'cell')
 
         eyeAcc = cellfun(@(h,v) [h, v], HEacc, VEacc, 'uni', 0);
     else % cols
-         x = cellfun(@(q) (0:(size(q,2) - 1)) / samplingRate, eyeVel, 'uni', 0);
+        x = cellfun(@(q) (0:(size(q,2) - 1)) / samplingRate, eyeVel, 'uni', 0);
         HEacc = cellfun(@(q,r) gradient(r(1,:), q), x, eyeVel, 'uni', 0);
         VEacc = cellfun(@(q,r) gradient(r(2,:), q), x, eyeVel, 'uni', 0);
 

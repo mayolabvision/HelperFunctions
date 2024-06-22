@@ -78,8 +78,8 @@ end
 
 if plt ==1
     figure;
-    x = 1:500+1;
-    plot(x,eyeVelocity(stimOnset:stimOnset+500),'k-')
+    x = 1:1500+1;
+    plot(x,eyeVelocity(stimOnset-500:stimOnset+1000),'k-')
     hold on
     xline(rxnTime,'b--')
     title(rxnTime)

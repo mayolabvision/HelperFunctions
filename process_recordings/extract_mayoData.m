@@ -71,7 +71,9 @@ trialMarkers = horzcat(trialMarkers{:});
 trialMarkers(cellfun('isempty',trialMarkers)) = {NaN};
 
 % 7. Smooth the eye traces for approximating velocity and acceleration
-eyePos = cellfun(@(x,y) filterEyeTraces_sglolay(x.trial(1:2,y:end),2,9,0), eye, trialStarts, 'uni', 0);
+%eyePos = cellfun(@(x,y) filterEyeTraces_sglolay(x.trial(1:2,y:end),2,111,0), eye, trialStarts, 'uni', 0);
+eyePos = cellfun(@(x,y) filterEyeTraces_EyeLink(x.trial(1:2,y:end),1000,30,4,0), eye, trialStarts, 'uni', 0);
+%eyePos = cellfun(@(x,y) x.trial(1:2,y:end), eye, trialStarts, 'uni', 0);
 %eyePos = cellfun(@(x,y) smoothdata(x.trial(1:2,y:end),2,'gaussian',kernel), eye, trialStarts, 'uni', 0);
 X = cellfun(@(q) 1:size(q,2), eyePos, 'uni', 0);
 
