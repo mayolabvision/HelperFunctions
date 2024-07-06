@@ -24,6 +24,8 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %                       (e.g., CONDITION_NAMES = {'c1','c2'})
     %   CONDITION_COLORS  - Cell array of colors, default is 2 colors per condition 
     %                        (e.g., CONDITION_COLORS = {[[102,178,255]./255;[0,102,204]./255], [[255,102,102]./255;[204,0,0]./255]})
+    %   EPOCH_STARTS      - Array of points to put markers 
+    %                        (e.g., [-500,-300,0,300,500])
     %
     %%% Outputs: %%%
     %   D - Struct array compatible with DataHigh
@@ -31,7 +33,8 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %%% Example usage: %%%
     %   D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'ALIGN_BY', 'SACCADE', 'SPK_INTERVAL', [-500, 500], ...
     %                     'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, 'CONDITION_BY', 'block', 'CONDITION_GROUPS', {[1,3,5],[2,4,6]}, 'CONDITION_NAMES', {'c1','c2'}...
-    %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]]});
+    %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]]}, ...
+    %                     'EPOCH_STARTS',[-500,300,0,300,500]);
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     addpath(genpath(fullfile(pwd, '..'))); % so you have access to the convertBetween_eventCodes_eventNames function
@@ -45,6 +48,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     defaultConditionGroups = false; % Default is to not group any of the conditions together
     defaultConditionNames = false; % Default is to name conditions based on existing values
     defaultConditionColors = repmat({[[102, 178, 255]./255;[0, 102, 204]./255], [[255, 102, 102]./255;[204, 0, 0]./255]}, 1, 6);
+    defaultEpochStarts = false; % Default is to not specify any epochStarts
     
 
     % Create an input parser
@@ -59,6 +63,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     addParameter(p, 'CONDITION_GROUPS', defaultConditionGroups, @iscell); % CONDITION_GROUPS must be a cell array
     addParameter(p, 'CONDITION_NAMES', defaultConditionNames, @iscell); % CONDITION_GROUPS must be a cell array
     addParameter(p, 'CONDITION_COLORS', defaultConditionColors, @iscell); % CONDITION_COLORS must be a cell array
+    addParameter(p, 'EPOCH_STARTS', defaultEpochStarts, @(x) isnumeric(x) || (islogical(x) && ~x)); % BLOCKS must be numeric or false
 
     % Parse the inputs
     parse(p, PATH, SESSION, varargin{:});
@@ -74,6 +79,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     CONDITION_GROUPS = p.Results.CONDITION_GROUPS;
     CONDITION_NAMES = p.Results.CONDITION_NAMES;
     CONDITION_COLORS = p.Results.CONDITION_COLORS;
+    EPOCH_STARTS = p.Results.EPOCH_STARTS;
 
     % Check SPK_INTERVAL validity
     if SPK_INTERVAL(1) >= SPK_INTERVAL(2)
@@ -87,11 +93,31 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     end
 
     % If you only have one color defined per condition, then D(i).epochStarts = 1
-    if size(CONDITION_COLORS{1},1) == 1
-        epoch_start = 1;
+    if islogical(EPOCH_STARTS) && isequal(EPOCH_STARTS, false)
+        if size(CONDITION_COLORS{1},1) == 1
+            epoch_start = 1;
+        else
+            epoch_start = [1,abs(SPK_INTERVAL(1))];
+        end
+    elseif isnumeric(EPOCH_STARTS)
+        % Sort, remove leading 0, and add 1 if necessary
+        epoch_start = sort(EPOCH_STARTS + abs(SPK_INTERVAL(1)));
+        epoch_start = epoch_start(epoch_start ~= 0);
+        if epoch_start(1) ~= 1, epoch_start = [1, epoch_start]; end
+
+        % Function to handle repeating colors
+        repeatColors = @(colors, len) repmat(colors, ceil(len / size(colors, 1)), 1);
+        
+        % Loop through each cell in CONDITION_COLORS
+        for i = 1:length(CONDITION_COLORS)
+            colors = CONDITION_COLORS{i};
+            CONDITION_COLORS{i} = repeatColors(colors, length(epoch_start)); % Repeat the colors
+            CONDITION_COLORS{i} = CONDITION_COLORS{i}(1:length(epoch_start), :); % Trim to ensure exact length
+        end
     else
-        epoch_start = [1,abs(SPK_INTERVAL(1))];
+        error('EPOCH_STARTS must be either false or an array of doubles.');
     end
+    
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% STEP 1: Load data
