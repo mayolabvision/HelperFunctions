@@ -25,7 +25,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %   CONDITION_COLORS  - Cell array of colors, default is 2 colors per condition 
     %                        (e.g., CONDITION_COLORS = {[[102,178,255]./255;[0,102,204]./255], [[255,102,102]./255;[204,0,0]./255]})
     %   EPOCH_STARTS      - Array of points to put markers 
-    %                        (e.g., [-500,-300,0,300,500])
+    %                        (e.g., [-200,-100,0,100,200])
     %
     %%% Outputs: %%%
     %   D - Struct array compatible with DataHigh
@@ -34,7 +34,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %   D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'ALIGN_BY', 'SACCADE', 'SPK_INTERVAL', [-500, 500], ...
     %                     'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, 'CONDITION_BY', 'block', 'CONDITION_GROUPS', {[1,3,5],[2,4,6]}, 'CONDITION_NAMES', {'c1','c2'}...
     %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]]}, ...
-    %                     'EPOCH_STARTS',[-500,300,0,300,500]);
+    %                     'EPOCH_STARTS',[-200,-100,0,100,200]);
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     addpath(genpath(fullfile(pwd, '..'))); % so you have access to the convertBetween_eventCodes_eventNames function
@@ -43,7 +43,7 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     defaultBlocks = false; % Default to combine all blocks
     defaultCorrectOnly = true; % Default to include all trials
     defaultAlignBy = 'SACCADE'; % Trial code or code name to align to
-    defaultSpkInterval = [-500, 500]; % Default spike interval in ms
+    defaultSpkInterval = [-300, 200]; % Default spike interval in ms
     defaultConditionBy = 'block'; % Default to condition by block
     defaultConditionGroups = false; % Default is to not group any of the conditions together
     defaultConditionNames = false; % Default is to name conditions based on existing values
@@ -99,7 +99,9 @@ function D = format_dataHigh(PATH, SESSION, varargin)
         else
             epoch_start = [1,abs(SPK_INTERVAL(1))];
         end
+
     elseif isnumeric(EPOCH_STARTS)
+        EPOCH_STARTS = EPOCH_STARTS(EPOCH_STARTS<SPK_INTERVAL(2) & EPOCH_STARTS>=SPK_INTERVAL(1));
         % Sort, remove leading 0, and add 1 if necessary
         epoch_start = sort(EPOCH_STARTS + abs(SPK_INTERVAL(1)));
         epoch_start = epoch_start(epoch_start ~= 0);
