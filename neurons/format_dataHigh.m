@@ -18,20 +18,21 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %                       (e.g., CORRECT_ONLY = true)
     %   CONDITION_BY      - String, 'block' or 'dir', default is 'block'
     %                       (e.g., CONDITION_BY = 'dir') 
+    %   CONDITION_GROUPS  - Cell array of block numbers or directions you wish to group together, default is false (none are grouped)
+    %                       (e.g., CONDITION_GROUPS = {[1,3,5],[2,4,6]})
+    %   CONDITION_NAMES   - Cell array of condition names
+    %                       (e.g., CONDITION_NAMES = {'c1','c2'})
     %   CONDITION_COLORS  - Cell array of colors, default is 2 colors per condition 
-    %                        (e.g., CONDITION_COLORS = {[[102,178,255]./255;[0,102,204]./255], [[255,102,102]./255;[204,0,0]./255],...
-    %                                                   [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
-    %                                                   [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]}
+    %                        (e.g., CONDITION_COLORS = {[[102,178,255]./255;[0,102,204]./255], [[255,102,102]./255;[204,0,0]./255]})
     %
     %%% Outputs: %%%
     %   D - Struct array compatible with DataHigh
     %
     %%% Example usage: %%%
-    % D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'ALIGN_BY', 'SACCADE', 'SPK_INTERVAL', [-500, 500], ...
-    %                     'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, 'CONDITION_BY', 'block',...
-    %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
-    %                                          [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
-    %                                          [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]});
+    %   D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'ALIGN_BY', 'SACCADE', 'SPK_INTERVAL', [-500, 500], ...
+    %                     'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, 'CONDITION_BY', 'block', 'CONDITION_GROUPS', {[1,3,5],[2,4,6]}, 'CONDITION_NAMES', {'c1','c2'}...
+    %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]]});
+    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     addpath(genpath(fullfile(pwd, '..'))); % so you have access to the convertBetween_eventCodes_eventNames function
 
@@ -41,7 +42,9 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     defaultAlignBy = 'SACCADE'; % Trial code or code name to align to
     defaultSpkInterval = [-500, 500]; % Default spike interval in ms
     defaultConditionBy = 'block'; % Default to condition by block
-    defaultConditionColors = repmat({[[102, 178, 255]./255;[0, 102, 204]./255], [[255, 102, 102]./255;[204, 0, 0]./255]}, 1, 3);
+    defaultConditionGroups = false; % Default is to not group any of the conditions together
+    defaultConditionNames = false; % Default is to name conditions based on existing values
+    defaultConditionColors = repmat({[[102, 178, 255]./255;[0, 102, 204]./255], [[255, 102, 102]./255;[204, 0, 0]./255]}, 1, 6);
     
 
     % Create an input parser
@@ -53,6 +56,8 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     addParameter(p, 'BLOCKS', defaultBlocks, @(x) isnumeric(x) || (islogical(x) && ~x)); % BLOCKS must be numeric or false
     addParameter(p, 'CORRECT_ONLY', defaultCorrectOnly, @islogical); % CORRECT_ONLY must be logical
     addParameter(p, 'CONDITION_BY', defaultConditionBy, @ischar); % CONDITION_BY must be a string
+    addParameter(p, 'CONDITION_GROUPS', defaultConditionGroups, @iscell); % CONDITION_GROUPS must be a cell array
+    addParameter(p, 'CONDITION_NAMES', defaultConditionNames, @iscell); % CONDITION_GROUPS must be a cell array
     addParameter(p, 'CONDITION_COLORS', defaultConditionColors, @iscell); % CONDITION_COLORS must be a cell array
 
     % Parse the inputs
@@ -66,11 +71,19 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     BLOCKS = p.Results.BLOCKS;
     CORRECT_ONLY = p.Results.CORRECT_ONLY;
     CONDITION_BY = p.Results.CONDITION_BY;
+    CONDITION_GROUPS = p.Results.CONDITION_GROUPS;
+    CONDITION_NAMES = p.Results.CONDITION_NAMES;
     CONDITION_COLORS = p.Results.CONDITION_COLORS;
 
     % Check SPK_INTERVAL validity
     if SPK_INTERVAL(1) >= SPK_INTERVAL(2)
         error('SPK_INTERVAL:InvalidRange', 'The first number in SPK_INTERVAL must be less than the second.');
+    end
+
+    % Check that CONDITION_NAMES and CONDITION_GROUPS are either both false or have the same dimensions
+    if ~(isequal(CONDITION_NAMES, false) && isequal(CONDITION_GROUPS, false)) && ...
+       ~isequal(size(CONDITION_NAMES), size(CONDITION_GROUPS))
+        error('CONDITION_NAMES and CONDITION_GROUPS must either both be false or have the same dimensions.');
     end
 
     % If you only have one color defined per condition, then D(i).epochStarts = 1
@@ -158,17 +171,33 @@ function D = format_dataHigh(PATH, SESSION, varargin)
             end
 
             D_eachBlock(trial).data = spks_perTrial; % Assign spike train matrix to data field
+
             if isequal(CONDITION_BY, 'block') % Condition by block
                 conditionNum = block; % Condition number is block number
-                D_eachBlock(trial).condition = blockNames{block}; % Condition name is block name
+                if iscell(CONDITION_NAMES)
+                    D_eachBlock(trial).condition = CONDITION_NAMES{cellfun(@(q) ismember(conditionNum,q), CONDITION_GROUPS)};
+                    D_eachBlock(trial).epochColors = CONDITION_COLORS{cellfun(@(q) ismember(conditionNum,q), CONDITION_GROUPS)};
+                elseif isequal(CONDITION_NAMES, false)
+                    D_eachBlock(trial).condition = blockNames{block}; % Condition name is block name
+                    D_eachBlock(trial).epochColors = CONDITION_COLORS{conditionNum};
+                else
+                    error('CONDITION_NAMES must be either false or a cell array.');
+                end
             elseif isequal(CONDITION_BY, 'dir') % Condition by direction
                 thisTrial_dir = data.trialinfo{block}.dirs(these_trials(trial)); % Get direction for this trial
-                conditionNum = find((sort(unique(data.trialinfo{block}.dirs)) == thisTrial_dir) == 1); % Find condition number for direction
-                D_eachBlock(trial).condition = char(string(thisTrial_dir)); % Assign condition name as direction
+                conditionNum = sort(unique(data.trialinfo{block}.dirs)) == thisTrial_dir; % Find condition number for direction
+                if iscell(CONDITION_NAMES)
+                    D_eachBlock(trial).condition = CONDITION_NAMES{cellfun(@(q) ismember(thisTrial_dir,q), CONDITION_GROUPS)};
+                    D_eachBlock(trial).epochColors = CONDITION_COLORS{cellfun(@(q) ismember(thisTrial_dir,q), CONDITION_GROUPS)};
+                elseif isequal(CONDITION_NAMES, false)
+                    D_eachBlock(trial).condition = char(string(thisTrial_dir)); % Assign condition name as direction
+                    D_eachBlock(trial).epochColors = CONDITION_COLORS{conditionNum};
+                else
+                    error('CONDITION_NAMES must be either false or a cell array.');
+                end
             end
             D_eachBlock(trial).type = 'traj';
             D_eachBlock(trial).epochStarts = epoch_start;
-            D_eachBlock(trial).epochColors = CONDITION_COLORS{conditionNum}; % Assign color for condition
         end
         D_all{block} = D_eachBlock; % Add block data to D_all
     end
