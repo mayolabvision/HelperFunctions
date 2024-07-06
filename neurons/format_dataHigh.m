@@ -16,14 +16,20 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %                       (e.g., CONDITION_BY = 'dir') 
     %   CONDITION_COLORS  - Cell array of colors, default is 12 different colors
     %                       (e.g., CONDITION_COLORS = {[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]})
+    %   MIN_FR_HZ         - Minimum firing rate in Hz for neurons to include, default is 0
+    %                       (e.g., MIN_FR_HZ = 1)
     %
     %%% Outputs: %%%
     %   D - Struct array compatible with DataHigh
     %
     %%% Example usage: %%%
     % D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, ...
-    %                     'CONDITION_BY', 'block', 'CONDITION_COLORS', {[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]});
+    %                     'CONDITION_BY', 'block', 'CONDITION_COLORS', {[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]}, ...
+    %                     'MIN_FR_HZ', 1);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % TO-DOS:
+    % 1. Add 'alignCode' as input, for aligning spikes to either stimOnset,
+    % saccadeOnset, etc...
 
     % Default values for optional parameters
     defaultBlocks = false; % Default to combine all blocks
@@ -32,6 +38,8 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     defaultConditionColors = {[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], ...
                               [0.5, 0.5, 0.5], [0.25, 0.25, 0.25], [0.75, 0.75, 0.75], ...
                               [1, 0.5, 0], [0.5, 1, 0], [0, 0.5, 1]}; % Default 12 colors
+    defaultMinFrHz = 0; % Default minimum firing rate
+
     % Create an input parser
     p = inputParser;
     addRequired(p, 'PATH', @ischar); % PATH must be a string
@@ -40,16 +48,19 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     addParameter(p, 'CORRECT_ONLY', defaultCorrectOnly, @islogical); % CORRECT_ONLY must be logical
     addParameter(p, 'CONDITION_BY', defaultConditionBy, @ischar); % CONDITION_BY must be a string
     addParameter(p, 'CONDITION_COLORS', defaultConditionColors, @iscell); % CONDITION_COLORS must be a cell array
+    addParameter(p, 'MIN_FR_HZ', defaultMinFrHz, @isnumeric); % MIN_FR_HZ must be numeric
 
     % Parse the inputs
     parse(p, PATH, SESSION, varargin{:});
 
+    % Assign parsed values to variables
     PATH = p.Results.PATH;
     SESSION = p.Results.SESSION;
     BLOCKS = p.Results.BLOCKS;
     CORRECT_ONLY = p.Results.CORRECT_ONLY;
     CONDITION_BY = p.Results.CONDITION_BY;
     CONDITION_COLORS = p.Results.CONDITION_COLORS;
+    MIN_FR_HZ = p.Results.MIN_FR_HZ;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% STEP 1: Load data
@@ -111,13 +122,28 @@ function D = format_dataHigh(PATH, SESSION, varargin)
 
     D = horzcat(D_all{:}); % Concatenate all blocks into one struct array
 
-    % Construct filename with details of included blocks, correct trials, and condition type
+    % If you want to remove neurons that didn't fire enough, before saving the file
+    % Trim the data field in each element of D using logical indexing
+    numNeurons = size(D(1).data, 1);
+    numTrials = length(D);
+    meanFR_hz = zeros(numNeurons, 1);
+    for trial = 1:numTrials
+        meanFR_hz = meanFR_hz + sum(D(trial).data, 2) / (size(D(trial).data, 2) / 1000); % Sum spike counts for each neuron
+    end
+    meanFR_hz = meanFR_hz / numTrials; % Calculate mean firing rate
+    
+    neuronsToKeep = meanFR_hz > MIN_FR_HZ; % Use MIN_FR_HZ for threshold
+    for i = 1:length(D)
+        D(i).data = D(i).data(neuronsToKeep, :);
+    end
+
+    % Construct filename with details of included blocks, correct trials, condition type, and min firing rate
     blockStr = sprintf('blocks_%s', strjoin(string(BLOCKS), '_')); % Convert blocks to a string with underscores
     correctStr = 'allTrials'; % Default string for including all trials
     if CORRECT_ONLY
         correctStr = 'correctOnly'; % Change string if only correct trials are included
     end
-    filename = sprintf('%s/dh_%s_%s_%s_%s.mat', PATH, SESSION, blockStr, correctStr, CONDITION_BY); % Construct the full filename
-
+    filename = sprintf('%s/dh_%s_%s_%s_%s_minFR%dHz.mat', PATH, SESSION, blockStr, correctStr, CONDITION_BY, MIN_FR_HZ); % Construct the full filename
+    
     save(filename, 'D', '-v7.3'); % Save the struct array to a .mat file with the constructed filename
 end
