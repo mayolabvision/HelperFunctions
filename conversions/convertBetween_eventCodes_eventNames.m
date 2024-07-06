@@ -123,7 +123,7 @@ elseif isequal(class(eventsIn{1}),'string') || isequal(class(eventsIn{1}),'categ
     eventsIn = cellfun(@(q) char(q), eventsIn, 'uni', 0);
     [~, index] = ismember(eventsIn, allEvents);
     eventsOut = allCodes(index);
-elseif isequal(class(eventsIn{1}),'double') || isequal(class(eventsIn{1}),'uint32')
+elseif isequal(class(eventsIn{1}),'double') || isequal(class(eventsIn{1}),'uint32') || isequal(class(eventsIn{1}),'uint32')
     eventsIn = cellfun(@(q) cast(q,'double'), eventsIn, 'uni', 0); % make sure they are doubles, not int32
     eventsIn = cell2mat(eventsIn);
     [~, index] = ismember(eventsIn, cell2mat(allCodes));

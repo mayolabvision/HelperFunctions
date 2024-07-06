@@ -8,47 +8,52 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     %             (e.g. SESSION = 's236')
     %
     %%% Optional parameters: %%%
+    %   ALIGN_BY          - Trial code (defined in exGlobals) to align the spike trains to
+    %                       (e.g., ALIGN_BY = 'SACCADE' or ALIGN_BY = 255)
+    %   SPK_INTERVAL      - Range around the ALIGN_BY code to pull out spikes, default is [-500, 500]
+    %                       (e.g., SPK_INTERVAL = [-500, 500])
     %   BLOCKS            - Array of blocks to process/concatenate into one struct, default is false (combines all blocks)
     %                       (e.g., BLOCKS = [1,2,3])
     %   CORRECT_ONLY      - Boolean, true to include only correct trials, false otherwise
     %                       (e.g., CORRECT_ONLY = true)
     %   CONDITION_BY      - String, 'block' or 'dir', default is 'block'
     %                       (e.g., CONDITION_BY = 'dir') 
-    %   CONDITION_COLORS  - Cell array of colors, default is 12 different colors
-    %                       (e.g., CONDITION_COLORS = {[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]})
-    %   MIN_FR_HZ         - Minimum firing rate in Hz for neurons to include, default is 0
-    %                       (e.g., MIN_FR_HZ = 1)
+    %   CONDITION_COLORS  - Cell array of colors, default is 2 colors per condition 
+    %                        (e.g., CONDITION_COLORS = {[[102,178,255]./255;[0,102,204]./255], [[255,102,102]./255;[204,0,0]./255],...
+    %                                                   [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
+    %                                                   [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]}
     %
     %%% Outputs: %%%
     %   D - Struct array compatible with DataHigh
     %
     %%% Example usage: %%%
-    % D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, ...
-    %                     'CONDITION_BY', 'block', 'CONDITION_COLORS', {[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]}, ...
-    %                     'MIN_FR_HZ', 1);
+    % D = format_dataHigh('/Users/kendranoneman/Data/emily_data', 's236', 'ALIGN_BY', 'SACCADE', 'SPK_INTERVAL', [-500, 500], ...
+    %                     'BLOCKS', [1,2,3], 'CORRECT_ONLY', true, 'CONDITION_BY', 'block',...
+    %                     'CONDITION_COLORS', {[[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
+    %                                          [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255],...
+    %                                          [[102,178,255]./255; [0,102,204]./255], [[255,102,102]./255; [204,0,0]./255]});
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % TO-DOS:
-    % 1. Add 'alignCode' as input, for aligning spikes to either stimOnset,
-    % saccadeOnset, etc...
+    addpath(genpath(fullfile(pwd, '..'))); % so you have access to the convertBetween_eventCodes_eventNames function
 
     % Default values for optional parameters
     defaultBlocks = false; % Default to combine all blocks
-    defaultCorrectOnly = false; % Default to include all trials
+    defaultCorrectOnly = true; % Default to include all trials
+    defaultAlignBy = 'SACCADE'; % Trial code or code name to align to
+    defaultSpkInterval = [-500, 500]; % Default spike interval in ms
     defaultConditionBy = 'block'; % Default to condition by block
-    defaultConditionColors = {[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], ...
-                              [0.5, 0.5, 0.5], [0.25, 0.25, 0.25], [0.75, 0.75, 0.75], ...
-                              [1, 0.5, 0], [0.5, 1, 0], [0, 0.5, 1]}; % Default 12 colors
-    defaultMinFrHz = 0; % Default minimum firing rate
+    defaultConditionColors = repmat({[[102, 178, 255]./255;[0, 102, 204]./255], [[255, 102, 102]./255;[204, 0, 0]./255]}, 1, 3);
+    
 
     % Create an input parser
     p = inputParser;
     addRequired(p, 'PATH', @ischar); % PATH must be a string
     addRequired(p, 'SESSION', @ischar); % SESSION must be a string
+    addParameter(p, 'ALIGN_BY', defaultAlignBy, @(x) ischar(x) || isstring(x) || isnumeric(x)); % ALIGN_BY must be a string/char or double
+    addParameter(p, 'SPK_INTERVAL', defaultSpkInterval, @(x) isnumeric(x) && numel(x) == 2); % SPK_INTERVAL must be a numeric array of size 2
     addParameter(p, 'BLOCKS', defaultBlocks, @(x) isnumeric(x) || (islogical(x) && ~x)); % BLOCKS must be numeric or false
     addParameter(p, 'CORRECT_ONLY', defaultCorrectOnly, @islogical); % CORRECT_ONLY must be logical
     addParameter(p, 'CONDITION_BY', defaultConditionBy, @ischar); % CONDITION_BY must be a string
     addParameter(p, 'CONDITION_COLORS', defaultConditionColors, @iscell); % CONDITION_COLORS must be a cell array
-    addParameter(p, 'MIN_FR_HZ', defaultMinFrHz, @isnumeric); % MIN_FR_HZ must be numeric
 
     % Parse the inputs
     parse(p, PATH, SESSION, varargin{:});
@@ -56,25 +61,65 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     % Assign parsed values to variables
     PATH = p.Results.PATH;
     SESSION = p.Results.SESSION;
+    ALIGN_BY = p.Results.ALIGN_BY;
+    SPK_INTERVAL = p.Results.SPK_INTERVAL;
     BLOCKS = p.Results.BLOCKS;
     CORRECT_ONLY = p.Results.CORRECT_ONLY;
     CONDITION_BY = p.Results.CONDITION_BY;
     CONDITION_COLORS = p.Results.CONDITION_COLORS;
-    MIN_FR_HZ = p.Results.MIN_FR_HZ;
+
+    % Check SPK_INTERVAL validity
+    if SPK_INTERVAL(1) >= SPK_INTERVAL(2)
+        error('SPK_INTERVAL:InvalidRange', 'The first number in SPK_INTERVAL must be less than the second.');
+    end
+
+    % If you only have one color defined per condition, then D(i).epochStarts = 1
+    if size(CONDITION_COLORS{1},1) == 1
+        epoch_start = 1;
+    else
+        epoch_start = [1,abs(SPK_INTERVAL(1))];
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% STEP 1: Load data
     data = load('-mat', sprintf('%s/%s.mat', PATH, SESSION)); % Load the session data
 
-    %% STEP 2: Find longest possible trial duration
+    %% STEP 2: Define duration of spike trains, based on SPK_INTERVAL
     % DataHigh requires that all spike trains have the same length across all trials.
     % Therefore, we need to determine the longest possible trial first and use that length to bin all spike trains to ensure consistency.
     
     allTcodes  =  cellfun(@(x) vertcat(x.tcodes{:}), data.trialinfo, 'UniformOutput', false); % Concatenate tcodes from all trials
     allTcodes  =  vertcat(allTcodes{:}); % Concatenate all blocks
-    edges      =  0:(1/1000):max(allTcodes(:,3)); % Define edges for histograms in 1ms bins
+    edges      =  (SPK_INTERVAL(1)/1000):(1/1000):(SPK_INTERVAL(2)/1000); % Define edges for histograms in 1ms bins
 
-    %% STEP 3: Pull out fieldnames of "spikes_blocks"
+    %% STEP 3: Define which trial code to align spike trains to
+    % The ALIGN_BY input can be either the word for the code (e.g., 'SACCADE') or the numeric code (e.g., 255)
+    trialCodes = sort(unique(allTcodes(:,2)));
+    possibleCodes = trialCodes(trialCodes>0 & trialCodes<1000);
+    possibleCodeNames = convertBetween_eventCodes_eventNames(num2cell(possibleCodes));
+    if isequal(class(ALIGN_BY), 'char') || isequal(class(ALIGN_BY), 'string')
+        if ismember(ALIGN_BY, possibleCodeNames)
+            alignCode = possibleCodes(ismember(possibleCodeNames, ALIGN_BY));
+            alignName = ALIGN_BY;
+        else
+            fprintf('Error: ALIGN_BY "%s" does not match any possible code names.\n', ALIGN_BY);
+            error('ALIGN_BY does not match any possible code names.');
+        end
+    elseif isequal(class(ALIGN_BY), 'double')
+        if ismember(ALIGN_BY, possibleCodes)
+            alignCode = ALIGN_BY;
+            alignName = possibleCodeNames(possibleCodes==ALIGN_BY);
+            alignName = alignName{1};
+        else
+            fprintf('Error: ALIGN_BY "%d" does not match any possible codes.\n', ALIGN_BY);
+            error('ALIGN_BY does not match any possible codes.');
+        end
+    else
+        fprintf('Error: ALIGN_BY is of unsupported type "%s".\n', class(ALIGN_BY));
+        error('ALIGN_BY is of unsupported type.');
+    end
+
+    %% STEP 4: Pull out fieldnames of "spikes_blocks"
     % In case datafiles in the future don't always have 6 spikes_blocks
     allFields  =  fieldnames(data.spikesbyclust(1)); % Get all field names from spikesbyclust
     spkBlocks  =  find(cellfun(@iscell, struct2cell(data.spikesbyclust(1))) == 1); % Find fields that are cell arrays
@@ -87,21 +132,28 @@ function D = format_dataHigh(PATH, SESSION, varargin)
     end
     blockNames = blockNames(BLOCKS); % Select block names based on BLOCKS
 
-    %% STEP 4: Bin spikes for each spikes_block, cluster, and trial
-    % You can specify if you only want to include correct trials or not 
+    %% STEP 5: Bin spikes for each spikes_block, cluster, and trial
+    % You can specify if you only want to include correct trials or not in the function inputs
+    % If the code you want to align spikes to doesn't exist for a given trial, it skips that trial
     D_all = cell(1, length(BLOCKS));
     for block = 1:length(BLOCKS)
         D_eachBlock = struct([]); % Initialize empty struct for each block
         if CORRECT_ONLY % If only correct trials are included
-            these_trials = find(logical(cellfun(@(q) sum(q(:,2)==150), data.trialinfo{block}.tcodes)) == 1); % Find correct trials
+            these_trials = find(cellfun(@(q) sum(q(:,2)==150) + sum(q(:,2)==alignCode), data.trialinfo{block}.tcodes) == 2); % Find correct trials
         else
-            these_trials = 1:length(data.trialinfo{block}.tcodes); % Include all trials
+            these_trials = find(cellfun(@(q) sum(q(:,2)==alignCode), data.trialinfo{block}.tcodes) == 1);
         end
+        %these_trials = 
         for trial = 1:length(these_trials)
+            alignTime = data.trialinfo{block}.tcodes{these_trials(trial)}(data.trialinfo{block}.tcodes{these_trials(trial)}(:,2)==alignCode,3);
             spks_perTrial = zeros(length(data.spikesbyclust), length(edges) - 1); % Initialize spike train matrix for each trial
             for cluster = 1:length(data.spikesbyclust)
                 spktimes = data.spikesbyclust(cluster).(blockNames{block}){these_trials(trial)}; % Get spike times for each cluster
-                [spks_binned, ~] = histcounts(spktimes, edges); % Bin spike times into histogram
+                if ~isempty(spktimes)
+                    [spks_binned, ~] = histcounts(spktimes-alignTime, edges); % Bin spike times into histogram
+                else
+                    spks_binned = zeros(1,size(edges,2)-1);
+                end
                 spks_perTrial(cluster, :) = spks_binned; % Assign histogram to spike train matrix
             end
 
@@ -114,7 +166,8 @@ function D = format_dataHigh(PATH, SESSION, varargin)
                 conditionNum = find((sort(unique(data.trialinfo{block}.dirs)) == thisTrial_dir) == 1); % Find condition number for direction
                 D_eachBlock(trial).condition = char(string(thisTrial_dir)); % Assign condition name as direction
             end
-            D_eachBlock(trial).epochStarts = 1; % Start of epoch
+            D_eachBlock(trial).type = 'traj';
+            D_eachBlock(trial).epochStarts = epoch_start;
             D_eachBlock(trial).epochColors = CONDITION_COLORS{conditionNum}; % Assign color for condition
         end
         D_all{block} = D_eachBlock; % Add block data to D_all
@@ -122,28 +175,16 @@ function D = format_dataHigh(PATH, SESSION, varargin)
 
     D = horzcat(D_all{:}); % Concatenate all blocks into one struct array
 
-    % If you want to remove neurons that didn't fire enough, before saving the file
-    % Trim the data field in each element of D using logical indexing
-    numNeurons = size(D(1).data, 1);
-    numTrials = length(D);
-    meanFR_hz = zeros(numNeurons, 1);
-    for trial = 1:numTrials
-        meanFR_hz = meanFR_hz + sum(D(trial).data, 2) / (size(D(trial).data, 2) / 1000); % Sum spike counts for each neuron
-    end
-    meanFR_hz = meanFR_hz / numTrials; % Calculate mean firing rate
-    
-    neuronsToKeep = meanFR_hz > MIN_FR_HZ; % Use MIN_FR_HZ for threshold
-    for i = 1:length(D)
-        D(i).data = D(i).data(neuronsToKeep, :);
-    end
-
-    % Construct filename with details of included blocks, correct trials, condition type, and min firing rate
+    %% STEP 6: Save struct, D, to a .mat file
+    % Construct filename with details of included blocks, correct trials, condition type, min firing rate, SPK_INTERVAL, and ALIGN_BY
     blockStr = sprintf('blocks_%s', strjoin(string(BLOCKS), '_')); % Convert blocks to a string with underscores
     correctStr = 'allTrials'; % Default string for including all trials
     if CORRECT_ONLY
         correctStr = 'correctOnly'; % Change string if only correct trials are included
     end
-    filename = sprintf('%s/dh_%s_%s_%s_%s_minFR%dHz.mat', PATH, SESSION, blockStr, correctStr, CONDITION_BY, MIN_FR_HZ); % Construct the full filename
+    spkIntervalStr = sprintf('spkInt_%d_%dms', SPK_INTERVAL(1), SPK_INTERVAL(2)); % Convert SPK_INTERVAL to a string
+    alignByStr = sprintf('alignBy_%s', alignName); % Convert ALIGN_BY to a string
+    filename = sprintf('%s/dh_%s_%s_%s_%s_%s_%s.mat', PATH, SESSION, blockStr, alignByStr, spkIntervalStr, correctStr, CONDITION_BY); % Construct the full filename
     
     save(filename, 'D', '-v7.3'); % Save the struct array to a .mat file with the constructed filename
 end
