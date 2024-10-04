@@ -25,6 +25,8 @@ function [visdp, visds, sacdp, sacds, vmi, STI, baseFR] = qa_dirmemJPM_2023(file
 % h is an optional figure handle. If h is -1, this doesn't plot and
 % instead just spits out the results
 
+SETS = {[165,315], [1:45:316]};
+
 if (nargin < 3)
     sortcode = 1;
 end
@@ -34,13 +36,15 @@ if (nargin < 4)
     hb=figure;
 else
     if (h > 0)
-        figure(h);
+        f1 = figure(h);
+        f1.Position = [100,50,1300,900];
         hb = h+1;
-        figure(hb);
+        f2 = figure(hb);
+        f2.Position = [100,50,1300,900];
     end
 end
 
-a = qa_extract_data_1chan(filename,sortcode,channel);
+a = qa_extract_data_1chan(filename,sortcode,channel,SETS);
 
 %%%%%%%
 % Generate two raster/PSTH plots - stim-aligned and sac-aligned
@@ -77,7 +81,7 @@ if (h > 0)
         % hard coded kludge; I==4
         if (I==4)
             xlabel('Aligned to Stim Onset. (s)');
-            title (filename, 'Interpreter','none')
+            title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
         end
 
         if (I<size(a.STIMEVENTS,1))
@@ -105,11 +109,12 @@ if (h > 0)
         hold on
         overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
+        xline(0.26, 'r--')
         set(get(gca,'Children'),'linewidth',psthline);
 
         if (I==4)
             xlabel('Aligned to Sacc Onset. (s)');
-            title (filename, 'Interpreter','none')
+            title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
         end
 
         if (I<size(a.SACEVENTS,1))
@@ -239,8 +244,8 @@ if (h > 0)
     polarplot(deg2rad([theta 0]),[rho rho(1)],'ko-',...
         'markerfacecolor','k','linewidth',3)
     hold on
-    polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'go--',LineWidth=2);
-    polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'go--',LineWidth=2);   
+    polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'go--','LineWidth',2);
+    polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'go--','LineWidth',2);   
     
     h1=polarplot(deg2rad(visdp),max(rho),'k^'); % Plot black triangle at best dir
     txd1 = get(h1,'ThetaData');
@@ -259,8 +264,8 @@ if (h > 0)
     polarplot(deg2rad([theta 0]),[rho2 rho2(1)],'ko-',...
         'markerfacecolor','k','linewidth',3)
     hold on
-    polarplot(deg2rad([theta 0]),[rhoLsc rhoLsc(1)],'go--',LineWidth=2);
-    polarplot(deg2rad([theta 0]),[rhoUsc rhoUsc(1)],'go--',LineWidth=2);
+    polarplot(deg2rad([theta 0]),[rhoLsc rhoLsc(1)],'go--','LineWidth',2);
+    polarplot(deg2rad([theta 0]),[rhoUsc rhoUsc(1)],'go--','LineWidth',2);
 
     h2=polarplot(sacdp,max(rho2),'k^'); % Plot black triangle at best dir
     txd2 = get(h2,'ThetaData');
@@ -269,6 +274,9 @@ if (h > 0)
     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
     title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
     prettyFig
+    
+    saveas(f1,sprintf('qa_figs/%s_unit%d_stimOnset.png',filename,sortcode),'png')
+    saveas(f2,sprintf('qa_figs/%s_unit%d_saccOnset.png',filename,sortcode),'png')
 end
 end
 
