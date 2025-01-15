@@ -8,7 +8,7 @@
 % 'prettyFigSGL' 
 
 
-function histStyle(column_of_values,fig_name,xlab,ylab,xlims,ylims,bs,xlPos,lcolor,fcolor)
+function [datamean, datastd] = histStyle(column_of_values,fig_name,xlab,ylab,xlims,ylims,bs,xlPos,lcolor,fcolor)
 
 % Plot histogram with white bars, range -1 to 
 h = histogram(column_of_values, 'binwidth',bs,'linewidth', 2, 'facecolor', fcolor); % -1:binsize:1,

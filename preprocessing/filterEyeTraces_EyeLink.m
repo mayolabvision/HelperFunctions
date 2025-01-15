@@ -1,10 +1,10 @@
-function [eye_new] = filterEyeTraces_EyeLink(eye,Fs,Fc,order,plt)
+function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
 % OBJECTIVE:
 % The Savitzky-Golay (SG) filter, used as digital filter for smoothing noisy data
 % Used here for smoothing eye traces
 %
 % INPUTS:
-% eye = eye traces (1D or 2D) in either a double array or cells of double arrays
+% EYE = eye traces (1D or 2D) in either a double array or cells of double arrays
 % order = polynomial order, choice should balance noise reduction with preservation of important signal features
 %         higher order - can fit more intricate shapes, can overfit noise
 %         lower order  - simpler fit, can be more robust to noise but less responsive to rapid changes in data
@@ -20,71 +20,59 @@ function [eye_new] = filterEyeTraces_EyeLink(eye,Fs,Fc,order,plt)
 % OUTPUTS:
 % eye_new = smoothed eye traces
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    defaultFs        =  1000; % 
+    defaultFc        =  84;
+    defaultPlotTrial =  false;
+    
+    % Create an input parser
+    p = inputParser;
+    addRequired(p, 'EYE', @isnumeric); % PATH must be a string
+    addParameter(p, 'SAMPLING_FREQUENCY', defaultFs, @(x) isnumeric(x));
+    addParameter(p, 'CUTOFF_FREQUENCY', defaultFc, @(x) isnumeric(x));
+    addParameter(p, 'PLOT_TRIAL', defaultPlotTrial, @islogical); % CORRECT_ONLY must be logical
 
-if nargin < 2
-    polynomialOrder = 2; frameLength = 11; plt = 0;
-elseif nargin < 4
-    plt = 0;
-end
+    % Parse the inputs
+    parse(p, EYE, varargin{:});
 
-% Normalize the cutoff frequency
-Wn = Fc / (Fs / 2); % Normalize by the Nyquist frequency
-
-% Design the Butterworth filter
-[b, a] = butter(order, Wn, 'low');
-
-
-if isequal(class(eye),'double')
-    % Determine the dimensions of the input data
-    [numRows, numCols] = size(eye);
-
-    % Apply the Savitzky-Golay filter along one dimension 
-    eye_new = zeros(size(eye));
-    if numRows > numCols % rows
-        eye = eye';
-        for i = 1:size(eye, 1)
-            eye_new(i,:) = filtfilt(b, a, eye(i,:));
+    % Assign parsed values to variables
+    EYE = p.Results.EYE;
+    Fs = p.Results.SAMPLING_FREQUENCY;
+    Fc = p.Results.CUTOFF_FREQUENCY;
+    plot_trial = p.Results.PLOT_TRIAL;
+    Ntaps = 80;        % Number of taps (filter order)
+    
+    % Normalize the cutoff frequency (since fir1 expects normalized frequencies)
+    Wn = Fc / (Fs / 2);  % Normalized frequency
+    
+    % Design FIR filter using Hamming window
+    fir_coefficients = fir1(Ntaps - 1, Wn, hamming(Ntaps));  % Use Hamming window for better performance
+    
+    eye_new = zeros(size(EYE));
+    if size(EYE,1) < size(EYE,2)  % EYE is [2, time_points], filter along the time dimension (columns)
+        for v=1:size(EYE,1)
+            eye_new(v,:) = filtfilt(fir_coefficients, 1, EYE(v,:)); 
         end
-        eye_new = eye_new';
-    else % cols
-        for i = 1:size(eye, 1)
-            eye_new(i,:) = filtfilt(b, a, eye(i,:));
+
+    else  % EYE is [time_points, 2], filter along the time dimension (rows)
+        for v=1:size(EYE,2)
+            eye_new(:,v) = filtfilt(fir_coefficients, 1, EYE(:,v));  
         end
     end
-elseif isequal(class(eye),'cell')
-    % Determine the dimensions of the input data
-    [numRows, numCols] = size(eye{1});
 
-    % Apply the Savitzky-Golay filter along one dimension 
-    if numRows > numCols % rows
-        eye_new = cellfun(@(q) filtfilt(b, a, q')', eye, 'uni', 0);
-    else % cols
-        eye_new = cellfun(@(q) filtfilt(b, a, q), eye, 'uni', 0);
+    
+    if plot_trial
+        figure('Position', [200, 100, 1400, 600]);
+        x = (1:length(eye_new));
+        
+        plot(x, EYE, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
+        hold on;
+        plot(x, eye_new, 'b-',  'LineWidth', 1, 'DisplayName', 'SG filtered');
+        xlabel('time aligned to trial onset (ms)');
+        ylabel('eye position (deg)');
+        legend('location','best');
+        prettyFig;
     end
-end
-
-if plt == 1 && isequal(class(eye),'double')
-    figure;
-    x = (1:length(eye_new));
     
-    plot(x, eye, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
-    hold on;
-    plot(x, eye_new, 'b-',  'LineWidth', 1, 'DisplayName', 'SG filtered');
-    plot(x, smoothdata(eye,'gaussian',20), 'r-',  'LineWidth', 1, 'DisplayName', 'smoothed');
-    xlabel('X');
-    ylabel('Y');
-    legend('location','best');
-elseif plt == 1 && isequal(class(eye),'cell')
-    figure;
-    x = (1:length(eye_new{1}));
-    
-    plot(x, eye{1}, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
-    hold on;
-    plot(x, eye_new{1}, 'b-',  'LineWidth', 1, 'DisplayName', 'SG filtered');
-    xlabel('X');
-    ylabel('Y');
-    legend('location','best');
-end
-
 end
 

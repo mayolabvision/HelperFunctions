@@ -27,7 +27,7 @@ tbl = extract_mayoData(datafolder, datafile);
 
 % Calculate pursuit onset
 [eyeT,eyeR] = cellfun(@(q) cart2pol(q(1,:),q(2,:)), tbl.eyeVel(tbl.trialOutcome=="CORRECT"), 'uni', 0);
-purOnsets = cellfun(@(q,r) detect_pursuitOnset(q,r,0,300,0), eyeR, num2cell(tbl.TARG_ON(tbl.trialOutcome=="CORRECT")), 'uni', 1);
+purOnsets = cellfun(@(q,r) detect_pursuitOnset(q,r,50,300,1), eyeR, num2cell(tbl.TARG_ON(tbl.trialOutcome=="CORRECT")), 'uni', 1);
 tbl.pursuitOnset(tbl.trialOutcome=="CORRECT") = purOnsets;
 
 %% Seperating by condition

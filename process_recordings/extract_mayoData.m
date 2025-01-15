@@ -34,7 +34,9 @@ addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 2. Extract traces using 'nev2dat' function 
+
 [dat,~] = nev2dat(sprintf('%s/%s',datafolder,datafile),'readNS5',true,'convertEyes',true,'include_0_255',true);
+
 trialNames = cellfun(@(q) [datafile,char('.'),char(string(q))], num2cell(1:length(dat))','uni',0);
 
 % 3. Pull out conditions from trial names, separated by ';' delimeter
