@@ -22,6 +22,13 @@ if isequal(class(eyeVelocity),'struct')
     eyeVelocity = eyeVelocity.RHVel;
 end
 
+if isequal(class(stimOnset),'cell')
+    stimOnset = stimOnset{1}(1);
+end
+
+eyeVelocity = smoothdata(eyeVelocity,'sgolay',29);
+eyeVelocity = smoothdata(eyeVelocity, 'gaussian', 100);
+
 vBase = eyeVelocity(stimOnset-75:stimOnset+25);
 if mean(vBase)+(std(vBase)*4) > 5 % if there is a microsaccade, look for a "better" window
     test = eyeVelocity(stimOnset-200:stimOnset+50);
@@ -78,9 +85,10 @@ end
 
 if plt ==1
     figure;
-    x = 1:1500+1;
-    plot(x,eyeVelocity(stimOnset-500:stimOnset+1000),'k-')
+    x = (1:901)-100;
+    plot(x,eyeVelocity(stimOnset-100:stimOnset+800),'k-')
     hold on
+    xline(0,'k--')
     xline(rxnTime,'b--')
     title(rxnTime)
 end

@@ -4,8 +4,8 @@ function eventsOut = convertBetween_eventCodes_eventNames(eventsIn)
 
 codes = struct();
 
-% trial boundaries
 codes.START_TRIAL = 1;
+codes.BCI_END = 249; % Use to indicate that this is end the BCI component of a trial. Useful when trial contains bci component and non-bci task (ie, reaching).
 codes.BACKGROUND_PROCESS_TRIAL = 250; % use to indicate this is a 'special' trial whose timing/results should not be analyzed--i.e. training a BCI decoder
 codes.SHOWEX_TIMINGERROR = 251;
 codes.BCI_ABORT = 252;  % use to indicate that BCI computer is not working
@@ -47,7 +47,7 @@ codes.STIM10_OFF = 50 ;
 codes.TARG_ON = 70 ;
 codes.TARG1_ON = 71 ;
 codes.TARG2_ON = 72 ;
-codes.TARG3_ON = 73 ; % post-pursuit fixation onset
+codes.TARG3_ON = 73 ;
 codes.TARG4_ON = 74 ;
 codes.TARG5_ON = 75 ;
 codes.TARG6_ON = 76 ;
@@ -58,7 +58,7 @@ codes.TARG10_ON = 80 ;
 codes.TARG_OFF = 100 ;
 codes.TARG1_OFF = 101 ;
 codes.TARG2_OFF = 102 ;
-codes.TARG3_OFF = 103 ; % post-pursuit target offset
+codes.TARG3_OFF = 103 ;
 codes.TARG4_OFF = 104 ;
 codes.TARG5_OFF = 105 ;
 codes.TARG6_OFF = 106 ;
@@ -111,6 +111,11 @@ codes.BCI_MISSED = 162 ; % BCI task (vs. non-BCI behavior) performed incorrectly
 codes.CORRECT_REJECT = 163 ;
 codes.LATE_CHOICE = 164 ;
 codes.BROKE_TASK = 165;
+codes.PURSUIT_TARG = 166;
+codes.BROKE_PURSUIT = 167;
+codes.PURSUIT_TARG_OFF = 12697;
+
+codes.NaN = 666;
 
 allCodes = struct2cell(codes);
 allEvents = fieldnames(codes);
@@ -126,6 +131,7 @@ elseif isequal(class(eventsIn{1}),'string') || isequal(class(eventsIn{1}),'categ
 elseif isequal(class(eventsIn{1}),'double') || isequal(class(eventsIn{1}),'uint32') || isequal(class(eventsIn{1}),'uint32')
     eventsIn = cellfun(@(q) cast(q,'double'), eventsIn, 'uni', 0); % make sure they are doubles, not int32
     eventsIn = cell2mat(eventsIn);
+    eventsIn(isnan(eventsIn)) = 666;
     [~, index] = ismember(eventsIn, cell2mat(allCodes));
     eventsOut =  allEvents(index);
 end

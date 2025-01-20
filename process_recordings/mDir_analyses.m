@@ -4,7 +4,7 @@ clc
 addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 
 datafolder = '/Users/kendranoneman/Data/rig_setup';
-datafile = 'sb26mdirA65650031';
+datafile = 'scrappy_0040_dirmem_behavOnly';
 %datafile = 'sb05pursA65650033';
 kernel = 50;
 
