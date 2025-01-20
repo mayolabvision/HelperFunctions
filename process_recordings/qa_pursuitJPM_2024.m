@@ -25,7 +25,7 @@ function [visdp, visds, sacdp, sacds, vmi, STI, baseFR] = qa_pursuitJPM_2024(fil
 % h is an optional figure handle. If h is -1, this doesn't plot and
 % instead just spits out the results
 
-SETS = {[145,345], [20:45:335]};
+SETS = {[10,20], [0:45:315]};
 
 if (nargin < 3)
     sortcode = 1;
@@ -76,8 +76,8 @@ if (h > 0)
       %  hold on
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
-        xline(.115, 'b--')
-        xline(1.28, 'b--')
+        xline(.110, 'b--')
+        xline(1.110, 'b--')
         xline(1.55, 'r--')
         set(get(gca,'Children'),'linewidth',psthline);
 
@@ -131,7 +131,7 @@ if (h > 0)
 
 %%%% calculate some statistics
 % spike counting windows
-stimwin = [0.1 0.5];
+stimwin = [0.110 1.10];
 sacwin = [-0.05 0.05];
 
 stimrate = nan(size(a.STIMEVENTS,1),size(a.STIMEVENTS,2));
