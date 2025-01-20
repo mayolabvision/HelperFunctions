@@ -25,7 +25,13 @@ function [visdp, visds, sacdp, sacds, vmi, STI, baseFR] = qa_dirmemJPM_2023(file
 % h is an optional figure handle. If h is -1, this doesn't plot and
 % instead just spits out the results
 
+%%%%%%%%%%%%% MUST CHANGE THIS FOR YOUR PARAMS %%%%%%%%%%%%%
+% The actual values here don't make a difference, but specify number of
+% conditions in the order of appearance in xml file
+% SETS{1} = saccade amplitudes
+% SETS{2} = saccade angles
 SETS = {[150,200], [0:45:315]};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (nargin < 3)
     sortcode = 1;
@@ -44,7 +50,7 @@ else
     end
 end
 
-a = qa_extract_data_1chan(filename,sortcode,channel,SETS);
+a = qa_extract_data_1chan(filename,'mdir',sortcode,channel,SETS);
 
 %%%%%%%
 % Generate two raster/PSTH plots - stim-aligned and sac-aligned

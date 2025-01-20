@@ -1,4 +1,4 @@
-function a = qa_extract_data_1chan(filename,sortcode,chan,sets)
+function a = qa_extract_data_1chan(filename,task_name,sortcode,chan,sets)
 % function a = qa_extract_data_1chan(filename,sortcode,chan)
 %
 % Extracts data from a NEV file and puts it in a simple struct with
@@ -6,6 +6,7 @@ function a = qa_extract_data_1chan(filename,sortcode,chan,sets)
 %
 % sortcode is optional list of valid sort codes (default is 1)
 % chan is the electrode channel (default is 1)
+% task_name is either 'mdir' or 'purs' right now
 %
 %sets = {[165,315], [15:45:330]};
 
@@ -16,13 +17,6 @@ end
 if (nargin < 3)
     chan = 1;
 end
-
-splitData = strsplit(filename, '_');
-experimenter = splitData{1};
-monkey = splitData{2};
-session = splitData{3};
-task_name = splitData{4}(1:4);
-task_num = splitData{4}(5);
 
 % if iscell(filename)
 %     disp 'BROKEN CODE. NEEDS UPDATING'
