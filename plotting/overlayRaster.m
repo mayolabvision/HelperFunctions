@@ -8,7 +8,6 @@ function overlayRaster(spikeTimes,timeRange,col)
 %
 % col is optional
 %
-alphaVal = 0.5;
 
 if (nargin < 3)
     col = 'k';
