@@ -25,7 +25,14 @@ function [visdp, visds, sacdp, sacds, vmi, STI, baseFR] = qa_pursuitJPM_2024(fil
 % h is an optional figure handle. If h is -1, this doesn't plot and
 % instead just spits out the results
 
-SETS = {[145,345], [20:45:335]};
+%%%%%%%%%%%%% MUST CHANGE THIS FOR YOUR PARAMS %%%%%%%%%%%%%
+% The actual values here don't make a difference, but specify number of
+% conditions in the order of appearance in xml file
+% SETS{1} = pursuit speeds
+% SETS{2} = pursuit angles
+% SETS{3) = jump types
+SETS = {[10,20], [0:45:315], [-1,0,1]};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (nargin < 3)
     sortcode = 1;
@@ -33,18 +40,18 @@ end
 
 if (nargin < 4)
     h=figure;
-    hb=figure;
+%     hb=figure;
 else
     if (h > 0)
         f1 = figure(h);
         f1.Position = [100,50,1300,900];
-        hb = h+1;
-        f2 = figure(hb);
-        f2.Position = [100,50,1300,900];
+%         hb = h+1;
+%         f2 = figure(hb);
+%         f2.Position = [100,50,1300,900];
     end
 end
 
-a = qa_extract_data_1chan(filename,sortcode,channel,SETS);
+a = qa_extract_data_1chan(filename,'purs',sortcode,channel,SETS);
 
 %%%%%%%
 % Generate two raster/PSTH plots - stim-aligned and sac-aligned
@@ -76,8 +83,8 @@ if (h > 0)
       %  hold on
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
-        xline(.115, 'b--')
-        xline(1.28, 'b--')
+        xline(.110, 'b--')
+        xline(1.110, 'b--')
         xline(1.55, 'r--')
         set(get(gca,'Children'),'linewidth',psthline);
 
@@ -96,43 +103,43 @@ if (h > 0)
     set(gcf,'color','w')
 
 
-    figure(hb)
-    for I=1:size(a.STIMEVENTS,1)
-        if I == 1
-            subplot(3,3,I+5)
-        elseif I == 3 || I == 5
-            subplot(3,3,I-1)
-        elseif I == 4
-            subplot(3,3,I-3)
-        else % plotd = 2, 6-8
-            subplot(3,3,I+1)
-        end
-        
-        showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
-        hold on
-        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
-        xline(0, 'r-')
-        xline(.115, 'b--')
-        xline(1.55, 'r--')
-        set(get(gca,'Children'),'linewidth',psthline);
-
-        if (I==4)
-            xlabel('Aligned to Step/Ramp Offset. (s)');
-            title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
-        end
-
-        if (I<size(a.SACEVENTS,1))
-        else
-            xlabel('Time (s)');
-        end
-    end
-    set(gcf,'color','w')
+%     figure(hb)
+%     for I=1:size(a.STIMEVENTS,1)
+%         if I == 1
+%             subplot(3,3,I+5)
+%         elseif I == 3 || I == 5
+%             subplot(3,3,I-1)
+%         elseif I == 4
+%             subplot(3,3,I-3)
+%         else % plotd = 2, 6-8
+%             subplot(3,3,I+1)
+%         end
+%         
+%         showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
+%         hold on
+%         overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
+%         xline(0, 'r-')
+%         xline(.115, 'b--')
+%         xline(1.55, 'r--')
+%         set(get(gca,'Children'),'linewidth',psthline);
+% 
+%         if (I==4)
+%             xlabel('Aligned to Step/Ramp Offset. (s)');
+%             title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
+%         end
+% 
+%         if (I<size(a.SACEVENTS,1))
+%         else
+%             xlabel('Time (s)');
+%         end
+%     end
+%     set(gcf,'color','w')
  end
 
 %%%% calculate some statistics
 % spike counting windows
-stimwin = [0.1 0.5];
-sacwin = [-0.05 0.05];
+stimwin = [0.110 1.10];
+% sacwin = [-0.05 0.05];
 
 stimrate = nan(size(a.STIMEVENTS,1),size(a.STIMEVENTS,2));
 for I=1:size(a.STIMEVENTS,1)
@@ -147,17 +154,17 @@ for I=1:size(a.STIMEVENTS,1)
 end
 stimrate = stimrate' ./ diff(stimwin);
 
-sacrate = nan(size(a.SACEVENTS,1),size(a.SACEVENTS,2));
-for I=1:size(a.STIMEVENTS,1)
-    tdat = squeeze(a.SACEVENTS(I,1:a.RPTS(I)));
-    for J=1:size(a.SACEVENTS,2)
-        if J > a.RPTS(I)
-            break
-        end
-        sacrate(I,J) = length(find(tdat{J}>=sacwin(1) & tdat{J}<sacwin(2)));
-    end
-end
-sacrate = sacrate' ./ diff(sacwin);
+% sacrate = nan(size(a.SACEVENTS,1),size(a.SACEVENTS,2));
+% for I=1:size(a.STIMEVENTS,1)
+%     tdat = squeeze(a.SACEVENTS(I,1:a.RPTS(I)));
+%     for J=1:size(a.SACEVENTS,2)
+%         if J > a.RPTS(I)
+%             break
+%         end
+%         sacrate(I,J) = length(find(tdat{J}>=sacwin(1) & tdat{J}<sacwin(2)));
+%     end
+% end
+% sacrate = sacrate' ./ diff(sacwin);
 
 theta = 0:360/length(a.CND):360; theta(end)=[];
 
@@ -171,23 +178,24 @@ for sh=1:shuffles
     randind=randi( (size(stimrate,1)*size(stimrate,2)), size(stimrate,1), size(stimrate,2) );
     permutedStimrate = stimrate(randind);
     rhoPst = [rhoPst; nanmean(permutedStimrate)];
-    randind=randi( (size(sacrate,1)*size(sacrate,2)), size(sacrate,1), size(sacrate,2) );
-    permutedSacrate = sacrate(randind);
-    rhoPsc = [rhoPsc; nanmean(permutedSacrate)];
+%     randind=randi( (size(sacrate,1)*size(sacrate,2)), size(sacrate,1), size(sacrate,2) );
+%     permutedSacrate = sacrate(randind);
+%     rhoPsc = [rhoPsc; nanmean(permutedSacrate)];
 end
 
 sorted_rhoPst=sort(rhoPst);
 rhoLst = sorted_rhoPst(shuffles*.05,:); % 95% lower confidence interval
 rhoUst = sorted_rhoPst(shuffles-(shuffles*.05),:); % 95% upper confidence interval
 
-sorted_rhoPsc=sort(rhoPsc);
-rhoLsc = sorted_rhoPsc(shuffles*.05,:); % 95% lower confidence interval
-rhoUsc = sorted_rhoPsc(shuffles-(shuffles*.05),:); % 95% upper confidence interval
+% sorted_rhoPsc=sort(rhoPsc);
+% rhoLsc = sorted_rhoPsc(shuffles*.05,:); % 95% lower confidence interval
+% rhoUsc = sorted_rhoPsc(shuffles-(shuffles*.05),:); % 95% upper confidence interval
 
 
 % calculate visuomotor index, where 1 is visual and -1 is motor
 visual = nanmean(nanmean(stimrate));
-motor = nanmean(nanmean(sacrate));
+% motor = nanmean(nanmean(sacrate));
+motor = 0;
 vmi = (visual - motor) / (visual + motor);
 vmit = sprintf('%0.2f',vmi);
 
@@ -228,7 +236,7 @@ dsti = sprintf('%0.2f',STI);
 % calculate tuning preferences
 %theta = 0:360/length(a.CND):360; theta(end)=[];
 [visds, visdp] = tuningbias(theta,nanmean(stimrate));
-[sacds, sacdp] = tuningbias(theta,nanmean(sacrate));
+% [sacds, sacdp] = tuningbias(theta,nanmean(sacrate));
 
 
 % Generate polar plots
@@ -260,24 +268,24 @@ if (h > 0)
     prettyFig
     
     % Plot saccade-aligned responses
-    figure(hb)
-    subplot(3,3,5); 
-    rho2 = nanmean(sacrate);
-    dst = sprintf('%0.2f',sacds);
-    dpt = sprintf('%0.2f',sacdp);
-    polarplot(deg2rad([theta 0]),[rho2 rho2(1)],'ko-',...
-        'markerfacecolor','k','linewidth',3)
-    hold on
-    polarplot(deg2rad([theta 0]),[rhoLsc rhoLsc(1)],'go--','LineWidth',2);
-    polarplot(deg2rad([theta 0]),[rhoUsc rhoUsc(1)],'go--','LineWidth',2);
-
-    h2=polarplot(sacdp,max(rho2),'k^'); % Plot black triangle at best dir
-    txd2 = get(h2,'ThetaData');
-    tyd2 = get(h2,'RData');
-    set(h2,'ThetaData',txd2(1),'RData',tyd2(1));
-    set(h2,'markersize',10,'markerfacecolor','k'); hold off;
-    title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
-    prettyFig
+%     figure(hb)
+%     subplot(3,3,5); 
+%     rho2 = nanmean(sacrate);
+%     dst = sprintf('%0.2f',sacds);
+%     dpt = sprintf('%0.2f',sacdp);
+%     polarplot(deg2rad([theta 0]),[rho2 rho2(1)],'ko-',...
+%         'markerfacecolor','k','linewidth',3)
+%     hold on
+%     polarplot(deg2rad([theta 0]),[rhoLsc rhoLsc(1)],'go--','LineWidth',2);
+%     polarplot(deg2rad([theta 0]),[rhoUsc rhoUsc(1)],'go--','LineWidth',2);
+% 
+%     h2=polarplot(sacdp,max(rho2),'k^'); % Plot black triangle at best dir
+%     txd2 = get(h2,'ThetaData');
+%     tyd2 = get(h2,'RData');
+%     set(h2,'ThetaData',txd2(1),'RData',tyd2(1));
+%     set(h2,'markersize',10,'markerfacecolor','k'); hold off;
+%     title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
+%     prettyFig
     
     saveas(f1,sprintf('qa_figs/%s_unit%d_stimOnset.png',filename,sortcode),'png')
     %saveas(f2,sprintf('qa_figs/%s_unit%d_saccOnset.png',filename,sortcode),'png')

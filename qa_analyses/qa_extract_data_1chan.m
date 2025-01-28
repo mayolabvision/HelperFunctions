@@ -1,4 +1,4 @@
-function a = qa_extract_data_1chan(filename,sortcode,chan,sets)
+function a = qa_extract_data_1chan(filename,task_name,sortcode,chan,sets)
 % function a = qa_extract_data_1chan(filename,sortcode,chan)
 %
 % Extracts data from a NEV file and puts it in a simple struct with
@@ -6,6 +6,7 @@ function a = qa_extract_data_1chan(filename,sortcode,chan,sets)
 %
 % sortcode is optional list of valid sort codes (default is 1)
 % chan is the electrode channel (default is 1)
+% task_name is either 'mdir' or 'purs' right now
 %
 %sets = {[165,315], [15:45:330]};
 
@@ -16,12 +17,6 @@ end
 if (nargin < 3)
     chan = 1;
 end
-
-splitData = strsplit(filename, '_');
-monkey = splitData{1};
-session = splitData{2};
-task_name = splitData{3};
-chamber = splitData{4};
 
 % if iscell(filename)
 %     disp 'BROKEN CODE. NEEDS UPDATING'
@@ -106,14 +101,17 @@ for I=1:length(tstops)
         
         %rewtime = tcodes(find(tcodes(:,2)==73),3);
         % code 70 is TARG_ON
-        stimtime=tcodes(find(tcodes(:,2)==70),3);
-        stimtime = stimtime(1); % in case there are > 1 TARG_ON codes
-        if isequal(task_name, 'dirmem')
+         % in case there are > 1 TARG_ON codes
+        if isequal(task_name, 'mdir')
+            stimtime=tcodes(find(tcodes(:,2)==70),3);
+            stimtime = stimtime(1);
             % code 141 is SACCADE (for reference, 3 is FIX_OFF)
             sactime=tcodes(find(tcodes(:,2)==141),3);
             sactime = sactime(1);
         else
-            sactime = tcodes(find(tcodes(:,2)==70),3);
+            stimtime=tcodes(find(tcodes(:,2)==166),3);
+            stimtime = stimtime(1);
+            sactime = tcodes(find(tcodes(:,2)==166),3);
             sactime = sactime(1) + (110/1000);
         end
         % all nev codes
