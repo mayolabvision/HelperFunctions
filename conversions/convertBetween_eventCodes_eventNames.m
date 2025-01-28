@@ -115,12 +115,20 @@ codes.PURSUIT_TARG = 166;
 codes.BROKE_PURSUIT = 167;
 codes.PURSUIT_TARG_OFF = 12697;
 
+codes.VIS_GUIDED_SACC = 2001;
+codes.MEM_GUIDED_SACC = 2002;
+codes.DVIS_GUIDED_SACC = 2003;
+
 codes.NaN = 666;
 
 allCodes = struct2cell(codes);
 allEvents = fieldnames(codes);
 
 %% CONVERSION
+if isequal(class(eventsIn),'double') || isequal(class(eventsIn),'uint32') || isequal(class(eventsIn),'uint32')
+    eventsIn = num2cell(eventsIn);
+end
+
 if isequal(class(eventsIn{1}),'char')
     [~, index] = ismember(eventsIn, allEvents);
     eventsOut = allCodes(index);
