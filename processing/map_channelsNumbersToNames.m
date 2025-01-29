@@ -13,7 +13,7 @@ function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeI
 
     % Default values for optional parameters
     [currentDir, ~, ~] = fileparts(mfilename('fullpath'));
-    defaultMappingPath = fullfile(currentDir, 'mappings');
+    defaultMappingPath = fullfile(fileparts(currentDir), 'mappings');
 
     % Create an input parser
     p = inputParser;

@@ -79,7 +79,6 @@ if (h > 0)
         end
 
         showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
-      %  hold on
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
         set(get(gca,'Children'),'linewidth',psthline);
@@ -111,9 +110,9 @@ if (h > 0)
             subplot(3,3,I+1)
         end
         
-        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
-        hold on
         showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
+        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
+        
         xline(0, 'r-')
         xline(0.26, 'r--')
         set(get(gca,'Children'),'linewidth',psthline);
@@ -281,8 +280,8 @@ if (h > 0)
     title(['SacDir: ',dpt,', Sel: ',dst,', STI: ',dsti]);
     prettyFig
     
-    saveas(f1,sprintf('qa_figs/%s_unit%d_stimOnset.png',filename,sortcode),'png')
-    saveas(f2,sprintf('qa_figs/%s_unit%d_saccOnset.png',filename,sortcode),'png')
+    % saveas(f1,sprintf('qa_figs/%s_unit%d_stimOnset.png',filename,sortcode),'png')
+    % saveas(f2,sprintf('qa_figs/%s_unit%d_saccOnset.png',filename,sortcode),'png')
 end
 end
 

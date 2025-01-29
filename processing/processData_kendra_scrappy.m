@@ -12,27 +12,31 @@ csvPath = '/Users/kendranoneman/OneDrive/DATA/RECORDING_INFO.csv';
 
 EXPERIMENTER = 'kendra';
 MONKEY = 'scrappy';
-SESSION = '0077a';
+SESSION = '0097a';
 
 % Load in details from notes
 [this_sess,filename] = read_recordingNotes(csvPath,EXPERIMENTER,MONKEY,SESSION);
 
-% Name/organize channels based on recording details
-[mappings,probe_specs] = map_channelsNumbersToNames(this_sess.mapFile_name,this_sess.probeID{1},'probeDepths_mm',this_sess.recordDepth_mm{1});
-
-%% Extracting/saving nev and out, using Smith lab nevutils
-
-tic
 taskTypes = {'rfmp','purs','mdir','fstm'};
 numTasks = [this_sess.rfmp_num this_sess.purs_num this_sess.mdir_num this_sess.fstm_num];
+tasks = [];
+for i=1:length(taskTypes)
+    tasks = [tasks, arrayfun(@(x) sprintf('%s%d', taskTypes{i}, x), 1:numTasks(i), 'UniformOutput', false)];
+end
 
-% Make structure to hold all data 
-S1 = struct();
-S1.recording_info = table2struct(this_sess);
-S1.channels = mappings;
+%% Extracting/saving nev and out, using Smith lab nevutils
+if ~exist(fullfile(dataFolder, 'processed', sprintf('%s.mat', filename)), 'file')
+    % Name/organize channels based on recording details
+    [mappings,probe_specs] = map_channelsNumbersToNames(this_sess.mapFile_name,this_sess.probeID{1},'probeDepths_mm',this_sess.recordDepth_mm{1});
 
-for i = 1:length(taskTypes)
-    if ~exist(fullfile(dataFolder, 'processed', sprintf('%s.mat', filename)), 'file')
+    tic
+
+    % Make structure to hold all data 
+    S1 = struct();
+    S1.recording_info = table2struct(this_sess);
+    S1.channels = mappings;
+    
+    for i = 1:length(taskTypes)
         these_tasks = arrayfun(@(x) sprintf('%s%d', taskTypes{i}, x), 1:numTasks(i), 'UniformOutput', false);
         for f = 1:length(these_tasks)
             this_task = these_tasks{f};
@@ -56,27 +60,127 @@ for i = 1:length(taskTypes)
             S1.(this_task) = tbl;
         end
     end
+
+    S = unify_taskTables(S1,taskTypes);
+    
+    % Save the structure S to the specified file
+    filePath = fullfile(dataFolder, 'processed', sprintf('%s.mat', filename));
+    save(filePath, 'S');
+    
+    tc = toc;
+    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+    fprintf(sprintf('Elapsed time is %2.2f minutes',tc/60))
+    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+
+else
+    fprintf('\n---- loading S for %s ----\n', filename);
+    load(fullfile(dataFolder, 'processed', sprintf('%s.mat', filename)))
 end
 
-S = unify_taskTables(S1,taskTypes);
+%% PLOT 1. Total number of trials & percent correct across tasks
 
-% Save the structure S to the specified file
-filePath = fullfile(dataFolder, 'processed', sprintf('%s.mat', filename));
-save(filePath, 'S');
-
-tc = toc;
-fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-fprintf(sprintf('Elapsed time is %2.2f minutes',tc/60))
-fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-
-
-%% Fixing up some stuff with S
-% Calculate SNR each channel across all tasks
-
-% Save S 
-if ~exist(fullfile(dataFolder, 'processed_', filename), 'dir')
-    mkdir(fullfile(dataFolder, 'processed', filename));
+main_taskTypes = taskTypes(cellfun(@(q) ~contains(q,'fstm'), taskTypes, 'uni', 1));
+main_tasks = tasks(cellfun(@(q) ~contains(q,'fstm'), tasks, 'uni', 1));
+results = cell(length(main_tasks),1);
+for task=1:length(main_tasks)
+    results{task} = S.(main_tasks{task}).result;
 end
+
+f1 = figure;
+f1.Position = [100 100 1800 400];
+tl = tiledlayout(1,length(main_tasks));
+tl.TileSpacing = 'tight';
+tl.Padding = 'compact';
+
+set(gcf,'color','w')
+for ii = 1:length(main_tasks)
+    nexttile
+    pieChart_trialOutcomes(results{ii}, main_tasks{ii}, vertcat(results{:}));
+end
+title(tl,sprintf('%s',filename),'fontsize',18,'interpreter','none')
+
+
+%% PLOT 2. rfmp
+
+GAMMA = 0.2;
+T = S.rfmp1;
+T = T(cellfun(@(q) sum(isnan(q))==0, T.STIM_ON, 'uni', 1),:);
+T.STIM_ON(T.result~='CORRECT') = cellfun(@(q) q(1:end-1), T.STIM_ON(T.result~='CORRECT'), 'uni', 0);
+T.conditions(T.result~="CORRECT") = cellfun(@(q) q(1:end-1), T.conditions(T.result~='CORRECT'), 'uni', 0);
+
+T.spiketimes = cellfun(@(q) q.*1000, T.spiketimes, 'uni', 0);
+stimuli = cell2mat(vertcat(T.conditions{:}));
+xvals = sort(unique(stimuli(:,1)));
+yvals = sort(unique(stimuli(:,2)));
+
+first_bin = 0; bin_width = 50; bin_step = 10; nbins = 24;
+bin_edges = arrayfun(@(x) [(first_bin + ((x*bin_step)-bin_step)),(first_bin + ((x*bin_step)-bin_step) + bin_width)], 1:nbins, 'UniformOutput', false);
+
+all_FRs = cell(size(T.spiketimes,2),1);
+for unit = 1:size(T.spiketimes,2)
+    FRs = cell(length(yvals),length(xvals),length(bin_edges));
+    for bin = 1:length(bin_edges)
+        for trial = 1:height(T)
+            stim_ons = T.STIM_ON{trial}./10;
+            conds = T.conditions{trial};
+            spks = T.spiketimes{trial,unit};
+            nets = T.net_labels{trial,unit};
+            for stim = 1:length(stim_ons)
+                aligned_spks = spks-stim_ons(stim);
+                spk_hz = sum(aligned_spks>bin_edges{bin}(1) & aligned_spks<=bin_edges{bin}(2) & nets>GAMMA)*(1000/range(bin_edges{bin}));
+                if isempty(FRs{T.conditions{trial}{stim}(2)==yvals,T.conditions{trial}{stim}(1)==xvals,bin})
+                    FRs{T.conditions{trial}{stim}(2)==yvals,T.conditions{trial}{stim}(1)==xvals,bin} = spk_hz;
+                else
+                    FRs{T.conditions{trial}{stim}(2)==yvals,T.conditions{trial}{stim}(1)==xvals,bin} = [FRs{T.conditions{trial}{stim}(2)==yvals,T.conditions{trial}{stim}(1)==xvals,bin}, spk_hz];
+                end
+            end
+        end
+    end
+    all_FRs{unit} = FRs;
+    fprintf(sprintf('\n----Unit %.2d complete----',unit))
+end
+
+%% RF Map plot for each unit
+f2a = figure;
+f2a.Position = [100 100 1800 900];
+tl = tiledlayout(4,6);
+tl.TileSpacing = 'compact';
+tl.Padding = 'tight';
+
+unit = 2;
+frs = cellfun(@(q) mean(q), all_FRs{unit});
+for bin = 1:length(bin_edges)
+    ax(bin) = nexttile(tl);
+    
+    hmap = pcolor(pix2deg(xvals,T(1,:).params.block.screenDistance,T(1,:).params.block.pixPerCM), ...
+        pix2deg(yvals,T(1,:).params.block.screenDistance,T(1,:).params.block.pixPerCM), frs(:,:,bin));
+    hmap.FaceColor = 'interp';
+    
+    title(sprintf('[%d , %d) ms',bin_edges{bin}(1),bin_edges{bin}(2)))
+
+    axis square;
+    prettyFig;
+end
+
+set(ax, 'Colormap', gray, 'CLim', [min(frs(:)) max(frs(:))])
+cbh = colorbar(ax(end)); 
+cbh.Layout.Tile = 'east'; 
+cbh.Label.String = 'Firing Rate (Hz)';
+cbh.Label.Rotation = 270;
+
+xlabel(tl,'Horizontal (deg)','fontsize',16)
+ylabel(tl,'Vertical (deg)','fontsize',16)
+title(tl,sprintf('%s',filename),'fontsize',20,'interpreter','none')
+subtitle(tl,sprintf('%s',S.channels.mapped_name{unit}),'fontsize',16,'interpreter','none')
+
+
+%% Compare RF maps between rfmp1 and rfmp2 
+% Quantify how different they are 
+
+
+
+
+
 
 %% Formatting data from each file
 % Load in nev and out for given file

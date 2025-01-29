@@ -130,7 +130,7 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
                 for u = 1:length(spks_byChan)
                     spks_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 3)') - trialstarts(n);
                     if spike_sort
-                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 4)');
+                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 4)').*1000;
                         % waveforms_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 5:end)');
                     end
                 end
