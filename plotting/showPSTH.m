@@ -1,4 +1,4 @@
-function [psth newRange] = showPSTH(spikeTimes,bounds,sigma,colorspec)
+function [psth,newRange,h] = showPSTH(spikeTimes,bounds,sigma,colorspec)
 %function psth = showPSTH(spikeTimes,bounds,sigma)
 %
 %spikeTimes is a list of spikeTimes (in s)
@@ -41,10 +41,10 @@ psth = psth/sampling/trials;
 
 samps = length(bounds(1)+sampling:sampling:bounds(2));
 
-if nargout == 0
-    plot(newRange(1):sampling:newRange(2),psth,colorspec)
-    xlim([bounds(1) bounds(2)])
-end
+% if nargout == 0
+h = plot(newRange(1):sampling:newRange(2),psth,colorspec);
+xlim([bounds(1) bounds(2)])
+% end
 
 % toCut = (length(psth)-samps+1)/2;
 % psth = psth(toCut:end-toCut);

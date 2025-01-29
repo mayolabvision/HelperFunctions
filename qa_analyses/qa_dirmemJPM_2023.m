@@ -78,9 +78,10 @@ if (h > 0)
             subplot(3,3,I+1)
         end
 
-        showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
+        [~,~,h] = showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
         xline(0, 'r-')
+        uistack(h,'top')
         set(get(gca,'Children'),'linewidth',psthline);
 
         % hard coded kludge; I==4
@@ -110,11 +111,11 @@ if (h > 0)
             subplot(3,3,I+1)
         end
         
-        showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
-        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol);
-        
+        [~,~,h] = showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
+        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol); 
         xline(0, 'r-')
         xline(0.26, 'r--')
+        uistack(h,'top')
         set(get(gca,'Children'),'linewidth',psthline);
 
         if (I==4)
