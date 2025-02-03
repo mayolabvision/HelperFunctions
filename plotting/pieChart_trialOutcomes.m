@@ -45,5 +45,5 @@ function pieChart_trialOutcomes(trialOutcomes, taskname, all_results)
     end
 
     % Add title
-    title({'';'';sprintf('%s (N = %d correct trials)', taskname, sum(trialOutcomes=="CORRECT"))},'fontsize',14);
+    title({'';'';sprintf('%s (%d correct / %d total trials)', taskname, sum(trialOutcomes=="CORRECT"), length(trialOutcomes))},'fontsize',14);
 end

@@ -1,0 +1,5 @@
+probeID,probeType,channelCount,distanceTipToFirstElectrode,interElectrodeSpacing,diameter,numberUses
+N177P15,vProbe,24,300,150,40,8
+N178P15,vProbe,24,300,150,40,5
+N19415,sProbe,24,750,150,40,18
+N19417,sProbe,24,750,150,40,1

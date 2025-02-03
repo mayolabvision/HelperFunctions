@@ -13,7 +13,7 @@ function S_new = unify_taskTables(S, tasknames)
         % Extract all column names from the tables for the current task
         allColumnNames = {};
         for i = 1:length(taskFields)
-            tableData = S.(taskFields{i});
+            tableData = S.(taskFields{i}).data;
             if istable(tableData)
                 allColumnNames = union(allColumnNames, tableData.Properties.VariableNames, 'stable');
             end
@@ -21,7 +21,7 @@ function S_new = unify_taskTables(S, tasknames)
 
         % Ensure all tables for the current task have the same column names
         for i = 1:length(taskFields)
-            tableData = S.(taskFields{i});
+            tableData = S.(taskFields{i}).data;
             if istable(tableData)
                 % Find missing columns for the current table
                 missingColumns = setdiff(allColumnNames, tableData.Properties.VariableNames, 'stable');
@@ -32,7 +32,7 @@ function S_new = unify_taskTables(S, tasknames)
                 end
                 
                 % Update the table in the new struct
-                S_new.(taskFields{i}) = tableData;
+                S_new.(taskFields{i}).data = tableData;
             end
         end
     end

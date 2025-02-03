@@ -63,73 +63,73 @@ psthline = 1.5;
 sigma = 10;  % For spike density functions.
 %
 
-if (h > 0)
-    figure(h); clf;
-    % stim-aligned first
-
-    for I=1:size(a.STIMEVENTS,1)
-        if I == 1
-            subplot(3,3,I+5)
-        elseif I == 3 || I == 5
-            subplot(3,3,I-1)
-        elseif I == 4
-            subplot(3,3,I-3)
-        else % plotd = 2, 6-8
-            subplot(3,3,I+1)
-        end
-
-        [~,~,h] = showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
-        overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
-        xline(0, 'r-')
-        uistack(h,'top')
-        set(get(gca,'Children'),'linewidth',psthline);
-
-        % hard coded kludge; I==4
-        if (I==4)
-            xlabel('Aligned to Stim Onset. (s)');
-            title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
-        end
-
-        if (I<size(a.STIMEVENTS,1))
-
-        else
-            xlabel('Time (s)');
-        end
-    end
-    set(gcf,'color','w')
-
-
-    figure(hb)
-    for I=1:size(a.STIMEVENTS,1)
-        if I == 1
-            subplot(3,3,I+5)
-        elseif I == 3 || I == 5
-            subplot(3,3,I-1)
-        elseif I == 4
-            subplot(3,3,I-3)
-        else % plotd = 2, 6-8
-            subplot(3,3,I+1)
-        end
-        
-        [~,~,h] = showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
-        overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol); 
-        xline(0, 'r-')
-        xline(0.26, 'r--')
-        uistack(h,'top')
-        set(get(gca,'Children'),'linewidth',psthline);
-
-        if (I==4)
-            xlabel('Aligned to Sacc Onset. (s)');
-            title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
-        end
-
-        if (I<size(a.SACEVENTS,1))
-        else
-            xlabel('Time (s)');
-        end
-    end
-    set(gcf,'color','w')
- end
+% if (h > 0)
+%     figure(h); clf;
+%     % stim-aligned first
+% 
+%     for I=1:size(a.STIMEVENTS,1)
+%         if I == 1
+%             subplot(3,3,I+5)
+%         elseif I == 3 || I == 5
+%             subplot(3,3,I-1)
+%         elseif I == 4
+%             subplot(3,3,I-3)
+%         else % plotd = 2, 6-8
+%             subplot(3,3,I+1)
+%         end
+% 
+%         [~,~,h] = showPSTH(a.STIMEVENTS(I,:),xlimits,psthsmooth); box off;
+%         overlayRaster(a.STIMEVENTS(I,:),xlimits,rastcol);
+%         xline(0, 'r-')
+%         uistack(h,'top')
+%         set(get(gca,'Children'),'linewidth',psthline);
+% 
+%         % hard coded kludge; I==4
+%         if (I==4)
+%             xlabel('Aligned to Stim Onset. (s)');
+%             title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
+%         end
+% 
+%         if (I<size(a.STIMEVENTS,1))
+% 
+%         else
+%             xlabel('Time (s)');
+%         end
+%     end
+%     set(gcf,'color','w')
+% 
+% 
+%     figure(hb)
+%     for I=1:size(a.STIMEVENTS,1)
+%         if I == 1
+%             subplot(3,3,I+5)
+%         elseif I == 3 || I == 5
+%             subplot(3,3,I-1)
+%         elseif I == 4
+%             subplot(3,3,I-3)
+%         else % plotd = 2, 6-8
+%             subplot(3,3,I+1)
+%         end
+% 
+%         [~,~,h] = showPSTH(a.SACEVENTS(I,:),xlimits,psthsmooth); box off;
+%         overlayRaster(a.SACEVENTS(I,:),xlimits,rastcol); 
+%         xline(0, 'r-')
+%         xline(0.26, 'r--')
+%         uistack(h,'top')
+%         set(get(gca,'Children'),'linewidth',psthline);
+% 
+%         if (I==4)
+%             xlabel('Aligned to Sacc Onset. (s)');
+%             title ({filename; sprintf('sort code = %d',sortcode)}, 'Interpreter','none')
+%         end
+% 
+%         if (I<size(a.SACEVENTS,1))
+%         else
+%             xlabel('Time (s)');
+%         end
+%     end
+%     set(gcf,'color','w')
+%  end
 
 %%%% calculate some statistics
 % spike counting windows

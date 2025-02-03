@@ -1,0 +1,69 @@
+# Saved November 23 2024 1:2:5 pm
+# Trellis Version 1.14.4.41
+# -----------------------------------------------------------------------------
+# Trellis standard electrode map file format: (v.2)
+# Previous map files should be backward comaptible with v.2
+# <hardware.address>; <elec_group.elec_label>; <view.coords>
+#
+# Example: (for use with Ripple processor)
+# -----------------------------------------------------------------------------
+# [processor.]port.FEslot.channel; [array.]electrode; [x.y.z]; [mapx, mapY, mapWidth, mapHeight]; [ImpedanceGreen, ImpedanceYellow, ImpedanceRed, Black]; [HeadX, HeadY, HeadWidth, HeadHeight, headOptions];
+#
+# '[x.y.z];' may be an empty whitespace string (ignored if 
+# whitespace or empty)
+# '[mapx, mapY, mapWidth, mapHeight];' must all be present together if used (along 
+# with all previous columns)
+# mapX, mapY uses a cartesian coordinate system as seen below(map will automatically 
+# scale/translate the map coordinates based off the min/max map cordinates provided)
+#                   Y+
+#                   |
+#              X- --+-- X+
+#                   |
+#                   Y-
+# [ImpedanceGreen, ImpedanceYellow, ImpedanceRed, ImpedanceBlack] must all be present 
+# together if used (along with all previous columns). Once included, all 
+# subsequent electrodes will use the same values until changed.
+#
+# Multiple heads (ellipes) may optionally be defined. Head options are as followed (must be a single string with any combination of the following):
+# V : Draw a vertical line from top of ellipse to bottom
+# H : Draw a Horizontal line from left to right of Ellipse
+# U : Draw a nose facing upward
+# D : Draw a nose facing downward
+# R : Draw a nose facing right
+# L : Draw a nose facing left
+#
+# NOTE: all fields are 1-indexed and any whitespace will be ignored
+#       terminating semicolon (;) is optional
+# -----------------------------------------------------------------------------------
+
+# port/slot name xyz     mapX        mapY      mapWidth   mapHeight  Green   Yellow   Red    Black     HeadX  HeadY   HdWidth HdHeight headOpts
+#=========  ===  ===  =========   =========   ========   ========    ======  ======  ======  ======   ======  ======  ======  =====     ===
+
+1.A.1.001; rFEF_probeA_ripChan0001_0001; ;
+1.A.1.003; rFEF_probeA_ripChan0003_0002; ;
+1.A.1.005; rFEF_probeA_ripChan0005_0003; ;
+1.A.1.007; rFEF_probeA_ripChan0007_0004; ;
+1.A.1.009; rFEF_probeA_ripChan0009_0005; ;
+1.A.1.011; rFEF_probeA_ripChan0011_0006; ;
+1.A.1.013; rFEF_probeA_ripChan0013_0007; ;
+1.A.1.015; rFEF_probeA_ripChan0015_0008; ;
+1.A.1.017; rFEF_probeA_ripChan0017_0009; ;
+1.A.1.019; rFEF_probeA_ripChan0019_0010; ;
+1.A.1.021; rFEF_probeA_ripChan0021_0011; ;
+1.A.1.023; rFEF_probeA_ripChan0023_0012; ;
+1.A.1.025; rFEF_probeA_ripChan0025_0013; ;
+1.A.1.027; rFEF_probeA_ripChan0027_0014; ;
+1.A.1.029; rFEF_probeA_ripChan0029_0015; ;
+1.A.1.031; rFEF_probeA_ripChan0031_0016; ;
+1.A.1.002; rFEF_probeA_ripChan0002_0017; ;
+1.A.1.004; rFEF_probeA_ripChan0004_0018; ;
+1.A.1.006; rFEF_probeA_ripChan0006_0019; ;
+1.A.1.008; rFEF_probeA_ripChan0008_0020; ;
+1.A.1.010; rFEF_probeA_ripChan0010_0021; ;
+1.A.1.012; rFEF_probeA_ripChan0012_0022; ;
+1.A.1.014; rFEF_probeA_ripChan0014_0023; ;
+1.A.1.016; rFEF_probeA_ripChan0016_0024; ;
+1.AIO.BNC.001; eye_HEPos; ;
+1.AIO.BNC.002; eye_VEPos; ;
+1.AIO.BNC.004; pupil; ;
+1.DIO.PAR.001; codes; ;

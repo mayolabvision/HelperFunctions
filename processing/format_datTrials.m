@@ -1,6 +1,8 @@
 function dat_all = format_datTrials(nev1,out,eye_channel_labels)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
+    % neuralType = 'spikes'; % 'raw', 'waveforms'
+
     Fs = double(out.hdr.Fs);
     nEpochs = size(out.hdr.timeStamps,2);
     
@@ -22,7 +24,7 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
 
     spk_channels = sort(unique(nev(nev(:,1) ~= 0, 1)));
     
-    dat_all = [];
+    dat_all = []; 
     past_epochEnd = 0;
     block = 1;
     for epoch=1:nEpochs
@@ -38,7 +40,8 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
         epochEnd_samp = (epochStart_samp + epochDiff)-1;
     
         this_nev = nev(nev(:,3)>=nsStartTime & nev(:,3)<=nsEndTime,:);
-        this_ns5 = out.data(:,epochStart_samp:epochEnd_samp);
+        ns5_rng = epochStart_samp:epochEnd_samp;
+        % this_ns5 = out.data(:,epochStart_samp:epochEnd_samp);
 
         diginnevind = find(this_nev(:,1)==0);
         digcodes = this_nev(diginnevind,:);
@@ -73,9 +76,17 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
         if ~isempty(tempdata.text)
     
             tempdata = getDatParams(tempdata);
-    
-            dat = struct();
-    
+            dat = repmat(struct(...
+                'block', [], ...
+                'time_sec', [], ...
+                'text', '', ...
+                'trialcodes', [], ...
+                'result', NaN, ...
+                'params', struct(), ...
+                'eyes', [], ...
+                'pupil', [], ...
+                'ns5_30kHz', []), length(trialstarts), 1);
+
             %% Make Struct
             for n = 1:length(trialstarts)
                 if mod(n,100) == 0
@@ -107,37 +118,29 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
                         block = block + 1;
                     end
                 end
-    
-                % eye data
-                eyes = this_ns5(eye_channels([1,2,4]),trialstarts_samp(n):trialends_samp(n));
+
+                eyes = out.data(eye_channels([1,2,4]),ns5_rng(trialstarts_samp(n):trialends_samp(n)));
                 eyes_1khz = downsample(eyes',30)';
                 [eyedeg, ~] = eye2deg(eyes_1khz(1:2,:), dat(n).params);
-    
-                pupil_1kHz = eyes_1khz(3,:);
-    
+   
                 dat(n).eyes = eyedeg;
-                dat(n).pupil = pupil_1kHz;
-                dat(n).diode = this_ns5(eye_channels(3),trialstarts_samp(n):trialends_samp(n));
-                dat(n).ns5_30kHz = this_ns5(:,trialstarts_samp(n):trialends_samp(n));
-    
-                % spikes
+                dat(n).pupil = eyes_1khz(3,:);
+
                 spks = this_trial(ismember(this_trial(:,1), spk_channels),:);
                 spks_byChan = cell(1,size(spk_channels,1));
                 if spike_sort
-                    % [netLabels_byChan,waveforms_byChan] = deal(cell(1,size(spk_channels,1)));
-                    netLabels_byChan = cell(1,size(spk_channels,1));
+                    [netLabels_byChan,waveforms_byChan] = deal(cell(1,size(spk_channels,1)));
                 end
                 for u = 1:length(spks_byChan)
-                    spks_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 3)') - trialstarts(n);
+                    spks_byChan{u} = ((spks(ismember(spks(:, 1), spk_channels(u)), 3)') - trialstarts(n)).*1000;
                     if spike_sort
-                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 4)').*1000;
-                        % waveforms_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 5:end)');
+                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 4)');
+                        waveforms_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 5:end)');
                     end
                 end
                 dat(n).spiketimes = spks_byChan;
                 if spike_sort
                     dat(n).net_labels = netLabels_byChan;
-                    % dat(n).waveforms = waveforms_byChan;
                 end
     
             end
@@ -146,6 +149,6 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
     
         % Concatenate the new structure to the array
         dat_all = [dat_all, dat];
-    
+
     end
 end

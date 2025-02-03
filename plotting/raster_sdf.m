@@ -1,108 +1,87 @@
-function raster_sdf(sptimes,timewindow,sigma,line_color,sem_shade)
+function raster_sdf(sptimes, timewindow, sigma, varargin)
+% RASTER_SDF plots a raster and spike density function (SDF) for a single neuron.
+%
+% Inputs:
+%   sptimes      - 1xN cell array (N = number of trials), each cell contains spike times
+%   timewindow   - Time points (not indices) to include (e.g. [-100 300])
+%   sigma        - Width of Gaussian/window [ms] (e.g. 5)
+%
+% Optional Inputs (via varargin):
+%   line_color   - Color of the SDF line (default: [0 0 255]./255)
+%   sem_shade    - Color of the SEM shading (default: [178 178 255]./255)
+%   rast_shade   - Color of raster plot lines (default: [166 166 166]./255)
 
-% raster for a single neuron (each row is a trial, each col is a spike time) 
+% Set default values for optional parameters
+default_line_color = [0 0 255] ./ 255;
+default_sem_shade  = [178 178 255] ./ 255;
+default_rast_shade = [166 166 166] ./ 255;
 
-%%%%%%%%%% Inputs: %%%%%%%%%%%%%
-% sptimes --> 1 x N cell array (N = number of trials)
-   % sptimes{n} = spike times in specified window
-% timewindow --> time points (not indices) to include (e.g. [-100 300])
-% sigma --> width of gaussian/window [ms] (e.g. 5)
-% line_color --> color of lines (e.g. [0 0 0]./255)
-% shade_color --> shade of lines (e.g. [153 153 153]./255)
+% Parse varargin inputs
+p = inputParser;
+p.addOptional('line_color', default_line_color, @(x) isnumeric(x) && length(x) == 3);
+p.addOptional('sem_shade', default_sem_shade, @(x) isnumeric(x) && length(x) == 3);
+p.addOptional('rast_shade', default_rast_shade, @(x) isnumeric(x) && length(x) == 3);
+p.parse(varargin{:});
+line_color = p.Results.line_color;
+sem_shade  = p.Results.sem_shade;
+rast_shade = p.Results.rast_shade;
 
-if nargin < 4
-    line_color = [0 0 255]./255;
-    sem_shade = [178,178,255]./255;
-    rast_shade = [166,166,166]./255;
-end
-
-% f = figure; %figure('Units','normalized','Position',[0 0 .3 1])
-% f.Position = [100 100 900 600];
-% ax = tiledlayout(2,1);
-% ax.TileSpacing = 'compact';
-% ax.Padding = 'compact';
-
-% For all trials...
+% Raster Plot
 for iTrial = 1:length(sptimes)
-                  
-    spks            = sptimes{iTrial}';         % Get all spikes of respective trial 
-%     if size(spks,1)==1
-%         spks = spks';
-%     end
-    xspikes         = repmat(spks,3,1);         % Replicate array
-    yspikes      	= nan(size(xspikes));       % NaN array
+    spks = sptimes{iTrial};
+    if size(spks,2)==1
+        spks = spks';
+    end
+    xspikes = repmat(spks, 3, 1);
+    yspikes = nan(size(xspikes));
     
     if ~isempty(yspikes)
-        yspikes(1,:) = iTrial-1;                % Y-offset for raster plot
-        yspikes(2,:) = iTrial;
+        yspikes(1, :) = iTrial - 1;
+        yspikes(2, :) = iTrial;
     end
     
-    
-    plot(xspikes, yspikes, 'Color', rast_shade , 'LineWidth', 3)
-    hold on
+    plot(xspikes, yspikes, 'Color', rast_shade, 'LineWidth', 3);
+    hold on;
 end
-xline(0,'k-','linewidth',2)
 
-xlim(timewindow)
-ylim([0 length(sptimes)])
-yticks([0 length(sptimes)])
-%xticks([min(timewindow) 0 max(timewindow)])
-
-ylabel('trials')
-%title(ax,[sprintf('%d',condition) char(176)],'fontweight','bold','fontsize',14)
-
+xline(0, 'k-', 'linewidth', 2);
+xlim(timewindow);
+ylim([0 length(sptimes)]);
+yticks([0 length(sptimes)]);
+ylabel('trials');
 prettyFig;
 
-%% Spike density function
-yyaxis right
+%% Spike Density Function
+yyaxis right;
 ax = gca;
 ax.YColor = 'k';
 
-tstep     	= 1;                                          % Resolution for SDF [ms]                   
-time     	= tstep+timewindow(1):tstep:timewindow(2);    % Time vector
+% Time vector
+tstep = 1;
+time = tstep + timewindow(1) : tstep : timewindow(2);
 
+sdf = zeros(length(sptimes), length(time));
 for iTrial = 1:length(sptimes)
-    spks    = []; 
-    gauss   = []; 
-    spks   	= sptimes{iTrial}';          % Get all spikes of respective trial
-    
-    if isempty(spks)            
-        out	= zeros(1,length(time));    % Add zero vector if no spikes
-    else
-        
-        % For every spike
-        for iSpk = 1:length(spks)
-            
-            % Center gaussian at spike time
-            mu              = spks(iSpk);
-            
-            % Calculate gaussian
-            p1              = -.5 * ((time - mu)/sigma) .^ 2;
-            p2              = (sigma * sqrt(2*pi));
-            gauss(iSpk,:)   = exp(p1) ./ p2;
-            
-        end
-        
-        % Sum over all distributions to get spike density function
-        sdf(iTrial,:)       = sum(gauss,1);
+    spks = sptimes{iTrial};
+    if size(spks,2)==1
+        spks = spks';
     end
+    if isempty(spks)
+        continue;
+    end
+    
+    gauss = arrayfun(@(mu) exp(-.5 * ((time - mu) / sigma) .^ 2) ./ (sigma * sqrt(2 * pi)), spks, 'UniformOutput', false);
+    sdf(iTrial, :) = sum(cell2mat(gauss'), 1);
 end
 
-x = ((1:size(sdf,2)) + timewindow(1));
+% Compute mean and SEM
+x = (1:size(sdf, 2)) + timewindow(1);
+[mn, ~, yu, yl] = sem_errorbar(sdf .* 1000);
+fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha', 0.5);
+hold on;
+plot(x, mn, '-', 'Color', line_color, 'LineWidth', 2);
 
-[mn,~,yu,yl] = sem_errorbar(sdf.*1000);
-fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle','none','FaceAlpha',0.5)
-hold on
-plot(x,mn,'-','Color', line_color, 'LineWidth', 2)
-
-ylabel('firing rate (Hz)', 'Rotation', 270)
-%set(gca, 'YDir', 'reverse')
-
-% [mn,~,yu,yl] = sem_errorbar(sdf(inds==2,:).*1000);
-% fill([x fliplr(x)], [yu fliplr(yl)], sem_shade{2}, 'linestyle','none','FaceAlpha',0.5)
-% hold on
-% plot(x,mn,'-','Color', line_color{2}, 'LineWidth', 2)
-
+ylabel('firing rate (Hz)', 'Rotation', 270);
 prettyFig;
 
 end

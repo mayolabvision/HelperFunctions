@@ -1,0 +1,46 @@
+# Saved December 18 2024 12:48:21 pm
+# Trellis Version 1.14.4.41
+# -----------------------------------------------------------------------------
+# Trellis standard electrode map file format: (v.2)
+# Previous map files should be backward comaptible with v.2
+# <hardware.address>; <elec_group.elec_label>; <view.coords>
+#
+# Example: (for use with Ripple processor)
+# -----------------------------------------------------------------------------
+# [processor.]port.FEslot.channel; [array.]electrode; [x.y.z]; [mapx, mapY, mapWidth, mapHeight]; [ImpedanceGreen, ImpedanceYellow, ImpedanceRed, Black]; [HeadX, HeadY, HeadWidth, HeadHeight, headOptions];
+#
+# '[x.y.z];' may be an empty whitespace string (ignored if 
+# whitespace or empty)
+# '[mapx, mapY, mapWidth, mapHeight];' must all be present together if used (along 
+# with all previous columns)
+# mapX, mapY uses a cartesian coordinate system as seen below(map will automatically 
+# scale/translate the map coordinates based off the min/max map cordinates provided)
+#                   Y+
+#                   |
+#              X- --+-- X+
+#                   |
+#                   Y-
+# [ImpedanceGreen, ImpedanceYellow, ImpedanceRed, ImpedanceBlack] must all be present 
+# together if used (along with all previous columns). Once included, all 
+# subsequent electrodes will use the same values until changed.
+#
+# Multiple heads (ellipes) may optionally be defined. Head options are as followed (must be a single string with any combination of the following):
+# V : Draw a vertical line from top of ellipse to bottom
+# H : Draw a Horizontal line from left to right of Ellipse
+# U : Draw a nose facing upward
+# D : Draw a nose facing downward
+# R : Draw a nose facing right
+# L : Draw a nose facing left
+#
+# NOTE: all fields are 1-indexed and any whitespace will be ignored
+#       terminating semicolon (;) is optional
+# -----------------------------------------------------------------------------------
+
+# port/slot name xyz     mapX        mapY      mapWidth   mapHeight  Green   Yellow   Red    Black     HeadX  HeadY   HdWidth HdHeight headOpts
+#=========  ===  ===  =========   =========   ========   ========    ======  ======  ======  ======   ======  ======  ======  =====     ===
+
+1.A.1.001; lFEF_probeA_ripChan0001_0001; ;
+1.AIO.BNC.001; eye_HEPos; ;
+1.AIO.BNC.002; eye_VEPos; ;
+1.AIO.BNC.004; pupil; ;
+1.DIO.PAR.001; codes; ;
