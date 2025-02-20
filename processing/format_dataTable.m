@@ -1,4 +1,4 @@
-function tbl = format_dataTable(nev,out,task_name,varargin)
+function tbl = format_dataTable(nev,out_ns5,task_name,varargin)
     % blah
     %
     %%% Required inputs: %%%
@@ -21,24 +21,25 @@ function tbl = format_dataTable(nev,out,task_name,varargin)
     
     % Default values for optional parameters
     defaultEyeChanLabels = {'10241', '10242', '10243', '10244'};
-    
 
     % Create an input parser
     p = inputParser;
     addRequired(p, 'nev', @(x) (isnumeric(x) && size(x, 2) == 3) || isstruct(x));
     addRequired(p, 'out', @isstruct);
     addParameter(p, 'EYE_CHAN_LABELS', defaultEyeChanLabels, (@(x) iscell(x) && length(x)==4)); % channel labels
+    addParameter(p, 'LFP', []);
 
     % Parse the inputs
-    parse(p, nev, out, varargin{:});
+    parse(p, nev, out_ns5, varargin{:});
 
     % Assign parsed values to variables
     nev = p.Results.nev;
-    out = p.Results.out;
+    out_ns5 = p.Results.out;
     EYE_CHAN_LABELS = p.Results.EYE_CHAN_LABELS;
+    LFP = p.Results.LFP;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    dat = format_datTrials(nev,out,EYE_CHAN_LABELS);
+    dat = format_datTrials(nev,out_ns5,EYE_CHAN_LABELS);
 
     tbl1 = struct2table(dat);
     tbl = table();
@@ -104,8 +105,16 @@ function tbl = format_dataTable(nev,out,task_name,varargin)
     eyeAcc = cellfun(@(q) calcDerivative_eyeTraces(q), eyeVel, 'uni', 0);
 
     tbl.eyePos = eyePos; tbl.eyeVel = eyeVel; tbl.eyeAcc = eyeAcc;
-    tbl.pupil = tbl1.pupil; 
-    tbl.spiketimes = tbl1.spiketimes; tbl.net_labels = tbl1.net_labels;
+    tbl.pupil = tbl1.pupil; tbl.diode = tbl1.diode;
+    tbl.spiketimes = tbl1.spiketimes; 
+    
+    if ismember('net_labels', tbl1.Properties.VariableNames)
+        tbl.net_labels = tbl1.net_labels;
+    end
+
+    if ~isempty(LFP)
+        tbl.lfp = LFP;
+    end
 
     %%%%%%%%%%%%% task-specific re-arranging and calculations %%%%%%%%%%%%%
     if contains(task_name, 'mdir')
@@ -119,8 +128,8 @@ function tbl = format_dataTable(nev,out,task_name,varargin)
         end
     elseif contains(task_name, 'purs')
         % Define the columns to replace and their new names
-        cols_to_replace = {'TARG_ON', 'BROKE_TARG', 'TARG_OFF'};
-        new_names = {'PURSUIT_TARG', 'BROKE_PURSUIT', 'PURSUIT_TARG_OFF'};
+        cols_to_replace = {'TARG_ON', 'TARG_OFF'};
+        new_names = {'PURSUIT_TARG', 'PURSUIT_TARG_OFF'};
         
         % Loop through each column to check and replace
         for i = 1:numel(cols_to_replace)
@@ -129,30 +138,38 @@ function tbl = format_dataTable(nev,out,task_name,varargin)
             end
         end
 
-        [pursuitOnsets, rxnTimes, msFlags, csFlags] = deal(zeros(height(tbl), 1));
-        for t = 1:height(tbl)
-            if isequal(tbl.result(t),"CORRECT")
-                [~,radPos] = cart2pol(tbl.eyePos{t}(1,:),tbl.eyePos{t}(2,:));
-                [~,radVel] = cart2pol(tbl.eyeVel{t}(1,:),tbl.eyeVel{t}(2,:));
-                [pursuitOnset,rxnTime,msFlag,csFlag] = detect_pursuitOnset(radPos,radVel,tbl.PURSUIT_TARG(t),tbl(t,:).params.block.reactionTime,tbl.pursuitSpeed(t),tbl.angle(t),tbl.jump(t),0);
-            else
-                pursuitOnset = NaN;
-                rxnTime = NaN; 
-                msFlag = NaN;
-                csFlag = NaN;
-            end
-            pursuitOnsets(t) = pursuitOnset;
-            rxnTimes(t) = rxnTime;
-            msFlags(t) = msFlag;
-            csFlags(t) = csFlag;
+        if ~ismember('pursuitSpeed',tbl.Properties.VariableNames)
+            tbl.pursuitSpeed = repmat(tbl(1,:).params.block.pursuitSpeed,height(tbl),1);
+            tbl = movevars(tbl,{'pursuitSpeed'},'Before','fixDuration');
+        end
+        if ~ismember('jump',tbl.Properties.VariableNames)
+            tbl.jump= repmat(tbl(1,:).params.block.jump,height(tbl),1);
+            tbl = movevars(tbl,{'jump'},'Before','fixDuration');
         end
 
-        tbl.pursuitOnset = pursuitOnsets;
-        tbl.rxnTime = rxnTimes;
-        tbl.msFlag = msFlags;
-        tbl.csFlag = csFlags;
+        [pursuitOnsets,rxnTimes,msOffsets,csOnsets,csVelocities,csPeaks,csOffsets,csAngles,crossingTimes] = deal(nan(height(tbl), 1));
+        csTypes = cell(height(tbl),1);
+        for t = 1:height(tbl)
+            if isequal(tbl.result(t),"CORRECT")
+                
+                [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG(t),tbl(t,:).params.block.crossingTime,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
+                pursuitOnset(t) = pursuit_onset; rxnTimes(t) = rxnTime; msOffsets(t) = msOffset; csOnsets(t) = csOnset; csVelocities(t) = csVelocity; csPeaks(t) = csPeak; csOffsets(t) = csOffset; csAngles(t) = csAngle; csTypes{t} = csType;
+            else
+                csTypes{t} = 'NaN';
+            end
 
-        tbl = movevars(tbl,{'pursuitOnset','rxnTime','msFlag','csFlag'},'Before','result');
+            if isequal(tbl(t,:).result,'CORRECT')
+                crossingTimes(t) = tbl(t,:).params.block.crossingTime;
+            end
+        end
+
+        tbl.pursuitOnset = pursuitOnsets; tbl.pursuitLatency = rxnTimes;
+        tbl.msOffset = msOffsets; tbl.CROSSING_TIME = crossingTimes;
+        tbl.csTimes = [csOnsets, csPeaks, csOffsets]; tbl.csVelocity = csVelocities; tbl.csAngle = csAngles;
+        tbl.pursType = csTypes; tbl.pursType = categorical(string(tbl.pursType));
+        
+        tbl = movevars(tbl,{'pursuitOnset','pursuitLatency','msOffset','pursType','csTimes','csVelocity','csAngle'},'Before','result');
+        tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG');
 
     elseif contains(task_name, 'rfmp')
         tbl = tbl(cellfun(@(q) sum(isnan(q))==0, tbl.STIM_ON, 'uni', 1),:);

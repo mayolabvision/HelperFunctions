@@ -44,7 +44,7 @@ function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeI
 
     mappings = readtable([mappingPath,'/',mapping_name,'.csv']);
     mappings = sortrows(mappings, 'ripChan_num');
-    mappings.experimenter = categorical(mappings.mapped_name);
+    mappings.mapped_name = categorical(mappings.mapped_name);
     
     probes = readtable([mappingPath,'/','probe_configs.csv']);
 

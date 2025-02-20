@@ -26,18 +26,14 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    % Default values for optional parameters
-    defaultPREINT = 25; 
-    defaultPOSTINT = 210;
-    defaultPureOnly = true;
-
     % Create an input parser
     p = inputParser;
     addRequired(p, 'T', @istable);
     addRequired(p, 'rt', @isnumeric); 
-    addParameter(p, 'PREINT', defaultPREINT, @isnumeric); 
-    addParameter(p, 'POSTINT', defaultPOSTINT, @isnumeric); 
-    addParameter(p, 'PURE_ONLY', defaultPureOnly, @islogical); % PURE_ONLY must be logical
+    addParameter(p, 'PREINT', 25, @isnumeric); 
+    addParameter(p, 'POSTINT', 210, @isnumeric); 
+    addParameter(p, 'MS_THRESH', 0, @isnumeric)
+    addParameter(p, 'PURE_ONLY', true, @islogical);
 
     % Parse the inputs
     parse(p, T, rt, varargin{:});
@@ -47,6 +43,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
     rt = p.Results.rt;
     PREINT = p.Results.PREINT;
     POSTINT = p.Results.POSTINT;
+    MS_THRESH = p.Results.MS_THRESH;
     PURE_ONLY = p.Results.PURE_ONLY;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,7 +55,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
     
     % Create a tiled layout for plotting
     % 6 rows, 3 columns with compact spacing and loose padding
-    tl = tiledlayout(6,3);
+    tl = tiledlayout(numel(unique(T.pursuitSpeed))*3,3);
     tl.TileSpacing = 'compact';
     tl.Padding = 'loose';
     
@@ -73,9 +70,11 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             cnt = cnt + 1;
             
             % Extract relevant trials
-            validTrials = (T.result == "CORRECT" & T.jump == jumps(j) & T.pursuitSpeed == speeds(s) & T.msFlag == 0 & ~isnan(T.csFlag));
+            validTrials = (T.result == "CORRECT" & T.jump == jumps(j) & T.pursuitSpeed == speeds(s) & ~isnan(T.pursuitLatency));
             eyeTraces = T.eyeVel(validTrials);
-            csFlags = T.csFlag(validTrials);
+            csFlags = T.pursType(validTrials); 
+            msOffsets = T.msOffset(validTrials);
+            msFlags = double(msOffsets > MS_THRESH);
             angles = T.angle(validTrials);
             
             % Use the appropriate onset timing variable if it exists
@@ -86,14 +85,15 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             end
             
             % Store angles for trials without catch-up saccades
-            angles_eachJump{j} = angles(~logical(csFlags));
+            angles_eachJump{j} = angles(logical(csFlags=='pure'));
             
             % Compute percentage of trials removed due to saccades
-            percentRemoved1 = 100 * (sum(csFlags ~= 0) / sum(validTrials));
-            percentRemoved2 = 100 * (sum(csFlags == 1) / sum(validTrials));
+            percentRemoved1 = 100 * (sum(msFlags == 1)  / sum(validTrials));
+            percentRemoved2 = 100 * (sum(csFlags ~= "pure") /  sum(validTrials));
+            totPercentRemoved = 100 * (sum(msFlags == 1 | csFlags ~= "pure") / sum(validTrials));
             
             % Align eye velocity traces to target motion onset
-            aligned = cellfun(@(q, w) q(:, w - PREINT:w + POSTINT), eyeTraces, num2cell(targetOnsets), 'uni', 0);
+            aligned = cellfun(@(q, w) q(:, w - PREINT:w + POSTINT + 100), eyeTraces, num2cell(targetOnsets), 'uni', 0);
             x = (1:length(aligned{1})) - PREINT; % Time axis
             ylim([0, max(speeds) * 1.8]);
             
@@ -109,7 +109,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             for t = 1:length(eyeTraces)
                 this_trl = aligned{t};
                 [~, rho] = cart2pol(this_trl(1, :), this_trl(2, :));
-                if csFlags(t) == 0
+                if csFlags(t) == "pure" & msFlags(t) == 0
                     plot(x, rho, 'k-');
                     num_pure = num_pure + 1;
                 else
@@ -121,7 +121,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
                 end
             end
             
-            xlim([-PREINT POSTINT]);
+            xlim([-PREINT POSTINT+100]);
             ylim([0, max(speeds) * 1.8]);
             
             % Add titles and labels
@@ -141,7 +141,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             
             % Display percentage of trials removed
             text(ax(cnt - 1), -PREINT + 10, max(speeds) * 1.8 - 2, ...
-                sprintf('%0.1f%% trials removed \n (%0.1f%% CS)', percentRemoved1, percentRemoved2), ...
+                sprintf('%0.1f%% CS trials || \n %0.1f%% MS trials \n = %0.2f%% removed', percentRemoved2, percentRemoved1, totPercentRemoved), ...
                 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
             
             xlabel('Time aligned to target motion onset (ms)');
@@ -163,7 +163,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             bar(possibleDirections, counts, 'FaceColor', [0.8 0.8 0.8], 'EdgeColor', 'k');
             xticks(possibleDirections);
             xlabel('Target angle (deg)');
-            title(sprintf('N = %d', length(angles_eachJump{jj})), 'FontWeight', 'normal');
+            title(sprintf('N = %d pure trials', length(angles_eachJump{jj})), 'FontWeight', 'normal');
             
             if jj == 1
                 ylabel('Count');

@@ -1,40 +1,71 @@
-function [pursuit_onset,rxnTime,msFlag,csFlag] = detect_pursuitOnset(eyePos,eyeVel,stimOnset,jumpDuration,targSpeed,targDir,jumpType,plt)
+function [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(eyePos,eyeVel,stimOnset,crossingTime,targSpeed,targAngle,varargin)
 % OBJECTIVE:
 % determine time of pursuit onset 
 %
 % INPUTS:
-% eyeVel = radial eye velocity either in 1D array of within struct, with fieldname 'RHVel'
-% stimOnset = time of target motion onset
-% minRT = minimum reaction time (RT) 
-% maxRT = maximum reaction time (RT)
 %
 % OUTPUTS:
 % pursuitOnset = time in ms of pursuit onset 
 % rxnTime = pursuitOnset - stimOnset 
 
-csPre = 60;
-csPost = 210;
+p = inputParser;
+addRequired(p, 'eyePos', @isnumeric);
+addRequired(p, 'eyeVel', @isnumeric);
+addRequired(p, 'stimOnset', @isnumeric);
+addRequired(p, 'crossingTime', @isnumeric);
+addRequired(p, 'targSpeed', @isnumeric); 
+addParameter(p, 'CS_PREINT', 50, @isnumeric); 
+addParameter(p, 'CS_POSTINT', 100, @isnumeric); 
+addParameter(p, 'PLOT_TRACES', false, @islogical); 
+
+% Parse the inputs
+parse(p, eyePos, eyeVel, stimOnset, crossingTime, targSpeed, varargin{:});
+
+% Assign parsed values to variables
+eyePos = p.Results.eyePos;
+eyeVel = p.Results.eyeVel;
+stimOnset = p.Results.stimOnset;
+crossingTime = p.Results.crossingTime;
+targSpeed = p.Results.targSpeed;
+CS_PREINT = p.Results.CS_PREINT;
+CS_POSTINT = p.Results.CS_POSTINT;
+PLOT_TRACES = p.Results.PLOT_TRACES;
+
+%%%%%%%%%%%%%%% BOUNDARIES AND DEFINITIONS %%%%%%%%%%%%%%%%%
+csPre = crossingTime - CS_PREINT; % 60
+csPost = crossingTime + CS_POSTINT; % 210
+
+msAcc_thresh = 1000; % deg/s^2
+msVel_thresh = 10; % deg/s
+
+csAcc_thresh = 1000;
+csVel_thresh = targSpeed*2;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[~,radPos] = cart2pol(eyePos(1,:),eyePos(2,:));
+[~,radVel] = cart2pol(eyeVel(1,:),eyeVel(2,:));
 
 % Design a 2nd-order low-pass Butterworth filter
 [b, a] = butter(2, 20 / (1000 / 2), 'low');
 
 % Apply the filter to the data
-filtered_eyePos = filtfilt(b, a, eyePos);
-eyeVel2 = diff(filtered_eyePos) * 1000; % overly smoothed, used to find pursuit onset
+filtered_radPos = filtfilt(b, a, radPos);
+radVel2 = diff(filtered_radPos) * 1000; % overly smoothed, used to find pursuit onset
 
 % Compute the acceleration using the 10ms before and after difference
 window_size = round(10e-3 * 1000);  % Convert 10ms to number of samples
 
 % Initialize the acceleration array
-eyeAcc = NaN(1, length(eyeVel2));  % NaN for boundary points where no acceleration can be computed
+eyeAcc = NaN(1, length(radVel2));  % NaN for boundary points where no acceleration can be computed
 
 % Compute acceleration by dividing the velocity difference over 20ms
-for i = (window_size + 1):(length(eyeVel2) - window_size)
-    eyeAcc(i) = (eyeVel2(i + window_size) - eyeVel2(i - window_size)) / (20e-3);  % 20ms difference
+for i = (window_size + 1):(length(radVel2) - window_size)
+    eyeAcc(i) = (radVel2(i + window_size) - radVel2(i - window_size)) / (20e-3);  % 20ms difference
 end
 
+%%%%%%%%%%%%%% 1. DETECT PURSUIT ONSET %%%%%%%%%%%%%%
 % Calculate the standard deviation of the velocity during the fixation period
-fixation_velocity = eyeVel2(stimOnset - 50:stimOnset + 50);
+fixation_velocity = radVel2(stimOnset - 50:stimOnset + 50);
 fixation_velocity = fixation_velocity(abs(eyeAcc(stimOnset-50:stimOnset+50))<200);
 fixation_std = std(fixation_velocity);
 
@@ -42,90 +73,154 @@ fixation_std = std(fixation_velocity);
 velocity_threshold = 2 * fixation_std;
 
 % Search for the pursuit onset: first time velocity > 2 * std(fixation velocity)
-% and stays above 30% of target velocity for 5 consecutive frames (10 ms)
+% and stays above 30% of target velocity for 10 consecutive frames (10 ms)
 threshold_velocity = 0.3 * targSpeed;
 pursuit_onset = NaN;  % Initialize pursuit onset index as NaN
+rxnTime = NaN;
 
-for i = stimOnset+50:length(eyeVel2)-10
-    if eyeVel2(i) > velocity_threshold && all(eyeVel2(i:i+9) > threshold_velocity)
+for i = stimOnset+50:length(radVel2)-10
+    if radVel2(i) > velocity_threshold && all(radVel2(i:i+9) > threshold_velocity)
         pursuit_onset = i;
+        rxnTime = pursuit_onset - stimOnset;
         break;  % Exit the loop as soon as the condition is satisfied
     end
 end
 
-if (sum(abs(eyeAcc(stimOnset-25:stimOnset+csPre))>1000) + sum(abs(eyeVel(stimOnset-25:stimOnset+csPre))>10)) > 0
-    msFlag = 1;
-    rxnTime = NaN;
-    csFlag = NaN;
+%%%%%%%%%%%%%% 2. DETECT MICROSACCADE  %%%%%%%%%%%%%%
+if (sum(abs(eyeAcc(stimOnset-100:stimOnset+csPre))>msAcc_thresh) + sum(abs(radVel(stimOnset-100:stimOnset+csPre))>msVel_thresh)) > 0
+    msOffset = find(abs(eyeAcc(stimOnset-100:stimOnset+csPre))>msAcc_thresh | abs(radVel(stimOnset-100:stimOnset+csPre))>msVel_thresh == 1, 1, 'last')-100;
 else
-    msFlag = 0;
-    rxnTime = pursuit_onset - stimOnset;
-
-    if (sum(abs(eyeAcc(stimOnset+csPre:stimOnset+csPost))>1000) + sum(abs(eyeVel(stimOnset+csPre:stimOnset+csPost))>targSpeed*2)) > 0
-        csFlag = 1;
-    else
-        csFlag = 0;
-        if rxnTime > csPost
-            csFlag = 1;
-        end
-    end
+    msOffset = NaN;
 end
 
-if plt==1
+%%%%%%%%%%%%%% 3. DETECT CATCH-UP SACCADE %%%%%%%%%%%%%%
+
+if (sum(abs(eyeAcc(stimOnset+csPre:stimOnset+csPost))>csAcc_thresh) + sum(abs(radVel(stimOnset+csPre:stimOnset+csPost))>csVel_thresh)) > 0 || rxnTime > (csPost + crossingTime/2)
+    % Define binary signal (1 if above threshold, 0 if below)
+    binarySignal = ((abs(eyeAcc(stimOnset+csPre : stimOnset+csPost+500)) > csAcc_thresh) + ...
+                    (abs(radVel(stimOnset+csPre : stimOnset+csPost+500)) > csVel_thresh)) > 0;
+    
+    % Find where binarySignal is 1
+    oneIdx = find(binarySignal == 1);
+    
+    % Check for the first occurrence of at least 5 consecutive ones
+    csOnset = NaN; % Default in case no valid onset is found
+    for i = 1:length(oneIdx)-4
+        if all(binarySignal(oneIdx(i):oneIdx(i)+4) == 1) % Check next 5 frames
+            csOnset = oneIdx(i) + csPre + stimOnset; % Adjust to original indexing
+            break; % Stop at the first valid occurrence
+        end
+    end
+    
+    [csVelocity,csPeak] = max(radVel(csOnset:csOnset+200));
+    csPeak = csPeak + csOnset;
+
+    % Define binary condition (1 if above threshold, 0 if below)
+    binarySignal = ((abs(eyeAcc(csPeak:csPeak+200)) > csAcc_thresh) + ...
+                    (abs(radVel(csPeak:csPeak+200)) > csVel_thresh)) > 0;
+    
+    % Find where binarySignal is 0
+    zeroIdx = find(binarySignal == 0);
+    
+    % Check for the first occurrence of at least 5 consecutive zeros
+    csOffset = NaN;  % Default in case no valid offset is found
+    for i = 1:length(zeroIdx)-4
+        if all(binarySignal(zeroIdx(i):zeroIdx(i)+4) == 0) % Check next 5 frames
+            csOffset = zeroIdx(i) + csPeak; % Adjust to original indexing
+            break; % Stop at the first valid occurrence
+        end
+    end
+    csFlag = 1;
+
+    dx = eyePos(1,csPeak) - eyePos(1,csOnset);
+    dy = eyePos(2,csPeak) - eyePos(2,csOnset);
+    csAngle = mod(atan2d(dy,dx),360);
+
+    angle_diff = min(mod(csAngle - targAngle, 360), mod(targAngle - csAngle, 360));
+    if angle_diff<90
+        csType = 'forward';
+    else
+        csType = 'backward';
+    end
+else
+    csFlag = 0;
+    csOnset = NaN; csVelocity = NaN; csPeak = NaN; csOffset = NaN; csAngle = NaN; angle_diff = NaN; csType = 'pure';
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if PLOT_TRACES
     fig = figure;
-    fig.Position = [100 100 900 900];
+    fig.Position = [100 100 1300 900];
     tl = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'loose');
 
-    nexttile
+    x = -25:500;
 
-    x = -100:500;
-    plot(x,eyePos(stimOnset-100:stimOnset+500),'k-','linewidth',2);
+    nexttile  
+    plot(x,radPos(stimOnset-25:stimOnset+500),'k-','linewidth',2);
 
-
-    
     l(1) = xline(0,'k--','linewidth',2);
     hold on
-    l(2) = xline(jumpDuration,'k--','linewidth',2);
+    l(2) = xline(crossingTime,'k--','linewidth',2);
     if ~isnan(rxnTime)
         l(3) = xline(rxnTime,'b--','linewidth',2);
     else
         l(3) = xline(0, 'b--', 'linewidth', 2);
     end
 
-    %plot(x,eyePos(stimOnset-100:stimOnset+500),'k-','linewidth',2);
+    %plot(x,radPos(stimOnset-100:stimOnset+500),'k-','linewidth',2);
 
     yLimits = ylim; % Get current y-axis limits
     l(4) = fill([csPre csPost csPost csPre], [yLimits(1) yLimits(1) yLimits(2) yLimits(2)], [0.8 0.8 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.1);
 
+    if isequal(csType,'forward')
+        xline(csOnset-stimOnset,'g--','linewidth',2)
+        xline(csPeak-stimOnset,'g--','linewidth',2)
+        xline(csOffset-stimOnset,'g--','linewidth',2)
+    elseif isequal(csType,'backward')
+        xline(csOnset-stimOnset,'r--','linewidth',2)
+        xline(csPeak-stimOnset,'r--','linewidth',2)
+        xline(csOffset-stimOnset,'r--','linewidth',2)
+    end
     title(sprintf('RT = %d ms, csFlag = %d',rxnTime, csFlag))
-    subtitle(sprintf('Speed = %d deg/s, Direction = %d deg, Jump = %d',targSpeed,targDir,jumpType))
+    subtitle(sprintf('Speed = %d deg/s, Angle = %d deg',targSpeed,targAngle))
     ylabel('position')
-    
+    xlim([-25,500])
     legend(l,"step ramp onset", "step ramp offset", "pursuit onset", "detection window",'location','best')
     prettyFig;
 
     nexttile
     xline(0,'k--','linewidth',2)
     hold on
-    xline(jumpDuration,'k--','linewidth',2)
+    xline(crossingTime,'k--','linewidth',2)
     if ~isnan(rxnTime)
         xline(rxnTime,'b--','linewidth',2)
     end
+    if isequal(csType,'forward')
+        xline(csOnset-stimOnset,'g--','linewidth',2)
+        xline(csPeak-stimOnset,'g--','linewidth',2)
+        xline(csOffset-stimOnset,'g--','linewidth',2)
+    elseif isequal(csType,'backward')
+        xline(csOnset-stimOnset,'r--','linewidth',2)
+        xline(csPeak-stimOnset,'r--','linewidth',2)
+        xline(csOffset-stimOnset,'r--','linewidth',2)
+    end
     yline(targSpeed,'k-','linewidth',2)
-    plot(x,eyeVel2(stimOnset-100:stimOnset+500),'k-','linewidth',2)
+    plot(x,radVel2(stimOnset-25:stimOnset+500),'k-','linewidth',2)
     ylabel('velocity')
+    xlim([-25,500])
     prettyFig;
 
     nexttile
     xline(0,'k--','linewidth',2)
     hold on
-    xline(jumpDuration,'k--','linewidth',2)
+    xline(crossingTime,'k--','linewidth',2)
     if ~isnan(rxnTime)
         xline(rxnTime,'b--','linewidth',2)
     end
-    plot(x,eyeAcc(stimOnset-100:stimOnset+500),'k-','linewidth',2)
+    plot(x,eyeAcc(stimOnset-25:stimOnset+500),'k-','linewidth',2)
     xlabel('time aligned to target motion onset (ms)')
     ylabel('acceleration')
+    xlim([-25,500])
     prettyFig;
 end
 

@@ -1,4 +1,4 @@
-function [nev,out] = extract_nevout(NEVPATH,varargin)
+function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
 % Pulls nev and out files from raw recorded datafiles 
     %
     %%% Required inputs: %%%
@@ -32,6 +32,7 @@ function [nev,out] = extract_nevout(NEVPATH,varargin)
     defaultSpikeSort = false;
     defaultGamma = 0.2;
     defaultNetFolder = '../networks';
+    defaultReadLFP = true;
     
 
     % Create an input parser
@@ -40,6 +41,7 @@ function [nev,out] = extract_nevout(NEVPATH,varargin)
     addParameter(p, 'SPIKE_SORT', defaultSpikeSort, @islogical); % CORRECT_ONLY must be logical
     addParameter(p, 'GAMMA', defaultGamma, @(x) isnumeric(x) && x>0 && x<1); % GAMMA must be numeric and between 0 and 1
     addParameter(p, 'netFolder', defaultNetFolder, @(x) ischar(x)); % GAMMA must be numeric and between 0 and 1
+    addParameter(p, 'READ_LFP', defaultReadLFP, @islogical); % CORRECT_ONLY must be logical
 
     % Parse the inputs
     parse(p, NEVPATH, varargin{:});
@@ -49,13 +51,19 @@ function [nev,out] = extract_nevout(NEVPATH,varargin)
     SPIKE_SORT = p.Results.SPIKE_SORT;
     GAMMA = p.Results.GAMMA;
     netFolder = p.Results.netFolder;
+    READ_LFP = p.Results.READ_LFP;
 
     if contains(NEVPATH, '.')
         dotIndex = find(NEVPATH == '.', 1, 'last'); % Find the last dot in the string
         NEVPATH = NEVPATH(1:dotIndex-1); % Remove everything from the last dot onward
     end
 
-    out = read_nsx([NEVPATH '.ns5']);
+    out_ns5 = read_nsx([NEVPATH '.ns5']);
+    if READ_LFP
+        out_ns2 = read_nsx([NEVPATH '.ns2']);
+    else
+        out_ns2 = false;
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if SPIKE_SORT

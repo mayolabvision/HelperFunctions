@@ -14,7 +14,7 @@ function raster_sdf(sptimes, timewindow, sigma, varargin)
 % Set default values for optional parameters
 default_line_color = [0 0 255] ./ 255;
 default_sem_shade  = [178 178 255] ./ 255;
-default_rast_shade = [166 166 166] ./ 255;
+default_rast_shade = [10 10 10] ./ 255;
 
 % Parse varargin inputs
 p = inputParser;
@@ -26,7 +26,11 @@ line_color = p.Results.line_color;
 sem_shade  = p.Results.sem_shade;
 rast_shade = p.Results.rast_shade;
 
-% Raster Plot
+%% Raster Plot
+yyaxis right; 
+ax = gca;
+ax.YColor = 'k';
+
 for iTrial = 1:length(sptimes)
     spks = sptimes{iTrial};
     if size(spks,2)==1
@@ -40,7 +44,7 @@ for iTrial = 1:length(sptimes)
         yspikes(2, :) = iTrial;
     end
     
-    plot(xspikes, yspikes, 'Color', rast_shade, 'LineWidth', 3);
+    plot(xspikes, yspikes, '-', 'Color', rast_shade, 'LineWidth', 1);
     hold on;
 end
 
@@ -48,11 +52,11 @@ xline(0, 'k-', 'linewidth', 2);
 xlim(timewindow);
 ylim([0 length(sptimes)]);
 yticks([0 length(sptimes)]);
-ylabel('trials');
+ylabel('trials','Rotation',270);
 prettyFig;
 
 %% Spike Density Function
-yyaxis right;
+yyaxis left;
 ax = gca;
 ax.YColor = 'k';
 
@@ -81,7 +85,7 @@ fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha'
 hold on;
 plot(x, mn, '-', 'Color', line_color, 'LineWidth', 2);
 
-ylabel('firing rate (Hz)', 'Rotation', 270);
+ylabel('firing rate (Hz)');
 prettyFig;
 
 end

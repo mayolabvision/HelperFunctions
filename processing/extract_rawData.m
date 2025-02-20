@@ -1,4 +1,4 @@
-function raw_all = extract_rawData(nev1,out)
+function raw_all = extract_rawData(nev1,out,channels)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
 
@@ -25,7 +25,7 @@ function raw_all = extract_rawData(nev1,out)
         epochEnd = out.hdr.timeStamps(2,epoch); % samp
     
         nsStartTime = double(epochStart / Fs); % sec
-        nsEndTime = double(epochEnd / Fs) + 0.3; % sec
+        nsEndTime = double(epochEnd / Fs) + (Fs/100000); % sec
     
         epochDiff = epochEnd - epochStart;
         epochStart_samp = past_epochEnd + 1;
@@ -75,7 +75,7 @@ function raw_all = extract_rawData(nev1,out)
                 end
                 % this_trial = this_nev(trialstartinds(n):trialendinds(n),:);
 
-                rawData{n} = out.data(:,ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                rawData{n} = out.data(channels,ns5_rng(trialstarts_samp(n):trialends_samp(n)));
 
                 % spks = this_trial(ismember(this_trial(:,1), spk_channels),:);
                 % if spike_sort

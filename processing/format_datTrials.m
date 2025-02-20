@@ -1,16 +1,16 @@
-function dat_all = format_datTrials(nev1,out,eye_channel_labels)
+function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     % neuralType = 'spikes'; % 'raw', 'waveforms'
 
-    Fs = double(out.hdr.Fs);
-    nEpochs = size(out.hdr.timeStamps,2);
+    Fs = double(out_ns5.hdr.Fs);
+    nEpochs = size(out_ns5.hdr.timeStamps,2);
     
     starttrial = 1;
     endtrial = 255;
     
     % {Eye_HE, Eye_VE, DIODE, PUPIL}
-    eye_channels = find(ismember(out.hdr.label, eye_channel_labels));
+    eye_channels = find(ismember(out_ns5.hdr.label, eye_channel_labels));
     
     % determine if nev is an array of struct, if struct pull out nev
     if isequal(class(nev1),'struct')
@@ -29,8 +29,8 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
     block = 1;
     for epoch=1:nEpochs
         % pull out data for this epoch
-        epochStart = out.hdr.timeStamps(1,epoch); % samp
-        epochEnd = out.hdr.timeStamps(2,epoch); % samp
+        epochStart = out_ns5.hdr.timeStamps(1,epoch); % samp
+        epochEnd = out_ns5.hdr.timeStamps(2,epoch); % samp
     
         nsStartTime = double(epochStart / Fs); % sec
         nsEndTime = double(epochEnd / Fs) + 0.3; % sec
@@ -108,7 +108,13 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
                     dat(n).result = NaN;
                 end
     
-                dat(n).params.block = tempdata.params.trial;
+                blockParams = tempdata.params.trial;
+                if isfield(blockParams, 'reactionTime')
+                    blockParams.crossingTime = blockParams.reactionTime; % Copy the data
+                    blockParams = rmfield(blockParams, 'reactionTime'); % Remove the old field
+                end
+                                
+                dat(n).params.block = blockParams;
                 if n<length(trialstarts) && trialstartinds(n+1)- trialendinds(n)>1
                     bt = this_nev(trialendinds(n)+1:trialstartinds(n+1)-1,:);
                     btdig = bt(bt(:,1)==0,:);
@@ -119,13 +125,15 @@ function dat_all = format_datTrials(nev1,out,eye_channel_labels)
                     end
                 end
 
-                eyes = out.data(eye_channels([1,2,4]),ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                eyes = out_ns5.data(eye_channels([1,2,3,4]),ns5_rng(trialstarts_samp(n):trialends_samp(n)));
                 eyes_1khz = downsample(eyes',30)';
                 [eyedeg, ~] = eye2deg(eyes_1khz(1:2,:), dat(n).params);
    
                 dat(n).eyes = eyedeg;
-                dat(n).pupil = eyes_1khz(3,:);
+                dat(n).pupil = eyes_1khz(4,:);
+                dat(n).diode = eyes_1khz(3,:);
 
+                
                 spks = this_trial(ismember(this_trial(:,1), spk_channels),:);
                 spks_byChan = cell(1,size(spk_channels,1));
                 if spike_sort

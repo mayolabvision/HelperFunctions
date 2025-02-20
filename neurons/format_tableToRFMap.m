@@ -1,4 +1,4 @@
-function all_FRs = format_tableToRFMap(T,first_bin,bin_width,bin_step,nbins,GAMMA)
+function [all_FRs,bin_edges,xvals,yvals] = format_tableToRFMap(T,first_bin,bin_width,bin_step,nbins,GAMMA)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
