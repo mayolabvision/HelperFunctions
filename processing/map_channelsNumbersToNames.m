@@ -1,14 +1,13 @@
 function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeID,varargin)
     % dfds
     % kjlad
-    function depths = getChannelDepths(chan_order,distanceToTip,interElecSpacing,probeDepth)
-        depths = zeros(length(chan_order),1);
-        num_chans = length(chan_order)-sum(chan_order==0);
-        for c = 1:length(depths)
-            if chan_order(c)>0
-                depths(c) = ((probeDepth*1000 - interElecSpacing*(num_chans-chan_order(c)))-distanceToTip)./1000;
-            end
+    function [rel_depths,abs_depths] = getChannelDepths(chan_num,distanceToTip,interElecSpacing,probeDepth)
+        rel_depths = zeros(length(chan_num),1);
+        num_chans = length(chan_num);
+        for c = 1:num_chans
+            rel_depths(c) = (0 - interElecSpacing*((num_chans-c)) - distanceToTip)./1000;
         end
+        abs_depths = rel_depths + probeDepth;
     end
 
     % Default values for optional parameters
@@ -43,7 +42,7 @@ function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeI
     end
 
     mappings = readtable([mappingPath,'/',mapping_name,'.csv']);
-    mappings = sortrows(mappings, 'ripChan_num');
+    mappings = sortrows(mappings, 'chan_num');
     mappings.mapped_name = categorical(mappings.mapped_name);
     
     probes = readtable([mappingPath,'/','probe_configs.csv']);
@@ -52,9 +51,12 @@ function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeI
     for probe = 1:length(probeID)
         this_probe = probes(ismember(probes.probeID,probeID{probe}),:);
         probe_specs = [probe_specs; this_probe];
-        depths = getChannelDepths(mappings.depth_order,this_probe.distanceTipToFirstElectrode,this_probe.interElectrodeSpacing,probeDepths_mm{probe}); 
+        [rel_depths, abs_depths] = getChannelDepths(mappings.chan_num,this_probe.distanceTipToFirstElectrode,this_probe.interElectrodeSpacing,probeDepths_mm{probe}); 
     end
     probe_specs = table2struct(probe_specs);
-    mappings.depth_mm = depths;
+    probe_specs.numberUses = [];
+
+    mappings.relDepth_mm = rel_depths;
+    mappings.absDepth_mm = abs_depths;
 
 end

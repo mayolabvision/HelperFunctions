@@ -1,4 +1,4 @@
-function tbl = format_dataTable(nev,out_ns5,task_name,varargin)
+function tbl = format_dataTable(nev,out_ns5,neural_channels,task_name,varargin)
     % blah
     %
     %%% Required inputs: %%%
@@ -39,7 +39,7 @@ function tbl = format_dataTable(nev,out_ns5,task_name,varargin)
     LFP = p.Results.LFP;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    dat = format_datTrials(nev,out_ns5,EYE_CHAN_LABELS);
+    dat = format_datTrials(nev,out_ns5,EYE_CHAN_LABELS,neural_channels);
 
     tbl1 = struct2table(dat);
     tbl = table();
@@ -179,6 +179,10 @@ function tbl = format_dataTable(nev,out_ns5,task_name,varargin)
 
     if ismember('emptyCnd', tbl.Properties.VariableNames)
         tbl.emptyCnd = [];
+    end
+
+    if ismember('IGNORED', tbl.Properties.VariableNames)
+        tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
     end
 
 end

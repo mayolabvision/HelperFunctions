@@ -1,4 +1,4 @@
-function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels)
+function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels,neural_channels)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     % neuralType = 'spikes'; % 'raw', 'waveforms'
@@ -21,8 +21,6 @@ function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels)
         nev = nev1;
         spike_sort = false;
     end
-
-    spk_channels = sort(unique(nev(nev(:,1) ~= 0, 1)));
     
     dat_all = []; 
     past_epochEnd = 0;
@@ -134,16 +132,16 @@ function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels)
                 dat(n).diode = eyes_1khz(3,:);
 
                 
-                spks = this_trial(ismember(this_trial(:,1), spk_channels),:);
-                spks_byChan = cell(1,size(spk_channels,1));
+                spks = this_trial(ismember(this_trial(:,1), neural_channels),:);
+                spks_byChan = cell(1,size(neural_channels,1));
                 if spike_sort
-                    [netLabels_byChan,waveforms_byChan] = deal(cell(1,size(spk_channels,1)));
+                    [netLabels_byChan,waveforms_byChan] = deal(cell(1,size(neural_channels,1)));
                 end
                 for u = 1:length(spks_byChan)
-                    spks_byChan{u} = ((spks(ismember(spks(:, 1), spk_channels(u)), 3)') - trialstarts(n)).*1000;
+                    spks_byChan{u} = ((spks(ismember(spks(:, 1), neural_channels(u)), 3)') - trialstarts(n)).*1000;
                     if spike_sort
-                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 4)');
-                        waveforms_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 5:end)');
+                        netLabels_byChan{u} = (spks(ismember(spks(:, 1), neural_channels(u)), 4)');
+                        waveforms_byChan{u} = (spks(ismember(spks(:, 1), neural_channels(u)), 5:end)');
                     end
                 end
                 dat(n).spiketimes = spks_byChan;

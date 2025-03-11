@@ -20,5 +20,4 @@ function [this_sess,filename] = read_recordingNotes(NOTES_PATH,EXPERIMENTER,MONK
     
     this_sess = recordings(recordings.experimenter==EXPERIMENTER & recordings.monkey==MONKEY & recordings.session_depth==SESSION,:);
     filename = sprintf('%s_%s_%s',EXPERIMENTER,MONKEY,SESSION);
-
 end

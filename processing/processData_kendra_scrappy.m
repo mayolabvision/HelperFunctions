@@ -6,376 +6,138 @@ addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Paths 
-NET_PATH   =  '/Users/kendranoneman/Packages/nasnet/networks';
-DATA_PATH  =  '/Users/kendranoneman/OneDrive/DATA';
+RAW_PATH   =  '/Volumes/lab_NHPdata';
+OUT_PATH   =  '/Users/kendranoneman/OneDrive/DATA';
 CSV_PATH   =  '/Users/kendranoneman/OneDrive/DATA/RECORDING_INFO.csv';
+NET_PATH   =  '/Users/kendranoneman/Packages/nasnet/networks';
+
+SAVE_RAW = true;
 
 % Session details
-EXPERIMENTER  =  'emily';
-MONKEY        =  'walter';
-SESSION       =  '0342a';
+EXPERIMENTER  =  'kendra';
+MONKEY        =  'scrappy';
+SESSION       =  '0097a';
 
-% Spike thresholding
-GAMMA  =  0.2; 
-
-% PROCESSING CHOICES
-SAVE_RAW = false;
-SAVE_LFP = false;
-
-% RF Mapping
-INTERP_RF = false; 
-FIRST_BIN = 0; BIN_WIDTH = 50; BIN_STEP = 10; NBINS = 24;
-
-% Smooth Pursuit
-PURS_PREINT  =  25;
-PURS_POSTINT =  210;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Load in recording details and make output directory
 [this_sess,filename]  =  read_recordingNotes(CSV_PATH,EXPERIMENTER,MONKEY,SESSION);
+if ~exist(fullfile(OUT_PATH, filename), 'dir'), mkdir(fullfile(OUT_PATH, filename)); end
 
 taskTypes = {'rfmp','purs','mdir','fstm'};
 numTasks = [this_sess.rfmp_num this_sess.purs_num this_sess.mdir_num this_sess.fstm_num];
+
 tasks = [];
 for i=1:length(taskTypes)
     tasks = [tasks, arrayfun(@(x) sprintf('%s%d', taskTypes{i}, x), 1:numTasks(i), 'UniformOutput', false)];
 end
 
-output_path = fullfile(DATA_PATH, 'processed', filename);
-if ~exist(output_path, 'dir'), mkdir(output_path); end
-if ~exist(fullfile(output_path, 'figs'), 'dir'), mkdir(fullfile(output_path, 'figs')); end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Extracting raw data from nev/out datafiles 
-if ~exist(fullfile(output_path, sprintf('%s66.mat',filename)), 'file')
-    % Name/organize channels based on recording details
-    [mappings,probe_specs] = map_channelsNumbersToNames(this_sess.mapFile_name,this_sess.probeID{1},'probeDepths_mm',this_sess.recordDepth_mm{1});
+[mappings,probe_specs] = map_channelsNumbersToNames(this_sess.mapFile_name,this_sess.probeID{1},'probeDepths_mm',this_sess.recordDepth_mm{1});
+mappings.absDepth_mm = mappings.absDepth_mm - (8.3-this_sess.gtHeight_mm{1}{1});
 
-    tic
+tic
 
-    % Make structure to hold all data 
-    S1 = struct();
-    S1.recording_info = table2struct(this_sess);
-    S1.channels = mappings;        
+% Make structure to hold all data 
+S1 = struct();
+S1.recording_info = table2struct(this_sess);
+S1.channels = mappings;        
+
+start_times = cell(sum(numTasks),1);
+task_num = 1;
+for i = 1:length(taskTypes)
+    these_tasks = arrayfun(@(x) sprintf('%s%d', taskTypes{i}, x), 1:numTasks(i), 'UniformOutput', false);
+    for f = 1:length(these_tasks)
+        this_task = these_tasks{f};
+
+        fprintf('\n---- generating nev_out for %s ----\n', this_task);
     
-    for i = 1:length(taskTypes)
-        these_tasks = arrayfun(@(x) sprintf('%s%d', taskTypes{i}, x), 1:numTasks(i), 'UniformOutput', false);
-        for f = 1:length(these_tasks)
-            this_task = these_tasks{f};
+        nevname = sprintf('%s/%s_%s', RAW_PATH, filename, this_task);
 
-            % Step 1. Pull out data, spike sorting
-            fprintf('\n---- generating nev_out for %s ----\n', this_task);
-        
-            nevname = sprintf('%s/raw/%s_%s', DATA_PATH, filename, this_task);
-            [nev, out_ns5, out_ns2] = extract_nevout(nevname, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', SAVE_LFP);
-        
-            % Step 2. Extract raw data and waveforms
-            if SAVE_RAW
-                fprintf('\n---- extracting raw data for %s ----\n', this_task);
+        if exist(sprintf('%s/%s_%s.ns2', RAW_PATH, filename, this_task), 'file') == 2
+            [nev, out_ns5, out_ns2] = extract_nevout(nevname, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', true);
+            lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num);
 
-                raw_chans = find(ismember(out_ns5.hdr.label, string(mappings.ripChan_num)));
-                raw = extract_rawData(nev,out_ns5,raw_chans);
-                raw = cellfun(@(q) single(q), raw, 'uni', 0);
-                save(fullfile(output_path, sprintf('%s_rawData.mat',this_task)), 'raw', '-v7.3');
-                clear raw;
-            end
-
-            if SAVE_LFP
-                lfp_chans = find(ismember(out_ns2.hdr.label, string(mappings.ripChan_num)));
-                lfp = extract_rawData(nev,out_ns2,lfp_chans);
-            end
-
-            % Step 3. Generate and save data table to structure
-            fprintf('\n---- generating table for %s ----\n', this_task);
-            if SAVE_LFP
-                tbl = format_dataTable(nev, out_ns5, this_task, 'LFP', lfp);
-            else
-                tbl = format_dataTable(nev, out_ns5, this_task);
-            end
-
-            if ismember('IGNORED', tbl.Properties.VariableNames)
-                tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
-            end
-
-            % Convert structures to a cell array of string representations
-            all_params = {tbl.params.block}.';
-            structStrings = cellfun(@(x) jsonencode(x), all_params, 'UniformOutput', false);
-            [~, uniqueIdx] = unique(structStrings, 'stable');
-            unique_structs = all_params(uniqueIdx);
-            merged_struct = struct();
-            fieldNames = fieldnames(unique_structs{1});
-            for ii = 1:numel(fieldNames)
-                field = fieldNames{ii};
-                merged_struct.(field) = cellfun(@(s) s.(field), unique_structs, 'UniformOutput', false);
-                if all(cellfun(@isnumeric, merged_struct.(field)))
-                    merged_struct.(field) = cell2mat(merged_struct.(field));
-                end
-            end
-            % tbl.params = [];
-
-            S1.(this_task).hdr = out_ns5.hdr;
-            S1.(this_task).params = merged_struct;
-            S1.(this_task).data = tbl;
-            clear tbl;
+            tbl = format_dataTable(nev, out_ns5, mappings.ripChan_num, this_task, 'LFP', lfp);
+        else
+            [nev, out_ns5, ~] = extract_nevout(nevname, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', false);
+            tbl = format_dataTable(nev, out_ns5, mappings.ripChan_num, this_task);
         end
-    end
 
-    S = unify_taskTables(S1,taskTypes);
+        % Save out_ns5 to raw .bin
+        if ~contains(this_task,'fstm')
+            bin_path = fullfile(OUT_PATH,filename,[this_task,'.bin']);
+            if exist(bin_path, 'file') == 0
+                fprintf('\n---- writing to bin for %s ----\n', this_task);
+                this_ns5 = out_ns5.data(ismember(out_ns5.hdr.label, string(1:512)),:)';
+                this_ns5 = this_ns5(:,mappings.ripChan_num);
+                
+                fileID = fopen(bin_path, 'wb');
+                fwrite(fileID, this_ns5', 'int16');
+                fclose(fileID);
+            end
+        end
 
-    % Save the structure S to the specified file
-    save(fullfile(output_path, sprintf('%s.mat',filename)), 'S');
-    
-    tc = toc;
-    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-    fprintf(sprintf('Total elapsed time was %2.2f minutes',tc/60))
-    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+        % Convert structures to a cell array of string representations
+        all_params = {tbl.params.block}.';
+        structStrings = cellfun(@(x) jsonencode(x), all_params, 'UniformOutput', false);
+        [~, uniqueIdx] = unique(structStrings, 'stable');
+        unique_structs = all_params(uniqueIdx);
+        merged_struct = struct();
+        fieldNames = fieldnames(unique_structs{1});
+        for ii = 1:numel(fieldNames)
+            field = fieldNames{ii};
+            merged_struct.(field) = cellfun(@(s) s.(field), unique_structs, 'UniformOutput', false);
+            if all(cellfun(@isnumeric, merged_struct.(field)))
+                merged_struct.(field) = cell2mat(merged_struct.(field));
+            end
+        end
 
-else
-    fprintf('\n---- loading S for %s ----\n', filename);
-    load(fullfile(output_path, sprintf('%s.mat',filename)))
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PLOT PARAMETERS
+        S1.(this_task).hdr = out_ns5.hdr;
+        S1.(this_task).params = merged_struct;
+        S1.(this_task).data = tbl;
 
-num_channels  =  height(S.channels);
-good_chans    =  S.channels.ripChan_num(S.channels.depth_order>0);
-num_rfmp = this_sess.rfmp_num; num_purs = this_sess.purs_num; num_mdir = this_sess.mdir_num; num_fstm = this_sess.fstm_num;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% ------------------------------------------- 1. Overall Performance -------------------------------------------
-fig_path = fullfile(output_path, 'figs', 'session_trialOutcomes.png');
-
-main_taskTypes = taskTypes(cellfun(@(q) ~contains(q,'fstm'), taskTypes, 'uni', 1));
-main_tasks = tasks(cellfun(@(q) ~contains(q,'fstm'), tasks, 'uni', 1));
-results = cell(length(main_tasks),1);
-for task=1:length(main_tasks)
-    results{task} = S.(main_tasks{task}).data.result;
-end
-
-f1a = figure;
-f1a.Position = [100 100 500*length(main_tasks) 400];
-tl = tiledlayout(1,length(main_tasks));
-tl.TileSpacing = 'tight';
-tl.Padding = 'compact';
-
-set(gcf,'color','w')
-for ii = 1:length(main_tasks)
-    nexttile
-    pieChart_trialOutcomes(results{ii}, main_tasks{ii}, vertcat(results{:}));
-end
-title(tl,sprintf('%s',filename),'fontsize',18,'interpreter','none')
-print(f1a, fig_path, '-dpng', '-r300');
-
-%% ------------------------------------------- 2. RF Mapping -------------------------------------------
-fig_path = fullfile(output_path, 'figs', 'rfmp');
-if ~exist(fullfile(output_path, 'figs', 'rfmp'), 'dir'), mkdir(fullfile(output_path, 'figs', 'rfmp')); end
-rfmp_tasks = tasks(cellfun(@(q) contains(q,'rfmp'), tasks, 'uni', 1));
-
-
-all_FRs = cell(num_channels,num_rfmp);
-for batch = 1:num_rfmp
-    T = S.(rfmp_tasks{batch}).data;
-
-    [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T,FIRST_BIN,BIN_WIDTH,BIN_STEP,NBINS,GAMMA);
-    all_FRs(:,batch) = frs;
-end
-
-% RF Map plot for each unit
-for batch = 1:num_rfmp
-    for unit = 1:length(good_chans)
-        f2a = figure('Visible','off');
-        f2a.Position = [100 100 1800 900];
-
-        chan_name   =  S.channels.mapped_name{good_chans(unit)};
-        chan_depth  =  S.channels.depth_mm(good_chans(unit));
-        tl = heatMap_rfOverTime(all_FRs{good_chans(unit),batch},'BIN_EDGES',bin_edges, 'INTERP', INTERP_RF,...
-                               'X_VALS',pix2deg(xvals,S.rfmp1.params.screenDistance(1),S.rfmp1.params.pixPerCM(1)), ...
-                               'Y_VALS',pix2deg(yvals,S.rfmp1.params.screenDistance(1),S.rfmp1.params.pixPerCM(1)));
-        
-        title(tl,sprintf('%s_%s',filename,rfmp_tasks{batch}),'fontsize',20,'interpreter','none')
-        subtitle(tl,sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth),'fontsize',16,'interpreter','none')
-    
-        print(f2a, fullfile(fig_path, sprintf('%s-%s.png', rfmp_tasks{batch}, chan_name)), '-dpng', '-r200');
-        fprintf(sprintf('\n----Unit %.2d complete----',good_chans(unit)))
+        start_times{task_num} = datetime(out_ns5.hdr.timeOrigin);
+        task_num = task_num + 1;
     end
 end
-fprintf('\n----------------------\n')
 
-% TODO: Compare RF maps, Quantify how different they are 
+S2 = unify_taskTables(S1,taskTypes);
 
-%% ------------------------------------------- 3. Smooth Pursuit -------------------------------------------
-fig_path = fullfile(output_path, 'figs', 'purs');
-if ~exist(fullfile(output_path, 'figs', 'purs'), 'dir'), mkdir(fullfile(output_path, 'figs', 'purs')); end
+% Rearrange based on task order
+times = datetime([start_times{:}]);
+[~, idx] = sort(times);
+sorted_tasks = tasks(idx);
 
-purs_tasks = tasks(cellfun(@(q) contains(q,'purs'), tasks, 'uni', 1));
-
-T = [];
-for batch = 1:num_purs
-    T = [T; S.(purs_tasks{batch}).data];
+S = struct('recording_info', S2.recording_info, 'channels', S2.channels);
+for i = 1:numel(sorted_tasks)
+    S.(sorted_tasks{i}) = S2.(sorted_tasks{i});
 end
 
-% A. Checks for biases in percent correct across conditions
-f3a = figure; %('Visible','off');
-f3a.Position = [100 100 400*numel(unique(T.pursuitSpeed)) 500];
+% Save the structure S to the specified file
+save(fullfile(OUT_PATH,filename,[filename,'.mat']), 'S');
 
-tl = polarPlot_pursDistByCondition(T,'perCorrect');
-title(tl,sprintf('%s_purs',filename),'fontsize',20,'interpreter','none')
-subtitle(tl, {'% Correct'},'fontsize',14)
+% Concatenate .bin files
+full_bin_path = fullfile(OUT_PATH,filename,[filename,'.bin']);
+if exist(full_bin_path, 'file') == 0
+    fid_write = fopen(full_bin_path,'w');
+    binFiles = dir(fullfile(OUT_PATH, filename, '*.bin'));
+    binFiles = binFiles(~strcmp({binFiles.name}, [filename, '.bin']));
 
-print(f3a, fullfile(fig_path, 'perCorrByCond.png'), '-dpng', '-r300');
+    for j = 1:length(binFiles)
+        fprintf('\n---- concatenating %s to bin ----\n', this_task);
+        fid_read = fopen(fullfile(binFiles(j).folder,binFiles(j).name));
+        A = fread(fid_read, '*int16');
+        fwrite(fid_write, A, 'int16');
+        fclose(fid_read);
 
-% B. Percent pure pursuit trials across conditions
-f3b = figure; %('Visible','off');
-f3b.Position = [100 100 400*numel(unique(T.pursuitSpeed)) 500];
-
-tl = polarPlot_pursDistByCondition(T,'perPure');
-title(tl,sprintf('%s_purs',filename),'fontsize',20,'interpreter','none')
-subtitle(tl, {'';'% of Trials w/ Pure Pursuit Initiation'},'fontsize',14)
-
-print(f3b, fullfile(fig_path, 'perPureByCond.png'), '-dpng', '-r300');
-
-% C. Pursuit latencies across conditions
-f3c = figure; %('Visible','off');
-f3c.Position = [100 100 400*numel(unique(T.pursuitSpeed)) 500];
-
-tl = polarPlot_pursDistByCondition(T,'pursLatency');
-title(tl,sprintf('%s_purs',filename),'fontsize',20,'interpreter','none')
-subtitle(tl, {'';'Pursuit Latency (ms)'},'fontsize',14)
-
-print(f3c, fullfile(fig_path, 'latencyByCond.png'), '-dpng', '-r300');
-
-
-%% Plot "pure pursuit" eye traces, split by speeds/jumps
-rt = S.(purs_tasks{1}).params.reactionTime;
-
-% Pure pursuit only
-f3d = figure; %('Visible','off');
-f3d.Position = [100 100 1500 450*numel(unique(T.pursuitSpeed))];
-
-[tl,num_pure] = eyeTraces_pursSplitByConditions(T,rt,'PREINT',PURS_PREINT,'POSTINT',PURS_POSTINT,'PURE_ONLY',true);
-
-title(tl,sprintf('%s_purs',filename),'fontsize',20,'interpreter','none')
-subtitle(tl, sprintf('(# of total pure pursuit trials (w/ no MS) = %d, step-ramp duration = %d ms)',num_pure,rt))
-
-print(f3d, fullfile(fig_path, 'eyeTraces_pureTrials.png'), '-dpng', '-r300');
-
-% All trials 
-f3e = figure; %('Visible','off');
-f3e.Position = [100 100 1500 450*numel(unique(T.pursuitSpeed))];
-
-[tl,num_pure] = eyeTraces_pursSplitByConditions(T,rt,'PREINT',PURS_PREINT,'POSTINT',PURS_POSTINT,'PURE_ONLY',false);
-
-title(tl,sprintf('%s_purs',filename),'fontsize',20,'interpreter','none')
-subtitle(tl, sprintf('(# of pure pursuit trials = %d, step-ramp duration = %d ms)',num_pure,rt))
-
-print(f3e, fullfile(fig_path, 'eyeTraces_allTrials.png'), '-dpng', '-r300');
-
-%% Pursuit rasters
-fig_path = fullfile(output_path, 'figs', 'purs', 'rasters');
-if ~exist(fig_path, 'dir'), mkdir(fig_path); end
-
-jump = -1; csFlag = 0;
-
-pursuitSpeeds = sort(unique(T.pursuitSpeed));
-for unit = 1:length(good_chans)
-    chan_name   =  S.channels.mapped_name{good_chans(unit)};
-    chan_depth  =  S.channels.depth_mm(good_chans(unit));
-
-    for speed = 1:length(pursuitSpeeds)
-        f3f = figure('Visible','off');
-        f3f.Position = [100 100 1800 900];
-        
-        angles = sort(unique(T.angle))';
-        angle_order = [6,3,2,1,4,7,8,9];
-        y_lims = []; % Store y-axis limits
-        frs_perAng = cell(length(angles),1);
-        for ang = 1:length(angles)
-            these_trls = T(T.angle==angles(ang) & T.pursuitSpeed==pursuitSpeeds(speed) & T.jump==jump & T.csFlag==csFlag,:);
-        
-            sptimes = cellfun(@(q,z,r) q(z)-r, these_trls.spiketimes(:,good_chans(unit)), cellfun(@(q) q>GAMMA, these_trls.net_labels(:,good_chans(unit)), 'uni', 0), num2cell(these_trls.PURSUIT_TARG), 'uni', 0);
-        
-            subplot(3,3,angle_order(ang))
-        
-            line_color = [0,0,0]./255; sem_shade = [200,200,200]./255;
-            raster_sdf(sptimes', [-25, 500], 10, 'line_color', line_color, 'sem_shade', sem_shade)
-        
-            yyaxis left;
-            ax = gca;
-            y_lims = [y_lims; ax.YLim];
-        
-            frs_perAng{ang} = cellfun(@(q) (sum(q>=0 & q <500)*(1000/500)), sptimes, 'uni', 1);
-        
-        end
-        
-        % Pad each cell with NaNs to match maxLength
-        maxLength = max(cellfun(@numel, frs_perAng));
-        frs_perAng = cellfun(@(x) [x; nan(maxLength - numel(x), 1)]', frs_perAng, 'UniformOutput', false);
-        
-        stimrate = vertcat(frs_perAng{:})';
-        
-        % Generate randomized index of stimrate values, WITH REPLACEMENT
-        shuffles = 1000;
-        rhoPst = [];
-        
-        for sh=1:shuffles
-            randind=randi( (size(stimrate,1)*size(stimrate,2)), size(stimrate,1), size(stimrate,2) );
-            permutedStimrate = stimrate(randind);
-            rhoPst = [rhoPst; nanmean(permutedStimrate)];
-        end
-        
-        sorted_rhoPst=sort(rhoPst);
-        rhoLst = sorted_rhoPst(shuffles*.05,:); % 95% lower confidence interval
-        rhoUst = sorted_rhoPst(shuffles-(shuffles*.05),:); % 95% upper confidence interval
-        
-        % calculate tuning preferences
-        %theta = 0:360/length(a.CND):360; theta(end)=[];
-        theta = 0:45:315;
-        [visds, visdp] = tuningbias(theta,nanmean(stimrate));
-        
-        subplot(3,3,5)
-        rho = nanmean(stimrate);
-        dst = sprintf('%0.2f',visds);
-        dpt = sprintf('%0.2f',visdp);
-        polarplot(deg2rad([theta 0]),[rho rho(1)],'ko-',...
-            'markerfacecolor','k','linewidth',3)
-        hold on
-        polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'go--','LineWidth',2);
-        polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'go--','LineWidth',2);   
-        
-        h1=polarplot(deg2rad(visdp),max(rho),'k^'); % Plot black triangle at best dir
-        txd1 = get(h1,'ThetaData');
-        tyd1 = get(h1,'RData');
-        set(h1,'ThetaData',txd1(1),'RData',tyd1(1));
-        set(h1,'markersize',10,'markerfacecolor','k'); hold off;
-        title(['VisDir: ',dpt,', Sel: ',dst]);
-        prettyFig
-        
-        
-        % Find the global y-axis limits
-        global_y_lim = [min(y_lims(:,1)), max(y_lims(:,2))];
-        
-        % Apply the limits to all subplots
-        for ang = 1:max(angle_order)
-            subplot(3,3,ang)
-            if ang ~= 5
-                yyaxis left;
-                ylim(global_y_lim);
-            end
-        end
-        
-        han=axes(f3f,'visible','off'); 
-        han.Title.Visible='on';
-        han.XLabel.Visible='on';
-        xlabel(han,{'';'time aligned to target motion onset (ms)'},'fontsize',16);
-        title(han,{sprintf('%s_purs',filename); sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth); sprintf('Pure Pursuit Trials (Speed = %d deg/s, Jump = %d)', pursuitSpeeds(speed), jump)},'fontsize',18,'interpreter','none')
-    
-        print(f3f, fullfile(fig_path, sprintf('%s-purePursuit-s%.2d.png', chan_name, pursuitSpeeds(speed))), '-dpng', '-r200');
-        fprintf(sprintf('\n----Unit %.2d complete----',good_chans(unit)))
-    
+        % Delete individual .bin file after it is written
+        delete(fullfile(binFiles(j).folder, binFiles(j).name));
     end
+    fclose(fid_write);
 end
-fprintf('\n----------------------\n')
 
-
+tc = toc;
+fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+fprintf(sprintf('Total elapsed time was %2.2f minutes',tc/60))
+fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
 

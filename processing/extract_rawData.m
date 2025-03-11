@@ -7,6 +7,8 @@ function raw_all = extract_rawData(nev1,out,channels)
     
     starttrial = 1;
     endtrial = 255;
+
+    neural_inds = find(ismember(out.hdr.label,string(1:500)));
     
     % determine if nev is an array of struct, if struct pull out nev
     if isequal(class(nev1),'struct')
@@ -14,8 +16,6 @@ function raw_all = extract_rawData(nev1,out,channels)
     else
         nev = nev1;
     end
-
-    % spk_channels = sort(unique(nev(nev(:,1) ~= 0, 1)));
     
     raw_all = []; %waves_all = [];
     past_epochEnd = 0;
@@ -33,7 +33,6 @@ function raw_all = extract_rawData(nev1,out,channels)
     
         this_nev = nev(nev(:,3)>=nsStartTime & nev(:,3)<=nsEndTime,:);
         ns5_rng = epochStart_samp:epochEnd_samp;
-        % this_ns5 = out.data(:,epochStart_samp:epochEnd_samp);
 
         diginnevind = find(this_nev(:,1)==0);
         digcodes = this_nev(diginnevind,:);
@@ -47,8 +46,6 @@ function raw_all = extract_rawData(nev1,out,channels)
         trialends = this_nev(trialendinds,3);
     
         [trialstarts, trialends,~,~] = detectMissingStartEndCode(trialstarts,trialends);
-        % trialstartinds = trialstartinds(trialstartgood);
-        % trialendinds = trialendinds(trialendgood);
     
         if length(trialstarts)~=length(trialends) || sum((trialends-trialstarts)<0)
             % fix it
@@ -73,28 +70,15 @@ function raw_all = extract_rawData(nev1,out,channels)
                 if mod(n,100) == 0
                     fprintf('Processed nev for %i trials of %i...\n',n,length(trialstarts));
                 end
-                % this_trial = this_nev(trialstartinds(n):trialendinds(n),:);
 
-                rawData{n} = out.data(channels,ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                neural_data = out.data(neural_inds,ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                rawData{n} = neural_data(channels,:);
 
-                % spks = this_trial(ismember(this_trial(:,1), spk_channels),:);
-                % if spike_sort
-                %     waveforms_byChan = cell(1,size(spk_channels,1));
-                % end
-                % for u = 1:length(spk_channels)
-                %     if spike_sort
-                %         waveforms_byChan{u} = (spks(ismember(spks(:, 1), spk_channels(u)), 5:end)');
-                %     end
-                % end
-                % if spike_sort
-                %     waves{n} = waveforms_byChan;
-                % end
-    
             end
         end
     
         % Concatenate the new structure to the array
         raw_all = [raw_all; rawData];
-        % waves_all = [waves_all; waves];
+
     end
 end

@@ -112,35 +112,40 @@ if (sum(abs(eyeAcc(stimOnset+csPre:stimOnset+csPost))>csAcc_thresh) + sum(abs(ra
         end
     end
     
-    [csVelocity,csPeak] = max(radVel(csOnset:csOnset+200));
-    csPeak = csPeak + csOnset;
-
-    % Define binary condition (1 if above threshold, 0 if below)
-    binarySignal = ((abs(eyeAcc(csPeak:csPeak+200)) > csAcc_thresh) + ...
-                    (abs(radVel(csPeak:csPeak+200)) > csVel_thresh)) > 0;
+    if ~isnan(csOnset)
+        [csVelocity,csPeak] = max(radVel(csOnset:csOnset+200));
+        csPeak = csPeak + csOnset;
     
-    % Find where binarySignal is 0
-    zeroIdx = find(binarySignal == 0);
-    
-    % Check for the first occurrence of at least 5 consecutive zeros
-    csOffset = NaN;  % Default in case no valid offset is found
-    for i = 1:length(zeroIdx)-4
-        if all(binarySignal(zeroIdx(i):zeroIdx(i)+4) == 0) % Check next 5 frames
-            csOffset = zeroIdx(i) + csPeak; % Adjust to original indexing
-            break; % Stop at the first valid occurrence
+        % Define binary condition (1 if above threshold, 0 if below)
+        binarySignal = ((abs(eyeAcc(csPeak:csPeak+200)) > csAcc_thresh) + ...
+                        (abs(radVel(csPeak:csPeak+200)) > csVel_thresh)) > 0;
+        
+        % Find where binarySignal is 0
+        zeroIdx = find(binarySignal == 0);
+        
+        % Check for the first occurrence of at least 5 consecutive zeros
+        csOffset = NaN;  % Default in case no valid offset is found
+        for i = 1:length(zeroIdx)-4
+            if all(binarySignal(zeroIdx(i):zeroIdx(i)+4) == 0) % Check next 5 frames
+                csOffset = zeroIdx(i) + csPeak; % Adjust to original indexing
+                break; % Stop at the first valid occurrence
+            end
         end
-    end
-    csFlag = 1;
-
-    dx = eyePos(1,csPeak) - eyePos(1,csOnset);
-    dy = eyePos(2,csPeak) - eyePos(2,csOnset);
-    csAngle = mod(atan2d(dy,dx),360);
-
-    angle_diff = min(mod(csAngle - targAngle, 360), mod(targAngle - csAngle, 360));
-    if angle_diff<90
-        csType = 'forward';
+        csFlag = 1;
+    
+        dx = eyePos(1,csPeak) - eyePos(1,csOnset);
+        dy = eyePos(2,csPeak) - eyePos(2,csOnset);
+        csAngle = mod(atan2d(dy,dx),360);
+    
+        angle_diff = min(mod(csAngle - targAngle, 360), mod(targAngle - csAngle, 360));
+        if angle_diff<90
+            csType = 'forward';
+        else
+            csType = 'backward';
+        end
     else
-        csType = 'backward';
+        csFlag = 0;
+        csOnset = NaN; csVelocity = NaN; csPeak = NaN; csOffset = NaN; csAngle = NaN; angle_diff = NaN; csType = 'pure';
     end
 else
     csFlag = 0;

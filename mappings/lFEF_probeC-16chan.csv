@@ -1,4 +1,4 @@
-ripChan_num,depth_order,mapped_name
+ripChan_num,chan_num,mapped_name
 257,1,lFEF_probeC_chan0001_ripChan0257
 259,2,lFEF_probeC_chan0002_ripChan0258
 261,3,lFEF_probeC_chan0003_ripChan0261
@@ -15,19 +15,3 @@ ripChan_num,depth_order,mapped_name
 283,14,lFEF_probeC_chan0014_ripChan0283
 285,15,lFEF_probeC_chan0015_ripChan0285
 287,16,lFEF_probeC_chan0016_ripChan0287
-258,0,lFEF_probeC_chan0000_ripChan0258
-260,0,lFEF_probeC_chan0000_ripChan0260
-262,0,lFEF_probeC_chan0000_ripChan0262
-264,0,lFEF_probeC_chan0000_ripChan0264
-266,0,lFEF_probeA_chan0000_ripChan0266
-268,0,lFEF_probeA_chan0000_ripChan0268
-270,0,lFEF_probeA_chan0000_ripChan0270
-272,0,lFEF_probeA_chan0000_ripChan0272
-274,0,lFEF_probeA_chan0000_ripChan0274
-276,0,lFEF_probeA_chan0000_ripChan0276
-278,0,lFEF_probeA_chan0000_ripChan0278
-280,0,lFEF_probeA_chan0000_ripChan0280
-282,0,lFEF_probeA_chan0000_ripChan0282
-284,0,lFEF_probeA_chan0000_ripChan0284
-286,0,lFEF_probeA_chan0000_ripChan0286
-288,0,lFEF_probeA_chan0000_ripChan0288
