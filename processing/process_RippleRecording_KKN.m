@@ -10,7 +10,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     
     defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
     defaultOUT_PATH  =  '/Users/kendranoneman/OneDrive/DATA';
-    defaultCSV_PATH  =  '/Users/kendranoneman/OneDrive/DATA/RECORDING_INFO.csv';
+    defaultCSV_PATH  =  '/Volumes/home/RECORDING_INFO.csv';
     defaultNET_PATH  =  '/Users/kendranoneman/Packages/nasnet/networks';
     
     p = inputParser;
@@ -48,9 +48,12 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
     filePattern = fullfile(RAW_PATH, [filename, '*.ns5']);
     raw_files = dir(filePattern);
-    [~, idx] = sort([raw_files.datenum]); 
-    sorted_files = raw_files(idx);
-    nevnames = cellfun(@(x) x(1:end-4), {sorted_files.name}, 'uni', 0);
+    raw_filenames = {raw_files.name}.';
+    nevnames = cellfun(@(q) q(1:end-4), raw_filenames, 'uni', 0);
+
+    recording_times = cellfun(@(l) l.hdr.timeOrigin, cellfun(@(q) read_nsx(fullfile(RAW_PATH,q),'readdata',false), raw_filenames, 'uni', 0), 'uni', 0);
+    [~,idx] = sort(recording_times);
+    nevnames = nevnames(idx);
 
     tasks = cellfun(@(q) q{4}, cellfun(@(x) split(x, '_'), nevnames, 'uni', 0), 'uni', 0);
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
