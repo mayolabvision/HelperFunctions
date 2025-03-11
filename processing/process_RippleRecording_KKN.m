@@ -4,6 +4,9 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     % monkey        =  'scrappy';
     % session       =  '0097a';
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Default paths to add to the MATLAB path
+    defaultPath1 = '/Users/kendranoneman/Packages';
+    defaultPath2 = '/Users/kendranoneman/Projects/mayo/helperfunctions';
     
     defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
     defaultOUT_PATH  =  '/Users/kendranoneman/OneDrive/DATA';
@@ -19,6 +22,8 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     addParameter(p, 'OUT_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'CSV_PATH', defaultCSV_PATH, @ischar); 
     addParameter(p, 'NET_PATH', defaultNET_PATH, @ischar); 
+    addParameter(p, 'PATH1', defaultPath1, @ischar);
+    addParameter(p, 'PATH2', defaultPath2, @ischar);
     
     % Parse inputs
     parse(p, experimenter, monkey, session, varargin{:});
@@ -30,6 +35,11 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     OUT_PATH = p.Results.OUT_PATH;
     CSV_PATH = p.Results.CSV_PATH;
     NET_PATH   = p.Results.NET_PATH;
+    PATH1 = p.Results.PATH1;
+    PATH2 = p.Results.PATH2;
+
+    addpath(genpath(PATH1));
+    addpath(genpath(PATH2));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     [this_sess,filename]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
