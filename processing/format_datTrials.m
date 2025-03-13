@@ -83,7 +83,7 @@ function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels,neural_chann
                 'params', struct(), ...
                 'eyes', [], ...
                 'pupil', [], ...
-                'ns5_30kHz', []), length(trialstarts), 1);
+                'diode', []), length(trialstarts), 1);
 
             %% Make Struct
             for n = 1:length(trialstarts)
@@ -130,7 +130,6 @@ function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels,neural_chann
                 dat(n).eyes = eyedeg;
                 dat(n).pupil = eyes_1khz(4,:);
                 dat(n).diode = eyes_1khz(3,:);
-
                 
                 spks = this_trial(ismember(this_trial(:,1), neural_channels),:);
                 spks_byChan = cell(1,size(neural_channels,1));
@@ -154,7 +153,7 @@ function dat_all = format_datTrials(nev1,out_ns5,eye_channel_labels,neural_chann
         end
     
         % Concatenate the new structure to the array
-        dat_all = [dat_all, dat];
+        dat_all = [dat_all; dat];
 
     end
 end

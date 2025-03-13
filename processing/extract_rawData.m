@@ -21,8 +21,8 @@ function raw_all = extract_rawData(nev1,out,channels)
     past_epochEnd = 0;
     for epoch=1:nEpochs
         % pull out data for this epoch
-        epochStart = out.hdr.timeStamps(1,epoch); % samp
-        epochEnd = out.hdr.timeStamps(2,epoch); % samp
+        epochStart = (out.hdr.timeStamps(1,epoch))./(30000/Fs); % samp
+        epochEnd = (out.hdr.timeStamps(2,epoch))./(30000/Fs); % samp
     
         nsStartTime = double(epochStart / Fs); % sec
         nsEndTime = double(epochEnd / Fs) + (Fs/100000); % sec
