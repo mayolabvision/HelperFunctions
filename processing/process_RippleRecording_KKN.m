@@ -90,7 +90,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     
         if exist([nevpath,'.ns2'], 'file') == 2
             [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', true);
-            lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num);
+            lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num); 
 
             tbl = format_dataTable(nev, out_ns5, mappings.ripChan_num, this_task, 'LFP', lfp);
         else
