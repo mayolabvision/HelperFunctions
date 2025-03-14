@@ -4,26 +4,23 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     % monkey        =  'scrappy';
     % session       =  '0097a';
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Default paths to add to the MATLAB path
-    defaultPath1 = '/Users/kendranoneman/Packages';
-    defaultPath2 = '/Users/kendranoneman/Projects/mayo/helperfunctions';
-    
+    % Default paths to add to the MATLAB path    
     defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
     defaultOUT_PATH  =  '/Users/kendranoneman/OneDrive/DATA';
     defaultCSV_PATH  =  '/Volumes/home/RECORDING_INFO.csv';
-    defaultNET_PATH  =  '/Users/kendranoneman/Packages/nasnet/networks';
+    defaultNET_PATH  =  '/Users/kendranoneman/Packages/nasnet';
+    defaultNEV_PATH  =  '/Users/kendranoneman/Packages/nevutils';
     
     p = inputParser;
     addRequired(p, 'experimenter', @ischar);
     addRequired(p, 'monkey', @ischar);
     addRequired(p, 'session', @ischar);
     addParameter(p, 'SAVE_RAW', true, @islogical); 
-    addParameter(p, 'RAW_PATH', defaultRAW_PATH, @ischar); 
-    addParameter(p, 'OUT_PATH', defaultOUT_PATH, @ischar); 
-    addParameter(p, 'CSV_PATH', defaultCSV_PATH, @ischar); 
-    addParameter(p, 'NET_PATH', defaultNET_PATH, @ischar); 
-    addParameter(p, 'PATH1', defaultPath1, @ischar);
-    addParameter(p, 'PATH2', defaultPath2, @ischar);
+    addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
+    addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
+    addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
+    addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar);
+    addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
     
     % Parse inputs
     parse(p, experimenter, monkey, session, varargin{:});
@@ -31,15 +28,19 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     monkey = p.Results.monkey;
     session = p.Results.session;
     SAVE_RAW = p.Results.SAVE_RAW;
-    RAW_PATH = p.Results.RAW_PATH;
-    OUT_PATH = p.Results.OUT_PATH;
-    CSV_PATH = p.Results.CSV_PATH;
-    NET_PATH   = p.Results.NET_PATH;
-    PATH1 = p.Results.PATH1;
-    PATH2 = p.Results.PATH2;
+    RAW_PATH = p.Results.RAW_DATA_PATH;
+    OUT_PATH = p.Results.OUT_DATA_PATH;
+    CSV_PATH = p.Results.RECD_CSV_PATH;
+    NET_PATH = p.Results.NASNET_PATH;
+    NEV_PATH = p.Results.NEVUTIL_PATH;
 
-    addpath(genpath(PATH1));
-    addpath(genpath(PATH2));
+    addpath(genpath(NET_PATH));
+    addpath(genpath(NEV_PATH));
+
+    % Get the directory of the current script or function
+    currentDir = fileparts(mfilename('fullpath'));
+    parentDirOneLevelUp = fileparts(currentDir);
+    addpath(genpath(parentDirOneLevelUp));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     [this_sess,filename]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
@@ -62,7 +63,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     
     %% Extracting raw data from nev/out datafiles 
     [mappings,probe_specs] = map_channelsNumbersToNames(this_sess.mapFile_name,this_sess.probeID{1},'probeDepths_mm',this_sess.recordDepth_mm{1});
-    %mappings.absDepth_mm = mappings.absDepth_mm - (8.3-this_sess.gtHeight_mm{1}{1});
+    mappings.absDepth_mm = mappings.absDepth_mm - (8.3-this_sess.gtHeight_mm{1}{1});
     
     tic
     
@@ -89,13 +90,13 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
         nevpath = sprintf('%s/%s', RAW_PATH, nevname);
     
         if exist([nevpath,'.ns2'], 'file') == 2
-            [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', true);
+            [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', true);
             lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num); 
 
-            tbl = format_dataTable(nev, out_ns5, mappings.ripChan_num, this_task, 'LFP', lfp);
+            tbl = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task, 'LFP', lfp);
         else
-            [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', NET_PATH, 'READ_LFP', false);
-            tbl = format_dataTable(nev, out_ns5, mappings.ripChan_num, this_task);
+            [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', false);
+            tbl = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task);
         end
 
         % Save out_ns5 to raw .bin

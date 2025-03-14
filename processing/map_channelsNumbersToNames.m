@@ -54,7 +54,7 @@ function [mappings,probe_specs] = map_channelsNumbersToNames(mapping_name,probeI
         [rel_depths, abs_depths] = getChannelDepths(mappings.chan_num,this_probe.distanceTipToFirstElectrode,this_probe.interElectrodeSpacing,probeDepths_mm{probe}); 
     end
     probe_specs = table2struct(probe_specs);
-    probe_specs.numberUses = [];
+    % probe_specs.numberUses = [];
 
     mappings.relDepth_mm = rel_depths;
     mappings.absDepth_mm = abs_depths;

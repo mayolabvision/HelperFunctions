@@ -14,6 +14,8 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     %   netFolder   -  string of the folder where the network is stored; can be
     %                  an absolute or relative path. DEFAULT: '../networks'
     %                  (e.g., '/Users/kendranoneman/Packages/nasnet/networks')
+    %   READ_LFP    -  True/False for reading lfp data 
+    %                  (Default: False)
     
     %%% Outputs: %%%
     %   nev  -  3-column array containing all spikes and trial codes
@@ -29,19 +31,16 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Default values for optional parameters
-    defaultSpikeSort = false;
     defaultGamma = 0.2;
     defaultNetFolder = '../networks';
-    defaultReadLFP = true;
-    
 
     % Create an input parser
     p = inputParser;
     addRequired(p, 'NEVPATH', @ischar); % PATH must be a string
-    addParameter(p, 'SPIKE_SORT', defaultSpikeSort, @islogical); % CORRECT_ONLY must be logical
+    addParameter(p, 'SPIKE_SORT', false, @islogical); % CORRECT_ONLY must be logical
     addParameter(p, 'GAMMA', defaultGamma, @(x) isnumeric(x) && x>0 && x<1); % GAMMA must be numeric and between 0 and 1
     addParameter(p, 'netFolder', defaultNetFolder, @(x) ischar(x)); % GAMMA must be numeric and between 0 and 1
-    addParameter(p, 'READ_LFP', defaultReadLFP, @islogical); % CORRECT_ONLY must be logical
+    addParameter(p, 'READ_LFP', false, @islogical); % CORRECT_ONLY must be logical
 
     % Parse the inputs
     parse(p, NEVPATH, varargin{:});

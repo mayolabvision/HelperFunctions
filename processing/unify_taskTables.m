@@ -1,4 +1,24 @@
 function S_new = unify_taskTables(S, tasknames)
+    % This function unifies task-specific tables within a structure by ensuring 
+    % that all tables related to the same task have the same set of columns. 
+    % It takes a structure S containing multiple fields, each holding task data 
+    % in the form of tables, and a cell array of tasknames. For each task, it 
+    % finds all tables associated with that task, identifies the union of all 
+    % column names across those tables, and ensures that each table contains 
+    % all the columns, filling missing ones with NaN values. The function returns 
+    % a new structure, S_new, with updated tables where all task-related tables 
+    % have consistent columns.
+
+    % INPUTS:
+    % S - A structure containing fields, each corresponding to a task with 
+    %     table data.
+    % tasknames - A cell array of task names, where each task name corresponds 
+    %             to a set of related fields in the structure S.
+
+    % OUTPUTS:
+    % S_new - A new structure with updated tables where each task's related 
+    %         tables have the same columns.
+
     % Create a new struct to store the updated version of S
     S_new = S;
 
