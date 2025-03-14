@@ -48,6 +48,7 @@ function tbl = format_dataTable(nev,out_ns5,varargin)
     addRequired(p, 'nev', @(x) (isnumeric(x) && size(x, 2) == 3) || isstruct(x));
     addRequired(p, 'out_ns5', @isstruct);
     addParameter(p, 'NEURAL_CHANNELS', [], @isnumeric);
+    addParameter(p, 'EXTRACT_EYE_DATA', true, @islogical)
     addParameter(p, 'EYE_CHAN_LABELS', defaultEyeChanLabels, (@(x) iscell(x) && length(x)==4)); % channel labels
     addParameter(p, 'CONVERT_TO_TABLE', false, @islogical);
     addParameter(p, 'TASK_NAME', [], @ischar)
@@ -60,10 +61,15 @@ function tbl = format_dataTable(nev,out_ns5,varargin)
     nev = p.Results.nev;
     out_ns5 = p.Results.out_ns5;
     NEURAL_CHANNELS = p.Results.NEURAL_CHANNELS;
+    EXTRACT_EYE_DATA = p.Results.EXTRACT_EYE_DATA;
     EYE_CHAN_LABELS = p.Results.EYE_CHAN_LABELS;
     CONVERT_TO_TABLE = p.Results.CONVERT_TO_TABLE;
     TASK_NAME = p.Results.TASK_NAME;
     LFP = p.Results.LFP;
+
+    if ~EXTRACT_EYE_DATA
+        EYE_CHAN_LABELS = [];
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
