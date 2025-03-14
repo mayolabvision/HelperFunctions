@@ -12,7 +12,7 @@
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:09:59
 
-echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
+echo "Job started at $(date)"
 
 module purge
 module load matlab/R2023a
@@ -21,11 +21,9 @@ module load matlab/R2023a
 RAW_PATH='/ix1/pmayo/lab_NHPdata'
 OUT_PATH='/ix1/pmayo/OneDrive/DATA'
 CSV_PATH='/ix1/pmayo/lab_NHPdata/RECORDING_INFO.csv'
-NET_PATH='/ihome/pmayo/knoneman/Packages/nasnet/networks'
+NET_PATH='/ihome/pmayo/knoneman/Packages/nasnet'
+NEV_PATH='/ihome/pmayo/knoneman/Packages/nevutils'
 
-PATH1='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-PATH2='/ihome/pmayo/knoneman/Packages'
-
-matlab -nodisplay -r "try, process_RippleRecording_KKN('$1', '$2', '$3', 'RAW_PATH', '$RAW_PATH', 'OUT_PATH', '$OUT_PATH', 'CSV_PATH', '$CSV_PATH', 'NET_PATH', '$NET_PATH', 'PATH1', '$PATH1', 'PATH2', '$PATH2'); catch, exit(1); end; exit;"
+matlab -nodisplay -r "try, process_RippleRecording_KKN('$1', '$2', '$3', 'RAW_DATA_PATH', '$RAW_PATH', 'OUT_DATA_PATH', '$OUT_PATH', 'RECD_CSV_PATH', '$CSV_PATH', 'NASNET_PATH', '$NET_PATH', 'NEVUTIL_PATH', '$NEV_PATH'); catch, exit(1); end; exit;"
 
 echo "DONE"
