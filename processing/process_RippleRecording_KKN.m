@@ -102,13 +102,13 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
         % Save out_ns5 to raw .bin
         if SAVE_RAW
             if ~contains(this_task,'fstm')
-                this_ns5 = out_ns5.data(ismember(out_ns5.hdr.label, string(1:512)),:)';
+                this_ns5 = out_ns5.data(ismember(out_ns5.hdr.label, string(1:512)),:);
                 if ~isempty(this_ns5)
                     fprintf('\n---- writing to bin for %s ----\n', this_task);
 
-                    this_ns5 = this_ns5(:,mappings.ripChan_num);
+                    this_ns5 = this_ns5(mappings.ripChan_num,:);
                     fid_write = fopen(full_bin_path, 'a'); % Open file in append mode ('a')
-                    fwrite(fid_write, this_ns5', 'int16');
+                    fwrite(fid_write, this_ns5, 'int16');
 
                     fclose(fid_write);  
                 else
