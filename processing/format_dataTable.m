@@ -320,7 +320,7 @@ function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
         end
 
         if ismember('STIM8_ON', tbl.Properties.VariableNames)
-            tbl.emptyCnd = [];
+            tbl.STIM8_ON = [];
         end
     
         if ismember('IGNORED', tbl.Properties.VariableNames)
