@@ -1,4 +1,4 @@
-function dat_all = format_datTrials(nev1, out_ns5, eye_channel_labels, neural_channels)
+function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels, neural_channels)
     % format_datTrials - Processes neural and behavioral data for multiple trials, 
     % extracts eye and spike data, and formats the information into a structured array.
     %
@@ -178,6 +178,8 @@ function dat_all = format_datTrials(nev1, out_ns5, eye_channel_labels, neural_ch
                         block = block + 1; % Move to the next block
                     end
                 end
+
+                dat(n).ns5_samps = ns5_rng([trialstarts_samp(n),trialends_samp(n)]);
 
                 % Extract and process eye data
                 if ~isempty(eye_channel_labels)

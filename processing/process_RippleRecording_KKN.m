@@ -81,6 +81,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
         end
     end
 
+    lastFileEnd = 0;
     for nevnum = 1:length(nevnames)
         nevname = nevnames{nevnum};
         this_task = tasks{nevnum};
@@ -93,10 +94,10 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
             [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', true);
             lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num); 
 
-            tbl = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task, 'LFP', lfp);
+            [tbl,nsEnd] = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task, 'LFP', lfp);
         else
             [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', false);
-            tbl = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task);
+            [tbl,nsEnd] = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task);
         end
 
         % Save out_ns5 to raw .bin
@@ -115,6 +116,14 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
                     fprintf('\n---- no raw signal for %s ----\n', this_task);
                 end
             end
+        end
+
+        % add to ns5_samps
+        if ~contains(this_task,'fstm')
+            tbl.ns5_samps = cellfun(@(q) q+lastFileEnd, num2cell(tbl.ns5_samps,2), 'uni', 0);
+            lastFileEnd = lastFileEnd + nsEnd;
+        else
+            tbl.ns5_samps = [];
         end
     
         % Convert structures to a cell array of string representations

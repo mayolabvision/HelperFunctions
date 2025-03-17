@@ -1,4 +1,4 @@
-function tbl = format_dataTable(nev,out_ns5,varargin)
+function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
     % format_dataTable - Processes neural and behavioral data from nev and ns5 files into a structured table.
     %
     % This function processes and formats data from neural and behavioral recording files. It takes in 
@@ -73,7 +73,7 @@ function tbl = format_dataTable(nev,out_ns5,varargin)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    dat = format_datTrials(nev,out_ns5,EYE_CHAN_LABELS,NEURAL_CHANNELS);
+    [dat,nsEnd] = format_datTrials(nev,out_ns5,EYE_CHAN_LABELS,NEURAL_CHANNELS);
 
     if CONVERT_TO_TABLE
         if isempty(TASK_NAME)
@@ -190,6 +190,8 @@ function tbl = format_dataTable(nev,out_ns5,varargin)
         if ~isempty(LFP)
             tbl.lfp = LFP;
         end
+
+        tbl.ns5_samps = tbl1.ns5_samps;
     
     
         %%%%%%%%%%%%%%%% TEMPORARY CODE FOR ANI %%%%%%%%%%%%%%%%%%%%%
@@ -314,6 +316,10 @@ function tbl = format_dataTable(nev,out_ns5,varargin)
         end
     
         if ismember('emptyCnd', tbl.Properties.VariableNames)
+            tbl.emptyCnd = [];
+        end
+
+        if ismember('STIM8_ON', tbl.Properties.VariableNames)
             tbl.emptyCnd = [];
         end
     
