@@ -28,6 +28,7 @@ function eventsOut = convertBetween_eventCodes_eventNames(eventsIn)
     codes = struct();
 
     % Trial start and end codes
+    codes.ALIGN_PULSE = 0;
     codes.START_TRIAL = 1;
     codes.BCI_END = 249;
     codes.BACKGROUND_PROCESS_TRIAL = 250;

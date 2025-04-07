@@ -45,7 +45,7 @@ function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
 
     % Create an input parser
     p = inputParser;
-    addRequired(p, 'nev', @(x) (isnumeric(x) && size(x, 2) == 3) || isstruct(x));
+    addRequired(p, 'nev', @(x) (isnumeric(x)) || isstruct(x));
     addRequired(p, 'out_ns5', @isstruct);
     addParameter(p, 'NEURAL_CHANNELS', [], @isnumeric);
     addParameter(p, 'EXTRACT_EYE_DATA', true, @islogical)
@@ -164,7 +164,12 @@ function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
     
         for m=1:length(eventNames)
             if sum(cellfun(@(q) size(q,1)>1, trialMarkers(:,m), 'uni', 1))>0 || sum(cellfun(@(q) size(q,2)>1, trialMarkers(:,m), 'uni', 1))>0
-                tbl.(eventNames{m}) = trialMarkers(:,m);
+                if numel(unique(cellfun(@numel ,trialMarkers(:,m),'uni',1))) == 1
+                    codeSplt = cellfun(@(q) num2cell(q), trialMarkers(:,m), 'uni', 0);
+                    tbl.(eventNames{m}) = vertcat(codeSplt{:});
+                else
+                    tbl.(eventNames{m}) = trialMarkers(:,m);
+                end
             else
                 tbl.(eventNames{m}) = cell2mat(trialMarkers(:,m));
             end
@@ -309,7 +314,7 @@ function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
             tbl = movevars(tbl,{'pursuitOnset','pursuitLatency','msOffset','pursType','csTimes','csVelocity','csAngle'},'Before','result');
             tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG');
     
-        elseif contains(TASK_NAME, 'rfmp')
+        elseif contains(TASK_NAME, 'rfmp') && ismember('STIM_ON', tbl.Properties.VariableNames)
             tbl = tbl(cellfun(@(q) sum(isnan(q))==0, tbl.STIM_ON, 'uni', 1),:);
             tbl.STIM_ON(tbl.result~='CORRECT') = cellfun(@(q) q(1:end-1), tbl.STIM_ON(tbl.result~='CORRECT'), 'uni', 0);
             tbl.conditions(tbl.result~="CORRECT") = cellfun(@(q) q(1:end-1), tbl.conditions(tbl.result~='CORRECT'), 'uni', 0);
@@ -323,7 +328,7 @@ function [tbl,nsEnd] = format_dataTable(nev,out_ns5,varargin)
             tbl.STIM8_ON = [];
         end
     
-        if ismember('IGNORED', tbl.Properties.VariableNames)
+        if ismember('IGNORED', tbl.Properties.VariableNames) && ismember('CORRECT', tbl.Properties.VariableNames)
             tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
         end
     else

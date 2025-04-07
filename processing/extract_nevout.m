@@ -16,6 +16,8 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     %                  (e.g., '/Users/kendranoneman/Packages/nasnet/networks')
     %   READ_LFP    -  True/False for reading lfp data 
     %                  (Default: False)
+    %   alignPulseEnabled - True/False 
+    %
     
     %%% Outputs: %%%
     %   nev  -  3-column array containing all spikes and trial codes
@@ -41,6 +43,7 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     addParameter(p, 'GAMMA', defaultGamma, @(x) isnumeric(x) && x>0 && x<1); % GAMMA must be numeric and between 0 and 1
     addParameter(p, 'netFolder', defaultNetFolder, @(x) ischar(x)); % GAMMA must be numeric and between 0 and 1
     addParameter(p, 'READ_LFP', false, @islogical); % CORRECT_ONLY must be logical
+    addParameter(p, 'alignPulseEnabled', false)
 
     % Parse the inputs
     parse(p, NEVPATH, varargin{:});
@@ -51,6 +54,7 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     GAMMA = p.Results.GAMMA;
     netFolder = p.Results.netFolder;
     READ_LFP = p.Results.READ_LFP;
+    ALIGN_PULSE = p.Results.alignPulseEnabled;
 
     if contains(NEVPATH, '.')
         dotIndex = find(NEVPATH == '.', 1, 'last'); % Find the last dot in the string
@@ -73,6 +77,10 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
         nev.net_labels = net_labels;
         nev.waveforms = waveforms;
     else
-        nev = readNEV([NEVPATH '.nev']);
+        if ALIGN_PULSE
+            nev = read_nev([NEVPATH '.nev']);
+        else
+            nev = readNEV([NEVPATH '.nev']);
+        end
     end
 end
