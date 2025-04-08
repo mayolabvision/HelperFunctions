@@ -82,7 +82,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     end
 
     lastFileEnd = 0;
-    for nevnum = 1:length(nevnames)
+    for nevnum = 1:2 %length(nevnames)
         nevname = nevnames{nevnum};
         this_task = tasks{nevnum};
     
@@ -92,12 +92,14 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     
         if exist([nevpath,'.ns2'], 'file') == 2
             [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', true);
-            lfp = extract_rawData(nev,out_ns2,mappings.ripChan_num); 
+            lfp = extract_lfpData(nev,out_ns2,mappings.ripChan_num); 
 
-            [tbl,nsEnd] = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task, 'LFP', lfp);
+            [dat, nsEnd] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
+            tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task, 'LFP', lfp);
         else
             [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', false);
-            [tbl,nsEnd] = format_dataTable(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task);
+            [dat, nsEnd] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
+            tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
         end
 
         % Save out_ns5 to raw .bin

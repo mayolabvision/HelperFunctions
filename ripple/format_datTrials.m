@@ -1,4 +1,4 @@
-function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels, neural_channels)
+function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
     % format_datTrials - Processes neural and behavioral data for multiple trials, 
     % extracts eye and spike data, and formats the information into a structured array.
     %
@@ -13,14 +13,17 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
     %%%% Required inputs: %%%
     %   nev1               -   nev file containing event data (e.g., neural threshold crossings and digital codes)
     %   out_ns5            -   ns5 file containing the raw 30kHz data (e.g., eye data, pupil, diode, raw neural signals)
-    %   eye_channel_labels -   Cell array of labels for eye movement channels (Eye_HE', 'Eye_VE', 'DIODE', 'PUPIL')
-    %                          e.g. {'10241', '10242', '10243', '10244'}
-    %   neural_channels    -   Array of channel IDs to extract neural spike data from (e.g., [1,2,3,4,5])
+
+    %%%% Optional parameters: %%%
+    %   NEURAL_CHANNELS  -  Array of channel IDs to extract neural data from. Leave empty if only behavioral data 
+    %                        is needed. Default is an empty array (i.e., []), meaning no neural data is extracted.
+    %   EYE_CHAN_LABELS  -  Cell array specifying the eye movement channels. Default is {'10241', '10242', '10243', '10244'}, 
+    %                        representing typical labels for {Eye_HE, Eye_VE, DIODE, PUPIL}
     %
     %%%% Outputs: %%%
-    %   dat_all         -    Array of structs with the following fields:
+    %   dat      -    Array of structs with the following fields:
     %       - block: The block number of the trial
-    %       - time_sec: Start and end times of the trial in seconds
+    %       - time: Start and end times of the trial in seconds
     %       - text: Trial-specific text or annotations
     %       - trialcodes: Trial-specific codes for event markers
     %       - result: The result of the trial, such as "correct" or "incorrect"
@@ -32,11 +35,31 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
     %       - net_labels: Spike sorting labels, if spike sorting is enabled
     %
     %%%% Example usage: %%%
-    %   dat_all = format_datTrials(nev1, out_ns5, {'10241', '10242', '10243', '10244'}, [0,1,2,3,4,5,6,7,8,9])
+    %   [dat,~] = format_datTrials(nev1, out_ns5, 'NEURAL_CHANNELS', [0,1,2,3,4,5,6,7,8,9])
     %
     % This will process the nev1 and out_ns5 files, extract eye and neural data, 
     % and return the data in the structured array `dat_all`, with separate trial information for each epoch.
     %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    defaultEyeChanLabels = {'10241', '10242', '10243', '10244'};
+
+    % Create an input parser
+    p = inputParser;
+    addRequired(p, 'nev', @(x) (isnumeric(x)) || isstruct(x));
+    addRequired(p, 'out_ns5', @isstruct);
+    addParameter(p, 'NEURAL_CHANNELS', [], @isnumeric);
+    addParameter(p, 'EYE_CHAN_LABELS', defaultEyeChanLabels, (@(x) iscell(x) && length(x)==4)); % channel labels
+
+    % Parse the inputs
+    parse(p, nev, out_ns5, varargin{:});
+
+    % Assign parsed values to variables
+    nev = p.Results.nev;
+    out_ns5 = p.Results.out_ns5;
+    neural_channels = p.Results.NEURAL_CHANNELS;
+    eye_channel_labels = p.Results.EYE_CHAN_LABELS;
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     Fs = double(out_ns5.hdr.Fs); % Sampling frequency
@@ -51,11 +74,11 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
     end
     
     % Determine if nev is an array of struct; if so, extract nev data
-    if isequal(class(nev1), 'struct')
-        nev = [nev1.nev nev1.net_labels']; % Combine event and neural network labels
+    if isequal(class(nev), 'struct')
+        NEV = [nev.nev nev.net_labels']; % Combine event and neural network labels
         spike_sort = true; % Flag for spike sorting
     else
-        nev = nev1;
+        NEV = nev;
         spike_sort = false; % No spike sorting if nev is not a struct
     end
     
@@ -77,12 +100,15 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
         epochEnd_samp = (epochStart_samp + epochDiff) - 1;
     
         % Extract trial data within the current epoch time range
-        this_nev = nev(nev(:, 3) >= nsStartTime & nev(:, 3) <= nsEndTime, :);
+        this_nev = NEV(NEV(:, 3) >= nsStartTime & NEV(:, 3) <= nsEndTime, :);
         ns5_rng = epochStart_samp:epochEnd_samp; % Range of samples in the epoch
 
         % Extract digital event codes
         diginnevind = find(this_nev(:, 1) == 0);
         digcodes = this_nev(diginnevind, :);
+
+        channels = unique(NEV(NEV(:,1) ~= 0,1:2),'rows');
+        channels = channels(channels(:,1) ~= 0 & ismember(channels(:, 1), 1:400),:);
     
         % Find trial start and end indices
         trialstartindstemp = find(digcodes(:, 2) == starttrial);
@@ -119,19 +145,21 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
             if ~isempty(eye_channel_labels)
                 dat = repmat(struct(...
                     'block', [], ...
-                    'time_sec', [], ...
+                    'channels', [], ...
+                    'time', [], ...
                     'text', '', ...
                     'trialcodes', [], ...
                     'result', NaN, ...
                     'params', struct(), ...
-                    'eyes', [], ...
+                    'eyedata', [], ...
                     'pupil', [], ...
                     'diode', []), length(trialstarts), 1);
                
             else
                 dat = repmat(struct(...
                 'block', [], ...
-                'time_sec', [], ...
+                'channels', [], ...
+                'time', [], ...
                 'text', '', ...
                 'trialcodes', [], ...
                 'result', NaN, ...
@@ -144,7 +172,8 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
                     fprintf('Processed nev for %i trials of %i...\n', n, length(trialstarts));
                 end
                 dat(n).block = block;
-                dat(n).time_sec = [trialstarts(n) trialends(n)]; % Store trial start and end times
+                dat(n).channels = channels;
+                dat(n).time = [trialstarts(n) trialends(n)]; % Store trial start and end times
                 this_trial = this_nev(trialstartinds(n):trialendinds(n), :);
                 trialdig = this_trial(this_trial(:, 1) == 0, :);
                 dat(n).text = char(trialdig(trialdig(:, 2) >= 256 & trialdig(:, 2) < 512, 2) - 256)';
@@ -189,7 +218,7 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
                     [eyedeg, ~] = eye2deg(eyes_1khz(1:2, :), dat(n).params); % Convert to degrees
         
                     % Store eye, pupil, and diode data
-                    dat(n).eyes = eyedeg;
+                    dat(n).eyedata = eyedeg;
                     dat(n).pupil = eyes_1khz(4, :);
                     dat(n).diode = eyes_1khz(3, :);
                 end
@@ -221,4 +250,6 @@ function [dat_all,epochEnd] = format_datTrials(nev1, out_ns5, eye_channel_labels
         % Concatenate the new structured data to the main array
         dat_all = [dat_all; dat];
     end
+
+    dat = dat_all;
 end
