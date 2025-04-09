@@ -56,10 +56,12 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
     READ_LFP = p.Results.READ_LFP;
     ALIGN_PULSE = p.Results.alignPulseEnabled;
 
-    if contains(NEVPATH, '.')
-        dotIndex = find(NEVPATH == '.', 1, 'last'); % Find the last dot in the string
-        NEVPATH = NEVPATH(1:dotIndex-1); % Remove everything from the last dot onward
-    end
+    [file_path,file_name,~] = fileparts(NEVPATH);
+    NEVPATH = fullfile(file_path,file_name);
+    % if contains(NEVPATH, '.')
+    %     dotIndex = find(NEVPATH == '.', 1, 'last'); % Find the last dot in the string
+    %     NEVPATH = NEVPATH(1:dotIndex-1); % Remove everything from the last dot onward
+    % end
 
     out_ns5 = read_nsx([NEVPATH '.ns5']);
     if READ_LFP

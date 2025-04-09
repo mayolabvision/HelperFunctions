@@ -15,7 +15,6 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     addRequired(p, 'experimenter', @ischar);
     addRequired(p, 'monkey', @ischar);
     addRequired(p, 'session', @ischar);
-    % addParameter(p, 'SAVE_RAW', true, @islogical); 
     addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
@@ -27,7 +26,6 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     experimenter = p.Results.experimenter;
     monkey = p.Results.monkey;
     session = p.Results.session;
-    % SAVE_RAW = p.Results.SAVE_RAW;
     RAW_PATH = p.Results.RAW_DATA_PATH;
     OUT_PATH = p.Results.OUT_DATA_PATH;
     CSV_PATH = p.Results.RECD_CSV_PATH;
@@ -89,9 +87,10 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
         this_task = tasks{nevnum};
     
         fprintf('\n---- generating nev_out for %s ----\n', this_task);
-    
+
         [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', false, 'READ_LFP', false, 'alignPulseEnabled', true);
-        [tbl,nsEnd] = format_dataTable(nev, out_ns5, 'CONVERT_TO_TABLE', true, 'TASK_NAME', this_task);
+        [dat, nsEnd] = format_datTrials(nev, out_ns5);
+        tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
 
         % add to ns5_samps
         if ~contains(this_task,'fstm')

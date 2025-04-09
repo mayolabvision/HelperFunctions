@@ -82,7 +82,7 @@ function process_RippleRecording_KKN(experimenter,monkey,session,varargin)
     end
 
     lastFileEnd = 0;
-    for nevnum = 1:2 %length(nevnames)
+    for nevnum = 1:length(nevnames)
         nevname = nevnames{nevnum};
         this_task = tasks{nevnum};
     
