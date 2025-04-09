@@ -1,4 +1,4 @@
-function ia_pursBehavKKN_2025(nevpath,varargin)
+function qa_pursBehavKKN_2025(nevpath,varargin)
     % qa_pursBehavKKN_2025: Function to analyze and visualize pursuit behavior data.
     %
     % This function quickly processes eye data related to pursuit behavior
@@ -19,7 +19,7 @@ function ia_pursBehavKKN_2025(nevpath,varargin)
     %   - None (the function generates plots and saves them if a path is provided).
     %
     % Example usage:
-    %   ia_pursBehavKKN_2025('/Volumes/lab_NHPdata/kendra_scrappy_0121a_purs2.nev',...
+    %   qa_pursBehavKKN_2025('/Volumes/lab_NHPdata/kendra_scrappy_0121a_purs2.nev',...
     %                        'PURS_PREINT', 25, 'PURS_POSTINT', 210, 'MS_THRESH', -25,...
     %                        'FIG_PATH','/Users/kendranoneman/OneDrive/DATA/kendra_scrappy_0121a')
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
