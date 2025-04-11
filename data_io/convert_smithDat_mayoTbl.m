@@ -257,7 +257,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     elseif contains(TASK_NAME, 'purs')
         % Define the columns to replace and their new names
         cols_to_replace = {'TARG_ON', 'TARG_OFF'};
-        new_names = {'PURSUIT_TARG', 'PURSUIT_TARG_OFF'};
+        new_names = {'PURSUIT_TARG_ON', 'PURSUIT_TARG_OFF'};
         
         % Loop through each column to check and replace
         for i = 1:numel(cols_to_replace)
@@ -280,7 +280,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         for t = 1:height(tbl)
             if isequal(tbl.result(t),"CORRECT")
                 
-                [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG(t),tbl(t,:).params.block.crossingTime,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
+                [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG_ON(t),tbl(t,:).params.block.crossingTime,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
                 pursuitOnset(t) = pursuit_onset; rxnTimes(t) = rxnTime; msOffsets(t) = msOffset; csOnsets(t) = csOnset; csVelocities(t) = csVelocity; csPeaks(t) = csPeak; csOffsets(t) = csOffset; csAngles(t) = csAngle; csTypes{t} = csType;
             else
                 csTypes{t} = 'NaN';
@@ -297,10 +297,9 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl.pursType = csTypes; tbl.pursType = categorical(string(tbl.pursType));
         
         tbl = movevars(tbl,{'pursuitOnset','pursuitLatency','msOffset','pursType','csTimes','csVelocity','csAngle'},'Before','result');
-        tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG');
+        tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG_ON');
 
     elseif contains(TASK_NAME, 'rfmp') && ismember('STIM_ON', tbl.Properties.VariableNames)
-        tbl = tbl(cellfun(@(q) sum(isnan(q))==0, tbl.STIM_ON, 'uni', 1),:);
         tbl.STIM_ON(tbl.result~='CORRECT') = cellfun(@(q) q(1:end-1), tbl.STIM_ON(tbl.result~='CORRECT'), 'uni', 0);
         tbl.conditions(tbl.result~="CORRECT") = cellfun(@(q) q(1:end-1), tbl.conditions(tbl.result~='CORRECT'), 'uni', 0);
     end

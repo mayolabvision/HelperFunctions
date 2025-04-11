@@ -89,7 +89,9 @@ function tl = heatMap_rfOverTime(frs, varargin)
         prettyFig;
     end
     
-    set(ax, 'Colormap', gray, 'CLim', [min(frs(:)) max(frs(:))])
+    if max(frs(:))>0
+        set(ax, 'Colormap', gray, 'CLim', [min(frs(:)) max(frs(:))])
+    end
     cbh = colorbar(ax(end)); 
     cbh.Layout.Tile = 'east'; 
     cbh.Label.String = 'Firing Rate (Hz)';

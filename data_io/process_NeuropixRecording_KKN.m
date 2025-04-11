@@ -20,6 +20,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
     addParameter(p, 'NPY_MAT_PATH', defaultNPY_PATH, @ischar);
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
+    addParameter(p, 'PARSE_KILOSORT', true, @islogical)
     
     % Parse inputs
     parse(p, experimenter, monkey, session, varargin{:});
@@ -31,6 +32,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     CSV_PATH = p.Results.RECD_CSV_PATH;
     NPY_PATH = p.Results.NPY_MAT_PATH;
     NEV_PATH = p.Results.NEVUTIL_PATH;
+    PARSE_KS = p.Results.PARSE_KILOSORT;
 
     addpath(genpath(NPY_PATH));
     addpath(genpath(NEV_PATH));
@@ -42,7 +44,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     [this_sess,filename]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
-    if ~exist(fullfile(OUT_PATH, filename), 'dir'), mkdir(fullfile(OUT_PATH, filename)); end
+    if ~exist(fullfile(OUT_PATH, [filename,'_g0']), 'dir'), mkdir(fullfile(OUT_PATH, [filename,'_g0'])); end
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
     filePattern = fullfile(RAW_PATH, [filename,'_g0'],[filename, '*.ns5']);
@@ -59,6 +61,14 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     tasks = cellfun(@(q) q{4}, cellfun(@(x) split(x, '_'), nevnames, 'uni', 0), 'uni', 0);
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
     
+    if PARSE_KS
+        %imec_dirs = dir(fullfile(OUT_PATH, [filename,'_g0'],[filename, '*_imec*']));
+        imec_dirs = dir(fullfile(OUT_PATH, [filename,'_g0'],[filename, '*_imec*']));
+        imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
+
+        imec_nums = cellfun(@(q) str2num(q(end)), imec_dirs, 'uni', 0);
+    end
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %% Extracting raw data from nev/out datafiles 
@@ -73,19 +83,16 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     % S1.channels = mappings;  
     % S1.probe_specs = probe_specs;
 
-    % % Check if the file already exists, if so delete
-    % if SAVE_RAW
-    %     full_bin_path = fullfile(OUT_PATH, filename, [filename, '.bin']);
-    %     if exist(full_bin_path, 'file') == 2
-    %         delete(full_bin_path);
-    %     end
-    % end
+    alignCodes = readmatrix(fullfile(RAW_PATH, [filename,'_g0'],['catgt_',filename,'_g0'],[filename,'_g0','_tcat.nidq.bfv_8_0_9.txt']));
+    alignTimes = readmatrix(fullfile(RAW_PATH, [filename,'_g0'],['catgt_',filename,'_g0'],[filename,'_g0','_tcat.nidq.bft_8_0_9.txt']));
+    alignTimes = alignTimes(alignCodes==2);
 
-    lastFileEnd = 0;
+    lastFileEnd = 0; last_alignID = 0;
     for nevnum = 1:length(nevnames)
         nevpath = nevpaths{nevnum};
         this_task = tasks{nevnum};
     
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RIPPLE BEHAVIOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         fprintf('\n---- generating nev_out for %s ----\n', this_task);
 
         [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', false, 'READ_LFP', false, 'alignPulseEnabled', true);
@@ -117,14 +124,38 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
 
         S1.(this_task).hdr = out_ns5.hdr;
         S1.(this_task).params = merged_struct;
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if PARSE_KS
+            % SYNC PULSE
+            these_alignTimes = alignTimes(last_alignID+1:last_alignID+height(tbl));
+
+            kilosort_all = [];
+            for imec = 1:1 %numel(imec_dirs)
+                [spikes_perTrial,kilosort] = parse_KilosortToTbl(tbl,fullfile(imec_dirs{imec},'kilosort4'),'NP_ALIGN_PULSES',these_alignTimes);
+                kilosort_all = [kilosort_all; kilosort];
+
+                tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
+            end
+
+            if nevnum==1
+                S1.kilosort = kilosort_all;
+            end
+
+            last_alignID = last_alignID + height(tbl);   
+        end
+
         S1.(this_task).data = tbl;
     
     end
 
-    
+    S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
+
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
-    save(fullfile(OUT_PATH,filename,[filename,'.mat']), 'S');
+
+
+    save(fullfile(OUT_PATH,[filename,'_g0'],[filename,'.mat']), 'S');
     
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');

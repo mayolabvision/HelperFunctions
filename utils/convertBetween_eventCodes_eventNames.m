@@ -137,6 +137,7 @@ function eventsOut = convertBetween_eventCodes_eventNames(eventsIn)
     codes.BROKE_TASK = 165;
     codes.PURSUIT_TARG = 166;
     codes.BROKE_PURSUIT = 167;
+    codes.PURSUIT_TARG_ON = 31791;
     codes.PURSUIT_TARG_OFF = 12697;
 
     % Block event codes
