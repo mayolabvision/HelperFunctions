@@ -130,9 +130,10 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
             % SYNC PULSE
             these_alignTimes = alignTimes(last_alignID+1:last_alignID+height(tbl));
 
-            kilosort_all = [];
-            for imec = 1:1 %numel(imec_dirs)
-                [spikes_perTrial,kilosort] = parse_KilosortToTbl(tbl,fullfile(imec_dirs{imec},'kilosort4'),'NP_ALIGN_PULSES',these_alignTimes);
+            kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
+            for imec = 1:numel(imec_dirs)
+                [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,fullfile(imec_dirs{imec},'kilosort4'),'NP_ALIGN_PULSES',these_alignTimes);
+                trlAvg_frs_all{imec} = trlAvg_frs;
                 kilosort_all = [kilosort_all; kilosort];
 
                 tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
@@ -142,6 +143,10 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
                 S1.kilosort = kilosort_all;
             end
 
+            for imec = 1:numel(imec_dirs)
+                S1.kilosort(imec).clusters.([this_task,'_Hz']) = trlAvg_frs_all{imec};
+            end
+
             last_alignID = last_alignID + height(tbl);   
         end
 
@@ -149,13 +154,14 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     
     end
 
-    S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
+    ff = fieldnames(S1);
+    S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
+    S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
-
-    save(fullfile(OUT_PATH,[filename,'_g0'],[filename,'.mat']), 'S');
+    save(fullfile(OUT_PATH,[filename,'_g0'],[filename,'_g0','.mat']), 'S');
     
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
