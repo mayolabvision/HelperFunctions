@@ -1,4 +1,4 @@
-function [spikes_perTrial,kilosort] = parse_KilosortToTbl(tbl,kilosort4_path,varargin)
+function [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 p = inputParser;
@@ -15,26 +15,56 @@ NP_ALIGN_PULSES = p.Results.NP_ALIGN_PULSES;
 % Load in MATLAB table
 tic
 
-% Load in kilosort results
-kilo_files = dir(fullfile(ks_path, '*.mat'));
-for i = 1:length(kilo_files)
-    load(fullfile(kilosort4_path,kilo_files(i).name));
+kilo_files1 = dir(fullfile(ks_path, '*.mat'));
+for i = 1:length(kilo_files1)
+    kpath = fullfile(kilosort4_path, kilo_files1(i).name);
+    [~, kname, ~] = fileparts(kpath);
+    
+    loaded = load(kpath);  % Load into struct
+    varNames = fieldnames(loaded);  % Get the name(s) of loaded variables
+
+    loaded_var = loaded.(varNames{1});
+    if isa(loaded_var, 'single') || isa(loaded_var, 'int32') || isa(loaded_var, 'int64')
+        loaded_var = double(loaded_var);
+    end
+    
+    % Assign the first variable in the .mat file to the struct
+    kilosort.(kname) = loaded_var;
 end
 
-kilosort.channel_positions = channel_positions;
-kilosort.channel_map = channel_map;
-kilosort.channel_shanks = channel_shanks;
-kilosort.pc_feature_ind = pc_feature_ind;
-kilosort.similar_templates = similar_templates;
-kilosort.templates = templates;
-kilosort.templates_ind = templates_ind;
-kilosort.whitening_mat = whitening_mat;
-kilosort.whitening_mat_dat = whitening_mat_dat;
-kilosort.whitening_mat_inv = whitening_mat_inv;
+% kilosort.channel_positions = channel_positions;
+% kilosort.channel_map = channel_map;
+% kilosort.channel_shanks = channel_shanks;
+% kilosort.pc_feature_ind = pc_feature_ind;
+% kilosort.similar_templates = similar_templates;
+% kilosort.templates = templates;
+% kilosort.templates_ind = templates_ind;
+% kilosort.whitening_mat = whitening_mat;
+% kilosort.whitening_mat_dat = whitening_mat_dat;
+% kilosort.whitening_mat_inv = whitening_mat_inv;
 
-unique_clusters = double(unique(spike_clusters)+1);
+% .tsv files
+kilo_files2 = dir(fullfile(ks_path, '*.tsv'));
+[~, sort_idx] = sort({kilo_files2.name}.');
+kilo_files2 = kilo_files2(sort_idx);
 
-spike_times_sec = double(spike_times)./30000;
+for ii = 1:length(kilo_files2)
+    cfpath = fullfile(kilo_files2(ii).folder, kilo_files2(ii).name);
+    [~, cfname, ~] = fileparts(kilo_files2(ii).name);
+    if ii==1
+        clusters = readtable(cfpath, 'FileType', 'text', 'Delimiter', '\t');
+    else
+        cc = readtable(cfpath, 'FileType', 'text', 'Delimiter', '\t');
+        cc2 = join(clusters, cc, 'Keys', 'cluster_id');
+        clusters = cc2;
+    end
+end
+clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
+clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
+kilosort.clusters = clusters;
+
+unique_clusters = double(unique(kilosort.spike_clusters)+1);
+spike_times_sec = double(kilosort.spike_times)./30000;
 
 spikes_perTrial = cell(height(tbl),1);
 for t = 1:height(tbl)
@@ -46,10 +76,14 @@ for t = 1:height(tbl)
     rp = tbl.ALIGN_PULSE{t,1};
     et = tbl.END_TRIAL(t);
 
-    spike_units = spike_clusters(spike_times_sec>=(np-(rp./1000)) & spike_times_sec<=(np+((et-rp)./1000)));
+    spike_units = kilosort.spike_clusters(spike_times_sec>=(np-(rp./1000)) & spike_times_sec<=(np+((et-rp)./1000)));
     spike_times = ((spike_times_sec((spike_times_sec>=(np-(rp./1000)) & spike_times_sec<=(np+((et-rp)./1000)))) - np)*1000) + rp;
 
     spikes_perTrial{t} = cellfun(@(u) spike_times(spike_units==u), num2cell(unique_clusters), 'uni', 0);
 end
+
+spike_counts = cellfun(@(w) cellfun(@(q) numel(q), w, 'uni', 1), spikes_perTrial, 'uni', 0);
+unit_frs = cellfun(@(w,v) w./v, spike_counts, num2cell((tbl.END_TRIAL-tbl.START_TRIAL)./1000), 'uni', 0);
+trlAvg_frs = mean(vertcat(unit_frs{:}),1,'omitnan')';
 
 end
