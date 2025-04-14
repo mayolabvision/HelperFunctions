@@ -6,9 +6,10 @@ function ia_rfMaps(data_path,varargin)
     addParameter(p, 'IMEC', 0, @isnumeric);
     
     parse(p, data_path, varargin{:});
-    data_path = p.Results.table_path;
+    data_path = p.Results.data_path;
     IMEC = p.Results.IMEC;
 
+    fprintf('\n------------------------------\n')
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
 

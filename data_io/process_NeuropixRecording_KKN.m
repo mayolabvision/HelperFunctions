@@ -77,7 +77,7 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     % S1.probe_specs = probe_specs;
 
     alignCodes = readmatrix(fullfile(RAW_PATH, session_name, ['catgt_',session_name],[session_name,'_tcat.nidq.bfv_8_0_9.txt']));
-    alignTimes = readmatrix(fullfile(RAW_PATH, session_name,['catgt_',session_name],[session_name,'_tcat.nidq.bft_8_0_9.txt']));
+    alignTimes = readmatrix(fullfile(RAW_PATH, session_name, ['catgt_',session_name],[session_name,'_tcat.nidq.bft_8_0_9.txt']));
     alignTimes = alignTimes(alignCodes==2);
 
     lastFileEnd = 0; last_alignID = 0;
@@ -147,15 +147,15 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     
     end
 
-    ff = fieldnames(S1);
-    S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
+    %ff = fieldnames(S1);
+    %S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
     S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
-    save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S');
-    
+    save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S', '-v7.3');
+ 
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     fprintf(sprintf('Total elapsed time was %2.2f minutes',tc/60))

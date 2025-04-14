@@ -1,15 +1,16 @@
 #!/bin/bash -l
 #SBATCH --cluster=smp
-#SBATCH --partition=smp
+#SBATCH --partition=high-mem
 #SBATCH --job-name=mtlab
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A.out
 #SBATCH --error=/ix1/pmayo/matlab/outfiles/out_%A.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=16G
 #SBATCH --cpus-per-task=8
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
-#SBATCH --time=0-00:09:59
+#SBATCH --time=0-02:00:00
 
 echo "Job started at $(date)"
 
@@ -51,7 +52,7 @@ matlab -nodisplay <<EOF
 try
     addpath(genpath('$HELPERS_PATH'));
     fprintf('Running process_NeuropixRecording_KKN for $1\n');
-    process_NeuropixRecording_KKN('$DATA_PATH', ...
+    process_NeuropixRecording_KKN('${1}', ...
         'RAW_DATA_PATH', '$RAW_PATH', ...
         'OUT_DATA_PATH', '$OUT_PATH', ...
         'RECD_CSV_PATH', '$CSV_PATH', ...
