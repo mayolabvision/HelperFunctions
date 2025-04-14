@@ -1,4 +1,4 @@
-function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
+function process_NeuropixRecording_KKN(session_name,varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % experimenter  =  'kendra';
     % monkey        =  'scrappy';
@@ -7,13 +7,11 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     % Default paths to add to the MATLAB path    
     defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
     defaultOUT_PATH  =  '/Volumes/home/DATA';
-    defaultCSV_PATH  =  '/Volumes/home/RECORDING_INFO.csv';
+    defaultCSV_PATH  =  '/Volumes/home/DATA/RECORDING_INFO.csv';
     defaultNEV_PATH  =  '/Users/kendranoneman/Packages/nevutils';
     
     p = inputParser;
-    addRequired(p, 'experimenter', @ischar);
-    addRequired(p, 'monkey', @ischar);
-    addRequired(p, 'session', @ischar);
+    addRequired(p, 'session_name', @ischar);
     addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
@@ -21,10 +19,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     addParameter(p, 'PARSE_KILOSORT', true, @islogical)
     
     % Parse inputs
-    parse(p, experimenter, monkey, session, varargin{:});
-    experimenter = p.Results.experimenter;
-    monkey = p.Results.monkey;
-    session = p.Results.session;
+    parse(p, session_name, varargin{:});
     RAW_PATH = p.Results.RAW_DATA_PATH;
     OUT_PATH = p.Results.OUT_DATA_PATH;
     CSV_PATH = p.Results.RECD_CSV_PATH;
@@ -38,16 +33,15 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     parentDirOneLevelUp = fileparts(currentDir);
     addpath(genpath(parentDirOneLevelUp));
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-    fprintf('Starting ia_trialOutcomes...\n');
-    disp('Processing...');
-    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fparts = split(session_name, '_');
+    experimenter = fparts{1}; monkey = fparts{2}; session = fparts{3};
 
-    [this_sess,filename]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
-    if ~exist(fullfile(OUT_PATH, [filename,'_g0']), 'dir'), mkdir(fullfile(OUT_PATH, [filename,'_g0'])); end
+    [this_sess,~]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
+    if ~exist(fullfile(OUT_PATH, session_name), 'dir'), mkdir(fullfile(OUT_PATH, session_name)); end
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
-    filePattern = fullfile(RAW_PATH, [filename,'_g0'],[filename, '*.ns5']);
+    filePattern = fullfile(RAW_PATH, session_name, [session_name(1:end-3), '*.ns5']);
     raw_files = dir(filePattern);
     raw_filenames = {raw_files.name}.';
     nevnames = cellfun(@(q) q(1:end-4), raw_filenames, 'uni', 0);
@@ -62,8 +56,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
     
     if PARSE_KS
-        %imec_dirs = dir(fullfile(OUT_PATH, [filename,'_g0'],[filename, '*_imec*']));
-        imec_dirs = dir(fullfile(OUT_PATH, [filename,'_g0'],[filename, '*_imec*']));
+        imec_dirs = dir(fullfile(OUT_PATH, session_name,[session_name, '*_imec*']));
         imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
 
         imec_nums = cellfun(@(q) str2num(q(end)), imec_dirs, 'uni', 0);
@@ -83,8 +76,8 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     % S1.channels = mappings;  
     % S1.probe_specs = probe_specs;
 
-    alignCodes = readmatrix(fullfile(RAW_PATH, [filename,'_g0'],['catgt_',filename,'_g0'],[filename,'_g0','_tcat.nidq.bfv_8_0_9.txt']));
-    alignTimes = readmatrix(fullfile(RAW_PATH, [filename,'_g0'],['catgt_',filename,'_g0'],[filename,'_g0','_tcat.nidq.bft_8_0_9.txt']));
+    alignCodes = readmatrix(fullfile(RAW_PATH, session_name, ['catgt_',session_name],[session_name,'_tcat.nidq.bfv_8_0_9.txt']));
+    alignTimes = readmatrix(fullfile(RAW_PATH, session_name,['catgt_',session_name],[session_name,'_tcat.nidq.bft_8_0_9.txt']));
     alignTimes = alignTimes(alignCodes==2);
 
     lastFileEnd = 0; last_alignID = 0;
@@ -161,7 +154,7 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     S = unify_taskTables(S1,taskTypes);
     S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
-    save(fullfile(OUT_PATH,[filename,'_g0'],[filename,'_g0','.mat']), 'S');
+    save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S');
     
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
