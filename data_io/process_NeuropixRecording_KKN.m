@@ -8,7 +8,6 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
     defaultOUT_PATH  =  '/Volumes/home/DATA';
     defaultCSV_PATH  =  '/Volumes/home/RECORDING_INFO.csv';
-    defaultNPY_PATH  =  '/Users/kendranoneman/Packages/npy-matlab';
     defaultNEV_PATH  =  '/Users/kendranoneman/Packages/nevutils';
     
     p = inputParser;
@@ -18,7 +17,6 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
-    addParameter(p, 'NPY_MAT_PATH', defaultNPY_PATH, @ischar);
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
     addParameter(p, 'PARSE_KILOSORT', true, @islogical)
     
@@ -30,17 +28,19 @@ function process_NeuropixRecording_KKN(experimenter,monkey,session,varargin)
     RAW_PATH = p.Results.RAW_DATA_PATH;
     OUT_PATH = p.Results.OUT_DATA_PATH;
     CSV_PATH = p.Results.RECD_CSV_PATH;
-    NPY_PATH = p.Results.NPY_MAT_PATH;
     NEV_PATH = p.Results.NEVUTIL_PATH;
     PARSE_KS = p.Results.PARSE_KILOSORT;
 
-    addpath(genpath(NPY_PATH));
     addpath(genpath(NEV_PATH));
 
     % Get the directory of the current script or function
     currentDir = fileparts(mfilename('fullpath'));
     parentDirOneLevelUp = fileparts(currentDir);
     addpath(genpath(parentDirOneLevelUp));
+    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+    fprintf('Starting ia_trialOutcomes...\n');
+    disp('Processing...');
+    fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     [this_sess,filename]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
