@@ -3,3 +3,5 @@
 process_recordings/example_data
 process_recordings/*.png
 conversions/__pycache__/
+utils/__pycache__/
+utils/__pycache__/convert_npy_to_mat.cpython-39.pyc
