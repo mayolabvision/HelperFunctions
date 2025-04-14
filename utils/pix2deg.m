@@ -11,16 +11,16 @@ function dva = pix2deg(pix,scrd,pixpercm)
 % Matthew A. Smith
 % Revised: 20130805
 
-global params;
+%global params;
 
-if isempty(params)
-    exGlobals;
-end
+%if isempty(params)
+%    exGlobals;
+%end
 
-if (nargin == 1)
-    scrd = params.screenDistance;
-    pixpercm = params.pixPerCM;
-end
+%if (nargin == 1)
+%    scrd = params.screenDistance;
+%    pixpercm = params.pixPerCM;
+%end
 
 d = pix./pixpercm;
 angle = atan(d./scrd);
