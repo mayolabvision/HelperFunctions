@@ -33,7 +33,12 @@ function ia_mdirRasters(data_path,varargin)
         sem_shade = [212,235,232]./255;
     end
     
-    T = [S.mdir1.data; S.mdir2.data]; T = T(T.result=='CORRECT',:);
+    if isfield(S, 'mdir2')
+        T = [S.mdir1.data; S.mdir2.data];
+    else
+        T = S.mdir1.data;
+    end
+    T = T(T.result=='CORRECT',:);
     
     angles = sort(unique(T.angle))';
     angle_order = [6,3,2,1,4,7,8,9];

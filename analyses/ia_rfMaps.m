@@ -3,23 +3,24 @@ function ia_rfMaps(data_path,varargin)
     %   Detailed explanation goes here
     p = inputParser;
     addRequired(p, 'data_path', @ischar);
+    addParameter(p, 'FIG_PATH', @ischar);
     addParameter(p, 'IMEC', 0, @isnumeric);
     
     parse(p, data_path, varargin{:});
     data_path = p.Results.data_path;
+    FIG_PATH = p.Results.FIG_PATH;
     IMEC = p.Results.IMEC;
 
     fprintf('\n------------------------------\n')
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
 
-    fig_path = fullfile(parent_path, 'figs', 'rfmp', 'unit_heatmaps');
-    if ~exist(fig_path, 'dir'), mkdir(fig_path); end
+    if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end
     
     TBL = S.rfmp1.data;
     
     for unit=1:height(S.kilosort(IMEC+1).clusters)
-        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
+        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
             [frs,bin_edges,xvals,yvals] = format_tableToRFMap(TBL, 'IMEC', IMEC, 'UNITS', unit);
         
             f2a = figure; %('Visible','off');
@@ -33,7 +34,7 @@ function ia_rfMaps(data_path,varargin)
             end
             %subtitle(tl,sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth),'fontsize',16,'interpreter','none')
             
-            print(f2a, fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), '-dpng', '-r200');
+            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%03d.png', IMEC, unit)), '-dpng', '-r200');
             fprintf(sprintf('\n----IMEC %d, Unit %.3d COMPLETE----',IMEC, unit))
         else
             fprintf(sprintf('\n----IMEC %d, Unit %.3d exists----',IMEC, unit))
