@@ -11,7 +11,11 @@
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-02:00:00
+#SBATCH --array=0-49
 
+echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
+echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
+echo "My SLURM_ARRAY_TASK_COUNT is $SLURM_ARRAY_TASK_COUNT"
 echo "Job started at $(date)"
 
 module purge
@@ -20,6 +24,7 @@ module load matlab/R2023a
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
+FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/mdir/unit_rasters"
 
 # First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
@@ -28,7 +33,9 @@ try
     fprintf('Running ia_mdirRasters for $1\n');
     ia_mdirRasters('$DATA_PATH', ...
         'IMEC', ${2}, ...
-        'ALIGN', '${3}');
+        'ALIGN', '${3}'), ...
+        'FIG_PATH', '$FIG_PATH', ...
+        'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
 catch err
     disp('ERROR in ia_mdirRasters:');
     disp(getReport(err));

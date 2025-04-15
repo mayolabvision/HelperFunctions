@@ -10,7 +10,11 @@
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-02:00:00
+#SBATCH --array=0-49
 
+echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
+echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
+echo "My SLURM_ARRAY_TASK_COUNT is $SLURM_ARRAY_TASK_COUNT"
 echo "Job started at $(date)"
 
 module purge
@@ -28,7 +32,8 @@ try
     fprintf('Running ia_rfMaps for $1\n');
     ia_rfMaps('$DATA_PATH', ...
         'IMEC', ${2}, ...
-         'FIG_PATH','$FIG_PATH');
+        'FIG_PATH', '$FIG_PATH', ...
+        'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
 catch err
     disp('ERROR in ia_rfMaps:');
     disp(getReport(err));
