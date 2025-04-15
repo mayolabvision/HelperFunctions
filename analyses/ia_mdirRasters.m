@@ -4,24 +4,32 @@ function ia_mdirRasters(data_path,varargin)
     p = inputParser;
     addRequired(p, 'data_path', @ischar);
     addParameter(p, 'IMEC', 0, @isnumeric);
+    addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'stim', @ischar);
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
+    addParameter(p, 'JOB_ID', NaN, @isnumeric);
     
     parse(p, data_path, varargin{:});
     data_path = p.Results.data_path;
     IMEC = p.Results.IMEC;
+    FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
     X_LIMITS = p.Results.X_LIMITS;
+    JOB_ID = p.Results.JOB_ID;
 
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
 
+    if isempty(FIG_PATH)
+        FIG_PATH = fullfile(parent_path, 'figs', 'mdir', 'unit_rasters');
+    end
+
     if isequal(ALIGN,'stim')
         FR_WIN = [50,150];
-        fig_path = fullfile(parent_path, 'figs', 'mdir', 'unit_rasters', 'stim_aligned');
+        fig_path = fullfile(FIG_PATH, 'stim_aligned');
     elseif isequal(ALIGN,'sacc')
         FR_WIN = [-50,50];
-        fig_path = fullfile(parent_path, 'figs', 'mdir', 'unit_rasters', 'sacc_aligned');
+        fig_path = fullfile(FIG_PATH, 'sacc_aligned');
     end
     if ~exist(fig_path, 'dir'), mkdir(fig_path); end
 
@@ -42,10 +50,23 @@ function ia_mdirRasters(data_path,varargin)
     
     angles = sort(unique(T.angle))';
     angle_order = [6,3,2,1,4,7,8,9];
+
+    if isnan(JOB_ID)
+        units = 1:height(S.kilosort(IMEC+1).clusters);
+    else
+        all_units = 1:height(S.kilosort(IMEC+1).clusters);
+        % Split into 50 chunks as a cell array
+        chunks = arrayfun(@(i) all_units(...
+            floor((i-1)*numel(all_units)/50)+1 : ...
+            floor(i*numel(all_units)/50)), ...
+            1:50, 'UniformOutput', false);
+        units = (chunks{(JOB_ID+1)}) - 1;
+    end
     
     imec_name = ['spiketimes_imec' num2str(IMEC)];
-    for unit=1:height(S.kilosort(IMEC+1).clusters)
-        if ~exist(fullfile(fig_path, sprintf('Aimec%d_unit%03d.png', IMEC, unit)), 'file')
+    for u=1:length(units)
+        unit = units(u);
+        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
             f3a = figure('Visible','off');
             f3a.Position = [100 100 1800 900];
         
@@ -53,7 +74,7 @@ function ia_mdirRasters(data_path,varargin)
             frs_perAng = cell(length(angles),1);
             for ang = 1:length(angles)
                 these_trls = T(T.angle==angles(ang),:);
-                sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{unit}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
+                sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                 
                 subplot(3,3,angle_order(ang))
                 raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color, 'SEM_SHADE', sem_shade)
@@ -128,9 +149,9 @@ function ia_mdirRasters(data_path,varargin)
             xlabel(han,{'';'time aligned to target onset (ms)'},'fontsize',16);
         
             if (IMEC)==0
-                title(han,sprintf('%s --- LEFT --- unit %d',filename,unit),'fontsize',20,'interpreter','none')
+                title(han,sprintf('%s --- LEFT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
             else
-                title(han,sprintf('%s --- RIGHT --- unit %d',filename,unit),'fontsize',20,'interpreter','none')
+                title(han,sprintf('%s --- RIGHT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
             end
         
             print(f3a, fullfile(fig_path, sprintf('imec%d_unit%03d.png', (IMEC), unit)), '-dpng', '-r200');
@@ -139,7 +160,6 @@ function ia_mdirRasters(data_path,varargin)
             fprintf(sprintf('\n----IMEC %d, Unit %.3d exists----',IMEC, unit))
         end
 
-        blah = 1;
     end
     fprintf('\n------------------------------\n')
 end
