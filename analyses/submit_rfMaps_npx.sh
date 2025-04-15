@@ -6,10 +6,10 @@
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=2
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
-#SBATCH --time=0-02:00:00
+#SBATCH --time=0-01:00:00
 #SBATCH --array=0-49
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
@@ -41,14 +41,5 @@ catch err
 end
 exit
 EOF
-
-#if [ "$2" == "rfmp" ]; then
-#    matlab -nodisplay -r "try, addpath('$HELPERS_PATH'); ia_rfMaps('$DATA_PATH', 'IMEC', '$3'); catch, exit(1); end; exit;"
-#elif [ "$2" == "mdir" ]; then
-#    matlab -nodisplay -r "try, addpath('$HELPERS_PATH'); ia_mdirRasters('$DATA_PATH', 'IMEC', '$3', 'ALIGN', '$4'); catch, exit(1); end; exit;"
-#else
-#    echo "Unknown function label: $3"
-#    exit 1
-#fi
 
 echo "DONE"
