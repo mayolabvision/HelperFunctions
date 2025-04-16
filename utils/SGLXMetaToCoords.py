@@ -419,7 +419,7 @@ def shankMapToGeom(meta):
 # =========================================================
 # Plot x z positions of all electrodes and saved channels
 #
-def plotSaved(xCoord, yCoord, shankInd, meta):
+def plotSaved(xCoord, yCoord, shankInd, meta, savePath=None): 
     
     geomList = getGeomParams(meta)
     # geomList = 
@@ -459,7 +459,12 @@ def plotSaved(xCoord, yCoord, shankInd, meta):
         plt.scatter(shankSep*sI + xCoord[currInd], yCoord[currInd], **marker_style)
    
    # after looping over all shanks, show plot 
-    plt.show()
+    if savePath is not None:
+        plt.savefig(savePath, dpi=300)
+    else:
+        plt.show()
+
+    plt.close(fig)
 
     return
 
@@ -630,7 +635,8 @@ def MetaToCoords(metaFullPath, outType, badChan= np.zeros((0), dtype = 'int'), d
         [nShank, shankWidth, shankPitch, shankInd, xCoord, yCoord, connected] = shankMapToGeom(meta);
     
     if showPlot:
-        plotSaved(xCoord, yCoord, shankInd, meta)
+        outPath = metaFullPath.replace('.meta', '.png')
+        plotSaved(xCoord, yCoord, shankInd, meta, savePath=outPath)
         
     [AP,LF,SY] = ChannelCountsIM(meta)    
     chans = np.arange(AP)

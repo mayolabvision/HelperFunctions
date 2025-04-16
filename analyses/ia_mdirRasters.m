@@ -81,7 +81,7 @@ function ia_mdirRasters(data_path,varargin)
                 if isequal(ALIGN,'stim')
                     sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                 elseif isequal(ALIGN,'sacc')
-                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.SACCADE, 'uni', 0);
+                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
                 end
 
                 subplot(3,3,angle_order(ang))
