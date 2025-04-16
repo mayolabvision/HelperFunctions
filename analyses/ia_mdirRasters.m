@@ -56,17 +56,18 @@ function ia_mdirRasters(data_path,varargin)
     else
         all_units = 1:height(S.kilosort(IMEC+1).clusters);
         % Split into 50 chunks as a cell array
+        n_chunks = 100;
         chunks = arrayfun(@(i) all_units(...
-            floor((i-1)*numel(all_units)/50)+1 : ...
-            floor(i*numel(all_units)/50)), ...
-            1:50, 'UniformOutput', false);
+            floor((i-1)*numel(all_units)/n_chunks)+1 : ...
+            floor(i*numel(all_units)/n_chunks)), ...
+            1:n_chunks, 'UniformOutput', false);
         units = (chunks{(JOB_ID+1)}) - 1;
     end
     
     imec_name = ['spiketimes_imec' num2str(IMEC)];
     for u=1:length(units)
         unit = units(u);
-        if ~exist(fullfile(fig_path, sprintf('AAAimec%d_unit%03d.png', IMEC, unit)), 'file')
+        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
             f3a = figure; %('Visible','off');
             f3a.Position = [100 100 1800 900];
         
