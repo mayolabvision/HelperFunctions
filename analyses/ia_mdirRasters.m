@@ -66,8 +66,8 @@ function ia_mdirRasters(data_path,varargin)
     imec_name = ['spiketimes_imec' num2str(IMEC)];
     for u=1:length(units)
         unit = units(u);
-        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
-            f3a = figure('Visible','off');
+        if ~exist(fullfile(fig_path, sprintf('AAAimec%d_unit%03d.png', IMEC, unit)), 'file')
+            f3a = figure; %('Visible','off');
             f3a.Position = [100 100 1800 900];
         
             y_lims = []; % Store y-axis limits
