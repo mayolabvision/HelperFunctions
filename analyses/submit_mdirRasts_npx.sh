@@ -1,16 +1,15 @@
 #!/bin/bash -l
 #SBATCH --cluster=smp
-#SBATCH --partition=high-mem
+#SBATCH --partition=smp
 #SBATCH --job-name=mdir
-#SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A.out
-#SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A.out
+#SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
+#SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=16G
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=2
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
-#SBATCH --time=0-02:00:00
+#SBATCH --time=0-00:59:59
 #SBATCH --array=0-49
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
@@ -43,14 +42,5 @@ catch err
 end
 exit
 EOF
-
-#if [ "$2" == "rfmp" ]; then
-#    matlab -nodisplay -r "try, addpath('$HELPERS_PATH'); ia_rfMaps('$DATA_PATH', 'IMEC', '$3'); catch, exit(1); end; exit;"
-#elif [ "$2" == "mdir" ]; then
-#    matlab -nodisplay -r "try, addpath('$HELPERS_PATH'); ia_mdirRasters('$DATA_PATH', 'IMEC', '$3', 'ALIGN', '$4'); catch, exit(1); end; exit;"
-#else
-#    echo "Unknown function label: $3"
-#    exit 1
-#fi
 
 echo "DONE"
