@@ -27,9 +27,11 @@ function ia_mdirRasters(data_path,varargin)
     if isequal(ALIGN,'stim')
         FR_WIN = [50,150];
         fig_path = fullfile(FIG_PATH, 'stim_aligned');
+        xlab = 'time aligned to target onset (ms)';
     elseif isequal(ALIGN,'sacc')
         FR_WIN = [-50,50];
         fig_path = fullfile(FIG_PATH, 'sacc_aligned');
+        xlab = 'time aligned to saccade onset (ms)';
     end
     if ~exist(fig_path, 'dir'), mkdir(fig_path); end
 
@@ -66,7 +68,7 @@ function ia_mdirRasters(data_path,varargin)
     imec_name = ['spiketimes_imec' num2str(IMEC)];
     for u=1:length(units)
         unit = units(u);
-        if ~exist(fullfile(fig_path, sprintf('AAAimec%d_unit%03d.png', IMEC, unit)), 'file')
+        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
             f3a = figure; %('Visible','off');
             f3a.Position = [100 100 1800 900];
         
@@ -74,8 +76,13 @@ function ia_mdirRasters(data_path,varargin)
             frs_perAng = cell(length(angles),1);
             for ang = 1:length(angles)
                 these_trls = T(T.angle==angles(ang),:);
-                sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                 
+                if isequal(ALIGN,'stim')
+                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
+                elseif isequal(ALIGN,'sacc')
+                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.SACCADE, 'uni', 0);
+                end
+
                 subplot(3,3,angle_order(ang))
                 raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color, 'SEM_SHADE', sem_shade)
         
@@ -146,7 +153,7 @@ function ia_mdirRasters(data_path,varargin)
             han=axes(f3a,'visible','off'); 
             han.Title.Visible='on';
             han.XLabel.Visible='on';
-            xlabel(han,{'';'time aligned to target onset (ms)'},'fontsize',16);
+            xlabel(han,{'';xlab},'fontsize',16);
         
             if (IMEC)==0
                 title(han,sprintf('%s --- LEFT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
