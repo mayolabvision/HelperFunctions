@@ -23,8 +23,18 @@ module load matlab/R2023a
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
-FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/mdir/unit_rasters"
+
+: "${4:=0}"
+if [ "$4" -eq 0 ]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/mdir/unit_rasters"
+elif [ "$4" -eq 1 ]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_corrected/mdir/unit_rasters"
+else
+    echo "Error: Invalid IMEC value '$4'. Must be 0 or 1."
+    exit 1
+fi
 
 # First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF

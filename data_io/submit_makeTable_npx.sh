@@ -18,15 +18,29 @@ module purge
 module load matlab/R2023a
 conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 
+: "${2:=0}"
+
 # Define the varargin parameters
 RAW_PATH='/ix1/pmayo/lab_NHPdata'
 OUT_PATH='/ix1/pmayo/lab_NHPdata'
 CSV_PATH='/ix1/pmayo/lab_NHPdata/RECORDING_INFO.csv'
 NEV_PATH='/ihome/pmayo/knoneman/Packages/nevutils'
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/kilosort4"
-KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/kilosort4"
-DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
+
+if [ "$2" -eq 0 ]; then
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/kilosort4"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/kilosort4"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
+    DRIFT="false"
+elif [ "$2" -eq 1 ]; then
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/corrected/kilosort4"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/corrected/kilosort4"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
+    DRIFT="true"
+else
+    echo "Error: Invalid IMEC value '$2'. Must be 0 or 1."
+    exit 1
+fi
 
 echo "Using DATA_PATH: $DATA_PATH"
 
@@ -56,7 +70,9 @@ try
         'RAW_DATA_PATH', '$RAW_PATH', ...
         'OUT_DATA_PATH', '$OUT_PATH', ...
         'RECD_CSV_PATH', '$CSV_PATH', ...
-        'NEVUTIL_PATH', '$NEV_PATH');
+        'NEVUTIL_PATH', '$NEV_PATH', ...
+        'PARSE_KILOSORT', evalin('base', 'true'), ...
+        'DRIFT_CORRECTED', evalin('base', '$DRIFT'));
 catch err
     disp('ERROR in process_NeuropixRecording_KKN:');
     disp(getReport(err));
@@ -64,8 +80,6 @@ catch err
 end
 exit
 EOF
-
-#matlab -nodisplay -r "try, process_NeuropixRecording_KKN('$1', '$2', '$3', 'RAW_DATA_PATH', '$RAW_PATH', 'OUT_DATA_PATH', '$OUT_PATH', 'RECD_CSV_PATH', '$CSV_PATH', 'NASNET_PATH', '$NET_PATH', 'NEVUTIL_PATH', '$NEV_PATH'); catch, exit(1); end; exit;"
 
 #matlab -nodisplay -r "try, ia_trialOutcomes('$DATA_PATH'); catch, exit(1); end; exit;"
 

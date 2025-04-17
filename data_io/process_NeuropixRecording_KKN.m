@@ -17,6 +17,7 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
     addParameter(p, 'PARSE_KILOSORT', true, @islogical)
+    addParameter(p, 'DRIFT_CORRECTED', false, @islogical)
     
     % Parse inputs
     parse(p, session_name, varargin{:});
@@ -25,6 +26,7 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     CSV_PATH = p.Results.RECD_CSV_PATH;
     NEV_PATH = p.Results.NEVUTIL_PATH;
     PARSE_KS = p.Results.PARSE_KILOSORT;
+    DRIFT = p.Results.DRIFT_CORRECTED;
 
     addpath(genpath(NEV_PATH));
 
@@ -125,7 +127,12 @@ function process_NeuropixRecording_KKN(session_name,varargin)
 
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
-                [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,fullfile(imec_dirs{imec},'kilosort4'),'NP_ALIGN_PULSES',these_alignTimes);
+                if DRIFT
+                    kilosort4_path = fullfile(imec_dirs{imec},'corrected','kilosort4');
+                else
+                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4');
+                end
+                [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
                 trlAvg_frs_all{imec} = trlAvg_frs;
                 kilosort_all = [kilosort_all; kilosort];
 
