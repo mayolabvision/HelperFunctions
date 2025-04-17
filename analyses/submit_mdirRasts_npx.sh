@@ -23,14 +23,15 @@ module load matlab/R2023a
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
+DRIFT_PRESET='dredge'
 
 : "${4:=0}"
 if [ "$4" -eq 0 ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
     FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/mdir/unit_rasters"
 elif [ "$4" -eq 1 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_corrected/mdir/unit_rasters"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_$DREDGE.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_$DREDGE/mdir/unit_rasters"
 else
     echo "Error: Invalid IMEC value '$4'. Must be 0 or 1."
     exit 1

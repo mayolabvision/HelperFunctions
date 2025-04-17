@@ -81,6 +81,6 @@ end
 exit
 EOF
 
-#matlab -nodisplay -r "try, ia_trialOutcomes('$DATA_PATH'); catch, exit(1); end; exit;"
+matlab -nodisplay -r "try, addpath(genpath('$HELPERS_PATH')); ia_trialOutcomes('$DATA_PATH'); catch, exit(1); end; exit;"
 
 echo "DONE"

@@ -22,14 +22,15 @@ module load matlab/R2023a
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
+DRIFT_PRESET='dredge'
 
 : "${3:=0}"
 if [ "$3" -eq 0 ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
     FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/rfmp/unit_heatmaps"
 elif [ "$3" -eq 1 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_corrected/rfmp/unit_heatmaps"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_$DRIFT_PRESET.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_$DRIFT_PRESET/rfmp/unit_heatmaps"
 else
     echo "Error: Invalid value '$3'. Must be 0 or 1."
     exit 1
