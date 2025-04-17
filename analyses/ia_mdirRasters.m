@@ -70,7 +70,7 @@ function ia_mdirRasters(data_path,varargin)
     for u=1:length(units)
         unit = units(u);
         if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
-            f3a = figure; %('Visible','off');
+            f3a = figure('Visible','off');
             f3a.Position = [100 100 1800 900];
         
             y_lims = []; % Store y-axis limits
@@ -81,7 +81,7 @@ function ia_mdirRasters(data_path,varargin)
                 if isequal(ALIGN,'stim')
                     sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                 elseif isequal(ALIGN,'sacc')
-                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.SACCADE, 'uni', 0);
+                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
                 end
 
                 subplot(3,3,angle_order(ang))
