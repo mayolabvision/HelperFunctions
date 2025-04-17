@@ -31,7 +31,7 @@ elif [ "$3" -eq 1 ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
     FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_corrected/rfmp/unit_heatmaps"
 else
-    echo "Error: Invalid IMEC value '$3'. Must be 0 or 1."
+    echo "Error: Invalid value '$3'. Must be 0 or 1."
     exit 1
 fi
 

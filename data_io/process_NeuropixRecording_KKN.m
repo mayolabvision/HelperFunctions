@@ -132,21 +132,23 @@ function process_NeuropixRecording_KKN(session_name,varargin)
                 else
                     kilosort4_path = fullfile(imec_dirs{imec},'kilosort4');
                 end
-                [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
-                trlAvg_frs_all{imec} = trlAvg_frs;
-                kilosort_all = [kilosort_all; kilosort];
+                if isfolder(kilosort4_path)
+                    [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
+                    trlAvg_frs_all{imec} = trlAvg_frs;
+                    kilosort_all = [kilosort_all; kilosort];
 
-                tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
+                    tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
+                end
             end
 
             if nevnum==1
                 S1.kilosort = kilosort_all;
             end
 
-            for imec = 1:numel(imec_dirs)
-                S1.kilosort(imec).clusters.([this_task,'_Hz']) = trlAvg_frs_all{imec};
-            end
-
+            %for imec = 1:numel(imec_dirs)
+            %    S1.kilosort(imec).clusters.([this_task, '_Hz']) = trlAvg_frs_all{imec};
+            %end
+            
             last_alignID = last_alignID + height(tbl);   
         end
 
@@ -161,8 +163,11 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     S = unify_taskTables(S1,taskTypes);
     S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
-    save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S', '-v7.3');
- 
+    if DRIFT
+        save(fullfile(OUT_PATH,session_name,[session_name,'_corrected.mat']), 'S', '-v7.3');
+    else
+        save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S', '-v7.3');
+    end 
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     fprintf(sprintf('Total elapsed time was %2.2f minutes',tc/60))

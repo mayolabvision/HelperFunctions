@@ -30,19 +30,17 @@ HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 if [ "$2" -eq 0 ]; then
     KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/kilosort4"
     KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/kilosort4"
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
     DRIFT="false"
 elif [ "$2" -eq 1 ]; then
     KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/corrected/kilosort4"
     KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/corrected/kilosort4"
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_corrected.mat"
     DRIFT="true"
 else
     echo "Error: Invalid IMEC value '$2'. Must be 0 or 1."
     exit 1
 fi
 
-echo "Using DATA_PATH: $DATA_PATH"
+echo "KILO4_PATH0: $DATA_PATH"
 
 # Convert .npy files in kilosort4 directory to .mat
 python -c "

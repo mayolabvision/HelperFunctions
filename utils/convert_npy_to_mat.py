@@ -3,6 +3,10 @@ import os
 from scipy.io import savemat
 
 def convert_npy_to_mat(directory):
+    if not os.path.isdir(directory):
+        print(f"Directory does not exist: {directory}")
+        return  # Exit the function gracefully
+
     for file in os.listdir(directory):
         if file.endswith('.npy') and file != 'ops.npy' and file != 'pc_features.npy':
             npy_path = os.path.join(directory, file)
