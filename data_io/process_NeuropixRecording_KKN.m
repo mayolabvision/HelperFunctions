@@ -16,8 +16,9 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'RECD_CSV_PATH', defaultCSV_PATH, @ischar); 
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
-    addParameter(p, 'PARSE_KILOSORT', true, @islogical)
-    addParameter(p, 'DRIFT_CORRECTED', false, @islogical)
+    addParameter(p, 'PARSE_KILOSORT', true, @islogical);
+    addParameter(p, 'DRIFT_CORRECTED', false, @islogical);
+    addParameter(p, 'DRIFT_PRESET', 'dredge', @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
@@ -26,7 +27,8 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     CSV_PATH = p.Results.RECD_CSV_PATH;
     NEV_PATH = p.Results.NEVUTIL_PATH;
     PARSE_KS = p.Results.PARSE_KILOSORT;
-    DRIFT = p.Results.DRIFT_CORRECTED;
+    DRIFT_CORRECTED = p.Results.DRIFT_CORRECTED;
+    DRIFT_PRESET = p.Results.DRIFT_PRESET;
 
     addpath(genpath(NEV_PATH));
 
@@ -127,8 +129,8 @@ function process_NeuropixRecording_KKN(session_name,varargin)
 
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
-                if DRIFT
-                    kilosort4_path = fullfile(imec_dirs{imec},'corrected','kilosort4');
+                if DRIFT_CORRECTED
+                    kilosort4_path = fullfile(imec_dirs{imec},DRIFT_PRESET,'kilosort4');
                 else
                     kilosort4_path = fullfile(imec_dirs{imec},'kilosort4');
                 end
@@ -156,15 +158,15 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     
     end
 
-    %ff = fieldnames(S1);
-    %S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
+    ff = fieldnames(S1);
+    S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
     S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
     if DRIFT
-        save(fullfile(OUT_PATH,session_name,[session_name,'_corrected.mat']), 'S', '-v7.3');
+        save(fullfile(OUT_PATH,session_name,[session_name,'_',DRIFT_PRESET,'.mat']), 'S', '-v7.3');
     else
         save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S', '-v7.3');
     end 

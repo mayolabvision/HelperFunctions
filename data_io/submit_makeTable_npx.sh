@@ -26,14 +26,15 @@ OUT_PATH='/ix1/pmayo/lab_NHPdata'
 CSV_PATH='/ix1/pmayo/lab_NHPdata/RECORDING_INFO.csv'
 NEV_PATH='/ihome/pmayo/knoneman/Packages/nevutils'
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
+DRIFT_PRESET='dredge'
 
 if [ "$2" -eq 0 ]; then
     KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/kilosort4"
     KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/kilosort4"
     DRIFT="false"
 elif [ "$2" -eq 1 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/corrected/kilosort4"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/corrected/kilosort4"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec0/$DRIFT_PRESET/kilosort4"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${1}/${1}_imec1/$DRIFT_PRESET/kilosort4"
     DRIFT="true"
 else
     echo "Error: Invalid IMEC value '$2'. Must be 0 or 1."
@@ -70,7 +71,8 @@ try
         'RECD_CSV_PATH', '$CSV_PATH', ...
         'NEVUTIL_PATH', '$NEV_PATH', ...
         'PARSE_KILOSORT', evalin('base', 'true'), ...
-        'DRIFT_CORRECTED', evalin('base', '$DRIFT'));
+        'DRIFT_CORRECTED', evalin('base', '$DRIFT'), ...
+        'DRIFT_PRESET', '$DRIFT_PRESET');
 catch err
     disp('ERROR in process_NeuropixRecording_KKN:');
     disp(getReport(err));
