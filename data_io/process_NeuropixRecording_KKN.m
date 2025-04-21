@@ -18,7 +18,6 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar); 
     addParameter(p, 'PARSE_KILOSORT', true, @islogical);
     addParameter(p, 'DRIFT_CORRECTED', false, @islogical);
-    addParameter(p, 'DRIFT_PRESET', 'dredge', @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
@@ -28,7 +27,6 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     NEV_PATH = p.Results.NEVUTIL_PATH;
     PARSE_KS = p.Results.PARSE_KILOSORT;
     DRIFT_CORRECTED = p.Results.DRIFT_CORRECTED;
-    DRIFT_PRESET = p.Results.DRIFT_PRESET;
 
     addpath(genpath(NEV_PATH));
 
@@ -38,10 +36,10 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     addpath(genpath(parentDirOneLevelUp));
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fparts = split(session_name, '_');
-    experimenter = fparts{1}; monkey = fparts{2}; session = fparts{3};
+    %fparts = split(session_name, '_');
+    %experimenter = fparts{1}; monkey = fparts{2}; session = fparts{3};
 
-    [this_sess,~]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
+    %[this_sess,~]  =  read_recordingNotes(CSV_PATH,experimenter,monkey,session);
     if ~exist(fullfile(OUT_PATH, session_name), 'dir'), mkdir(fullfile(OUT_PATH, session_name)); end
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
@@ -56,9 +54,12 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     nevnames = nevnames(idx);
     nevpaths = raw_filepaths(idx);
 
+    disp(nevpaths)
+
     tasks = cellfun(@(q) q{4}, cellfun(@(x) split(x, '_'), nevnames, 'uni', 0), 'uni', 0);
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
-    
+
+    disp(tasks)
     if PARSE_KS
         imec_dirs = dir(fullfile(OUT_PATH, session_name,[session_name, '*_imec*']));
         imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
@@ -76,7 +77,7 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     
     % Make structure to hold all data 
     S1 = struct();
-    S1.recording_info = table2struct(this_sess);
+    %S1.recording_info = table2struct(this_sess);
     % S1.channels = mappings;  
     % S1.probe_specs = probe_specs;
 
@@ -130,7 +131,7 @@ function process_NeuropixRecording_KKN(session_name,varargin)
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
                 if DRIFT_CORRECTED
-                    kilosort4_path = fullfile(imec_dirs{imec},DRIFT_PRESET,'kilosort4');
+                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_preprocess','sorter_output');
                 else
                     kilosort4_path = fullfile(imec_dirs{imec},'kilosort4');
                 end
@@ -147,9 +148,9 @@ function process_NeuropixRecording_KKN(session_name,varargin)
                 S1.kilosort = kilosort_all;
             end
 
-            %for imec = 1:numel(imec_dirs)
-            %    S1.kilosort(imec).clusters.([this_task, '_Hz']) = trlAvg_frs_all{imec};
-            %end
+            for imec = 1:numel(imec_dirs)
+                S1.kilosort(imec).clusters.([this_task, '_Hz']) = trlAvg_frs_all{imec};
+            end
             
             last_alignID = last_alignID + height(tbl);   
         end
@@ -159,16 +160,17 @@ function process_NeuropixRecording_KKN(session_name,varargin)
     end
 
     ff = fieldnames(S1);
-    S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
+    %S1 = orderfields(S1, [ff(1:find(strcmp(ff,'recording_info'))); "kilosort"; ff(~strcmp(ff,'kilosort') & ~strcmp(ff,'recording_info'))]);
+    S1 = orderfields(S1, ["kilosort"; ff(~strcmp(ff,'kilosort'))]);
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
     S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
-    if DRIFT
-        save(fullfile(OUT_PATH,session_name,[session_name,'_',DRIFT_PRESET,'.mat']), 'S', '-v7.3');
-    else
+    if DRIFT_CORRECTED
         save(fullfile(OUT_PATH,session_name,[session_name,'.mat']), 'S', '-v7.3');
+    else
+        save(fullfile(OUT_PATH,session_name,[session_name,'_raw.mat']), 'S', '-v7.3');
     end 
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');

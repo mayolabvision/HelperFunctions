@@ -33,7 +33,7 @@ function ia_mdirRasters(data_path,varargin)
         fig_path = fullfile(FIG_PATH, 'sacc_aligned');
         xlab = 'time aligned to saccade onset (ms)';
     end
-    if ~exist(fig_path, 'dir'), mkdir(fig_path); end
+    if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
 
     if IMEC==0
         line_color = [123, 44, 191]./255;

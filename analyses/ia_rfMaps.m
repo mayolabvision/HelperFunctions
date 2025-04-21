@@ -20,8 +20,7 @@ function ia_rfMaps(data_path,varargin)
     if isempty(FIG_PATH)
         FIG_PATH = fullfile(parent_path, 'figs', 'rfmp', 'unit_heatmaps');
     end
-
-    if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end
+    if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
 
     if isnan(JOB_ID)
         units = 1:height(S.kilosort(IMEC+1).clusters);

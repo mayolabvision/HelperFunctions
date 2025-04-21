@@ -59,8 +59,8 @@ for ii = 1:length(kilo_files2)
         clusters = cc2;
     end
 end
-clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
-clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
+%clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
+%clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
 kilosort.clusters = clusters;
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);

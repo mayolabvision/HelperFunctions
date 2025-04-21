@@ -21,21 +21,27 @@ echo "Job started at $(date)"
 module purge
 module load matlab/R2023a
 
+SESSION="$1"
+CORRECTED="${4:-0}"
+
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-DRIFT_PRESET='dredge'
 
-: "${4:=0}"
-if [ "$4" -eq 0 ]; then
+if [ "$CORRECTED" -eq 0 ]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_raw.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_raw/mdir/unit_rasters"
+elif [ "$CORRECTED" -eq 1 ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_defaults/mdir/unit_rasters"
-elif [ "$4" -eq 1 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_$DREDGE.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/ks_$DREDGE/mdir/unit_rasters"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_preprocess/rfmp/unit_rasters"
 else
-    echo "Error: Invalid IMEC value '$4'. Must be 0 or 1."
+    echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
     exit 1
 fi
+
+echo "DATA_PATH: $DATA_PATH"
+echo "FIG_PATH: $FIG_PATH"
+echo "CORRECTED: $CORRECTED"
+
 
 # First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
