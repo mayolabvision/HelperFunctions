@@ -30,12 +30,12 @@ NEV_PATH='/ihome/pmayo/knoneman/Packages/nevutils'
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 if [ "$CORRECTED" -eq 0 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_nodrift"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_nodrift"
     DRIFT="false"
 elif [ "$CORRECTED" -eq 1 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_preprocess/sorter_output"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_preprocess/sorter_output"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_medicine"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_medicine"
     DRIFT="true"
 else
     echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
