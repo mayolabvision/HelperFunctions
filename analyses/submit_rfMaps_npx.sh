@@ -20,18 +20,27 @@ echo "Job started at $(date)"
 module purge
 module load matlab/R2023a
 
+#########INPUTS##########
+
 SESSION="$1"
+IMEC="${2:-0}"
 CORRECTED="${3:-0}"
+
+echo "SESSION: $SESSION"
+echo "IMEC: $IMEC"
+echo "CORRECTED: $CORRECTED"
+
+########################
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 if [ "$CORRECTED" -eq 0 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_raw.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_raw/rfmp/unit_heatmaps"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_nodrift.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_nodrift/rfmp/unit_heatmaps"
 elif [ "$CORRECTED" -eq 1 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_preprocess/rfmp/unit_heatmaps"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_medicine/rfmp/unit_heatmaps"
 else
     echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
     exit 1
@@ -39,15 +48,13 @@ fi
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
-echo "CORRECTED: $CORRECTED"
 
-# First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
 try
     addpath(genpath('$HELPERS_PATH'));
     fprintf('Running ia_rfMaps for $1\n');
     ia_rfMaps('$DATA_PATH', ...
-        'IMEC', ${2}, ...
+        'IMEC', $IMEC, ...
         'FIG_PATH', '$FIG_PATH', ...
         'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
 catch err

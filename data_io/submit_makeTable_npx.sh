@@ -25,17 +25,18 @@ CORRECTED="${2:-0}"
 # Define the varargin parameters
 RAW_PATH='/ix1/pmayo/lab_NHPdata'
 OUT_PATH='/ix1/pmayo/lab_NHPdata'
-CSV_PATH='/ix1/pmayo/lab_NHPdata/RECORDING_INFO.csv'
 NEV_PATH='/ihome/pmayo/knoneman/Packages/nevutils'
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
+PROBE_TYPE='np'
+PARSE_KS="true"
 
 if [ "$CORRECTED" -eq 0 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_nodrift"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_nodrift"
     DRIFT="false"
 elif [ "$CORRECTED" -eq 1 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_preprocess/sorter_output"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_preprocess/sorter_output"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_medicine"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_medicine"
     DRIFT="true"
 else
     echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
@@ -67,20 +68,20 @@ else:
     print(f'Skipping convert_npy_to_mat: {kilo_path} does not exist.')
 "
 
-# First MATLAB call: run process_NeuropixRecording_KKN
+# First MATLAB call: run process_fullRecording
 matlab -nodisplay <<EOF
 try
     addpath(genpath('$HELPERS_PATH'));
-    fprintf('Running process_NeuropixRecording_KKN for $1\n');
-    process_NeuropixRecording_KKN('${SESSION}', ...
+    fprintf('Running process_fullRecording for $1\n');
+    process_fullRecording('${SESSION}', ...
         'RAW_DATA_PATH', '$RAW_PATH', ...
         'OUT_DATA_PATH', '$OUT_PATH', ...
-        'RECD_CSV_PATH', '$CSV_PATH', ...
         'NEVUTIL_PATH', '$NEV_PATH', ...
-        'PARSE_KILOSORT', evalin('base', 'true'), ...
+        'PROBE_TYPE', '$PROBE_TYPE', ...
+        'PARSE_KILOSORT', evalin('base', '$PARSE_KS'), ...
         'DRIFT_CORRECTED', evalin('base', '$DRIFT'));
 catch err
-    disp('ERROR in process_NeuropixRecording_KKN:');
+    disp('ERROR in process_fullRecording:');
     disp(getReport(err));
     exit(1);
 end

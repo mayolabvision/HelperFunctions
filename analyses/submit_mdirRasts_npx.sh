@@ -21,18 +21,29 @@ echo "Job started at $(date)"
 module purge
 module load matlab/R2023a
 
+#########INPUTS##########
+
 SESSION="$1"
+IMEC="${2:-0}"
+ALIGN="$3"
 CORRECTED="${4:-0}"
+
+echo "SESSION: $SESSION"
+echo "IMEC: $IMEC"
+echo "ALIGN: $ALIGN"
+echo "CORRECTED: $CORRECTED"
+
+########################
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 if [ "$CORRECTED" -eq 0 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_raw.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_raw/mdir/unit_rasters"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_nodrift.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_nodrift/mdir/unit_rasters"
 elif [ "$CORRECTED" -eq 1 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_preprocess/rfmp/unit_rasters"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_medicine/rfmp/unit_rasters"
 else
     echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
     exit 1
@@ -40,16 +51,14 @@ fi
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
-echo "CORRECTED: $CORRECTED"
-
 
 # First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
 fprintf('Running ia_mdirRasters for $1\n');
 ia_mdirRasters('$DATA_PATH', ...
-    'IMEC', ${2}, ...
-    'ALIGN', '${3}', ...
+    'IMEC', $IMEC, ...
+    'ALIGN', '$ALIGN', ...
     'FIG_PATH', '$FIG_PATH', ...
     'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
 exit
