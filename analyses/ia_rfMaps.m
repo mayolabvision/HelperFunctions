@@ -34,14 +34,23 @@ function ia_rfMaps(data_path,varargin)
         units = (chunks{(JOB_ID+1)}) - 1;
     end
     
+    % Find rfmp or rfMapping fields
+    fields = fieldnames(S);
+    matchingFields = fields(contains(fields, {'rfmp', 'rfMapping'}, 'IgnoreCase', true));
+
+    T = []; 
+    for mm = 1:numel(matchingFields)
+        T = [T; S.(matchingFields{mm}).data];
+    end
+
     for u=1:length(units)
         unit = units(u);
         if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
-            [frs,bin_edges,xvals,yvals] = format_tableToRFMap(S.rfmp1.data, 'IMEC', IMEC, 'UNITS', (unit+1));
+            [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
         
             f2a = figure('Visible','off');
             f2a.Position = [100 100 1800 900];
-            tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',pix2deg(xvals,S.rfmp1.params.screenDistance(1),S.rfmp1.params.pixPerCM(1)), 'Y_VALS',pix2deg(yvals,S.rfmp1.params.screenDistance(1),S.rfmp1.params.pixPerCM(1)));
+            tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
             
             if (IMEC)==0
                 title(tl,sprintf('%s --- LEFT --- cluster %d',filename, unit),'fontsize',20,'interpreter','none')
