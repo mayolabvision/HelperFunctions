@@ -43,11 +43,15 @@ function ia_mdirRasters(data_path,varargin)
         sem_shade = [212,235,232]./255;
     end
     
-    if isfield(S, 'mdir2')
-        T = [S.mdir1.data; S.mdir2.data];
-    else
-        T = S.mdir1.data;
+    % Find rfmp or rfMapping fields
+    fields = fieldnames(S);
+    matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
+    
+    T = []; 
+    for mm = 1:numel(matchingFields)
+        T = [T; S.(matchingFields{mm}).data];
     end
+
     T = T(T.result=='CORRECT',:);
     
     angles = sort(unique(T.angle))';
