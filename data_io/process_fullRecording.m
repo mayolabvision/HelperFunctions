@@ -256,7 +256,6 @@ function process_fullRecording(session_name,varargin)
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
-    S.rfmp1.data = S.rfmp1.data(~cellfun(@(q) any(isnan(q)), S.rfmp1.data.STIM_OFF, 'uni', 1),:);
 
     if DRIFT_CORRECTED
         save(fullfile(OUT_PATH,session_name,[session_name,'_medicine.mat']), 'S', '-v7.3');

@@ -324,4 +324,8 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
     end
 
+    if any(contains(TASK_NAME, {'rfmp', 'rfMapping'}))
+        tbl = tbl(~cellfun(@(q) any(isnan(q)), tbl.STIM_OFF, 'uni', 1),:);
+    end
+
 end
