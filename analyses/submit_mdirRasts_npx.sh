@@ -39,8 +39,8 @@ echo "CORRECTED: $CORRECTED"
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 if [ "$CORRECTED" -eq 0 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_nodrift.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_nodrift/mdir/unit_rasters"
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_baseline.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_baseline/mdir/unit_rasters"
 elif [ "$CORRECTED" -eq 1 ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
     FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_medicine/rfmp/unit_rasters"

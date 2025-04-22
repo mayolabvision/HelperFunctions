@@ -31,8 +31,8 @@ PROBE_TYPE='np'
 PARSE_KS="true"
 
 if [ "$CORRECTED" -eq 0 ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_nodrift"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_nodrift"
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_baseline"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_baseline"
     DRIFT="false"
 elif [ "$CORRECTED" -eq 1 ]; then
     KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_medicine"

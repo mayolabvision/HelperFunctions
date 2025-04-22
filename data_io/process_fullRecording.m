@@ -221,9 +221,9 @@ function process_fullRecording(session_name,varargin)
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
                 if DRIFT_CORRECTED
-                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_medicine');
+                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_baseline');
                 else
-                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_nodrift');
+                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_medicine');
                 end
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
@@ -260,7 +260,7 @@ function process_fullRecording(session_name,varargin)
     if DRIFT_CORRECTED
         save(fullfile(OUT_PATH,session_name,[session_name,'_medicine.mat']), 'S', '-v7.3');
     else
-        save(fullfile(OUT_PATH,session_name,[session_name,'_nodrift.mat']), 'S', '-v7.3');
+        save(fullfile(OUT_PATH,session_name,[session_name,'_baseline.mat']), 'S', '-v7.3');
     end 
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
