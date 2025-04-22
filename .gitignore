@@ -6,3 +6,4 @@ conversions/__pycache__/
 utils/__pycache__/
 utils/__pycache__/convert_npy_to_mat.cpython-39.pyc
 data_io/.ipynb_checkpoints/
+data_io/*.swp
