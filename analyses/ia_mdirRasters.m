@@ -73,7 +73,7 @@ function ia_mdirRasters(data_path,varargin)
     imec_name = ['spiketimes_imec' num2str(IMEC)];
     for u=1:length(units)
         unit = units(u);
-        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
+        if ~exist(fullfile(fig_path, sprintf('imec%d_unit%04d.png', IMEC, unit)), 'file')
             f3a = figure('Visible','off');
             f3a.Position = [100 100 1800 900];
         
@@ -166,10 +166,10 @@ function ia_mdirRasters(data_path,varargin)
                 title(han,sprintf('%s --- RIGHT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
             end
         
-            print(f3a, fullfile(fig_path, sprintf('imec%d_unit%03d.png', (IMEC), unit)), '-dpng', '-r200');
-            fprintf(sprintf('\n----IMEC %d, Unit %.3d COMPLETE----',IMEC, unit))
+            print(f3a, fullfile(fig_path, sprintf('imec%d_unit%04d.png', (IMEC), unit)), '-dpng', '-r200');
+            fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
         else
-            fprintf(sprintf('\n----IMEC %d, Unit %.3d exists----',IMEC, unit))
+            fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
         end
 
     end

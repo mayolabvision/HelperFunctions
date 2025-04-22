@@ -20,7 +20,7 @@ addOptional(p,'SIGMA', 10, @isnumeric)
 addOptional(p,'LINE_COLOR', [0 0 255]./255, @(x) isnumeric(x) && length(x) == 3);
 addOptional(p,'SEM_SHADE', [178 178 255]./255, @(x) isnumeric(x) && length(x) == 3);
 addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) isnumeric(x) && length(x) == 3);
-addOptional(p,'TICK_LENGTH', 3, @isnumeric)
+addOptional(p,'TICK_LENGTH', 1, @isnumeric)
 addOptional(p,'TICK_WIDTH', 2, @isnumeric)
 
 p.parse(spike_times, varargin{:});

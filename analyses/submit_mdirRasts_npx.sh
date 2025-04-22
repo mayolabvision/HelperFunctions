@@ -24,8 +24,8 @@ module load matlab/R2023a
 #########INPUTS##########
 
 SESSION="$1"
-IMEC="${2:-0}"
-ALIGN="$3"
+ALIGN="$2"
+IMEC="${3:-0}"
 CORRECTED="${4:-0}"
 
 echo "SESSION: $SESSION"

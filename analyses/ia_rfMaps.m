@@ -45,7 +45,7 @@ function ia_rfMaps(data_path,varargin)
 
     for u=1:length(units)
         unit = units(u);
-        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%03d.png', IMEC, unit)), 'file')
+        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d.png', IMEC, unit)), 'file')
             [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
         
             f2a = figure('Visible','off');
@@ -59,10 +59,10 @@ function ia_rfMaps(data_path,varargin)
             end
             %subtitle(tl,sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth),'fontsize',16,'interpreter','none')
             
-            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%03d.png', IMEC, unit)), '-dpng', '-r200');
-            fprintf(sprintf('\n----IMEC %d, Unit %.3d COMPLETE----',IMEC, unit))
+            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d.png', IMEC, unit)), '-dpng', '-r200');
+            fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
         else
-            fprintf(sprintf('\n----IMEC %d, Unit %.3d exists----',IMEC, unit))
+            fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
         end
     end
     fprintf('\n------------------------------\n')
