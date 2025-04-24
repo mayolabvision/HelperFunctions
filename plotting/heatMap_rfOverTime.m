@@ -67,6 +67,11 @@ function tl = heatMap_rfOverTime(frs, varargin)
         frs = cellfun(@(q) mean(q), frs);
     end
 
+    if size(xvals,1)>size(xvals,2)
+        xvals = xvals';
+        yvals = yvals';
+    end
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     tl = tiledlayout(4,ceil(numel(bin_edges)/4));
     tl.TileSpacing = 'compact';
@@ -76,7 +81,17 @@ function tl = heatMap_rfOverTime(frs, varargin)
     for bin = 1:length(bin_edges)
         ax(bin) = nexttile(tl);
         
-        hmap = pcolor(xvals, yvals, frs(:,:,bin));
+        frs2 = [frs(:,:,bin); frs(end,:,bin)];
+        frs2 = [frs2 frs2(:,end)];
+
+        dx = mean(diff(xvals));
+        dy = mean(diff(yvals));
+        xedges = [xvals - dx/2, xvals(end) + dx/2];
+        yedges = [yvals - dy/2, yvals(end) + dy/2];
+
+        % hmap = pcolor(xvals, yvals, frs(:,:,bin));
+        hmap = pcolor(xedges, yedges, frs2);
+        
         if interp
             hmap.FaceColor = 'interp';
         end

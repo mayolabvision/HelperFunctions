@@ -73,7 +73,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     tbl = table();
 
     % re-arranging table to be easier to access data 
-    tbl.trialName = cellfun(@(q) [TASK_NAME,char('.'),char(string(q))], num2cell(1:height(tbl1))','uni',0);
+    tbl.trialName = cellfun(@(q) [TASK_NAME, '.', sprintf('%04d', q)], num2cell(1:height(tbl1))', 'uni', 0);
     tbl.trialName = categorical(string(tbl.trialName));
     % tbl.block = tbl1.block;
     

@@ -16,6 +16,7 @@ function ia_rfMaps(data_path,varargin)
     fprintf('\n------------------------------\n')
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
+    fprintf(sprintf('\n----Data loaded for %s----\n',filename))
 
     if isempty(FIG_PATH)
         FIG_PATH = fullfile(parent_path, 'figs', 'rfmp', 'unit_heatmaps');
@@ -23,7 +24,7 @@ function ia_rfMaps(data_path,varargin)
     if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
 
     if isnan(JOB_ID)
-        units = 1:height(S.kilosort(IMEC+1).clusters);
+        units = (1:height(S.kilosort(IMEC+1).clusters)) - 1;
     else
         all_units = 1:height(S.kilosort(IMEC+1).clusters);
         % Split into 50 chunks as a cell array

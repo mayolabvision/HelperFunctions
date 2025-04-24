@@ -35,14 +35,7 @@ function ia_mdirRasters(data_path,varargin)
     end
     if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
 
-    if IMEC==0
-        line_color = [123, 44, 191]./255;
-        sem_shade = [228,212,242]./255;
-    else
-        line_color = [42, 157, 143]./255;
-        sem_shade = [212,235,232]./255;
-    end
-    
+
     % Find rfmp or rfMapping fields
     fields = fieldnames(S);
     matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
@@ -56,9 +49,21 @@ function ia_mdirRasters(data_path,varargin)
     
     angles = sort(unique(T.angle))';
     angle_order = [6,3,2,1,4,7,8,9];
+    distances = sort(unique(T.distance));
+
+    if IMEC==0
+        line_color = {[123,44,191]./255; [191,44,186]./255};
+        tick_color = {[73,26,114]./255; [114,26,111]./255};
+        sem_shade = {[228,212,242]./255; [242,212,241]./255};
+    else
+        line_color = {[42,157,143]./255; [42,114,157]./255};
+        tick_color = {[25,94,85]./255; [25,68,94]./255};
+        sem_shade = {[212,235,232]./255; [212,226,235]./255};
+    end
+    
 
     if isnan(JOB_ID)
-        units = 1:height(S.kilosort(IMEC+1).clusters);
+        units = (1:height(S.kilosort(IMEC+1).clusters)) - 1;
     else
         all_units = 1:height(S.kilosort(IMEC+1).clusters);
         % Split into 50 chunks as a cell array
@@ -74,14 +79,17 @@ function ia_mdirRasters(data_path,varargin)
     for u=1:length(units)
         unit = units(u);
         if ~exist(fullfile(fig_path, sprintf('imec%d_unit%04d.png', IMEC, unit)), 'file')
-            f3a = figure('Visible','off');
+            f3a = figure; %('Visible','off');
             f3a.Position = [100 100 1800 900];
         
             y_lims = []; % Store y-axis limits
-            frs_perAng = cell(length(angles),1);
+            frs_perAng = cell(length(angles),length(distances));
             for ang = 1:length(angles)
                 these_trls = T(T.angle==angles(ang),:);
-                
+
+                these_trls.trialName = categorical(regexprep( cellstr(these_trls.trialName), 'mdir1\.(\d+)', 'mdir1.${sprintf(''%04d'', str2double($1))}'));
+                these_trls = sortrows(these_trls, {'distance', 'trialName'});
+
                 if isequal(ALIGN,'stim')
                     sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                 elseif isequal(ALIGN,'sacc')
@@ -89,13 +97,28 @@ function ia_mdirRasters(data_path,varargin)
                 end
 
                 subplot(3,3,angle_order(ang))
-                raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color, 'SEM_SHADE', sem_shade)
+
+                if numel(distances)==1
+                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1})
+                    frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
+                else
+                    [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
+                    for dist = 1:numel(distances)
+                        line_colors(these_trls.distance==distances(dist)) = line_color(dist);
+                        tick_colors(these_trls.distance==distances(dist)) = tick_color(dist);
+                        sem_shades(these_trls.distance==distances(dist)) = sem_shade(dist);
+
+                        frs_perAng{ang,dist} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.distance==distances(dist)), 'uni', 1);
+                    end
+
+                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors)
+                end
         
                 yyaxis left;
                 ax = gca;
                 y_lims = [y_lims; ax.YLim];
             
-                frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/500)), sptimes, 'uni', 1);
+                frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
         
             end
         
