@@ -24,26 +24,26 @@ module load matlab/R2023a
 
 SESSION="$1"
 IMEC="${2:-0}"
-CORRECTED="${3:-0}"
+DRIFT_CORRECT_TYPE="${3:-None}"
 
 echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
-echo "CORRECTED: $CORRECTED"
+echo "DRIFT_CORRECT_TYPE: $DRIFT_CORRECT_TYPE"
 
 ########################
 
 # Define the varargin parameters
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
-if [ "$CORRECTED" -eq 0 ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_baseline.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_baseline/rfmp/unit_heatmaps"
-elif [ "$CORRECTED" -eq 1 ]; then
+if [ "$DRIFT_CORRECT_TYPE" == "medicine" ]; then
     DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort_medicine/rfmp/unit_heatmaps"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_medicine/rfmp/unit_heatmaps"
+elif [ "$DRIFT_CORRECT_TYPE" == "kilosort" ]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_kilosort.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_kilosort/rfmp/unit_heatmaps"
 else
-    echo "Error: Invalid CORRECTED value '$CORRECTED'. Must be 0 or 1."
-    exit 1
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_none.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_none/rfmp/unit_heatmaps"
 fi
 
 echo "DATA_PATH: $DATA_PATH"
