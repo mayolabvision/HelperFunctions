@@ -1,91 +1,99 @@
-function convert_ns5ToBin(ns5, save_path, varargin)
-% convert_ns5ToBin: Extracts raw neural signals from NS5 files or matrices and writes to a .bin file.
-%
-% Supports input as:
-%   - A single NS5 file path (char)
-%   - A struct containing NS5 data
-%   - A cell array of NS5 file paths (concatenates in order)
-%
-% Inputs:
-%   - ns5: (char, struct, or cell array of char) NS5 data input.
-%   - save_path: (char) Path to save the binary file.
-%
-% Optional Parameters:
-%   - 'CHANNELS': (numeric, default = all channels)
-%   - 'CHUNK_SIZE': (numeric, default = 1e6) Rows processed at a time.
-%
-% Example:
-%   convert_ns5ToBin({'file1.ns5', 'file2.ns5'}, 'output.bin');
+function convert_ns5ToBin(session_name, varargin)
+    % convert_ns5ToBin: Extracts raw neural signals from NS5 files or matrices and writes to a .bin file.
+    %
+    % Supports input as:
+    %   - A single NS5 file path (char)
+    %   - A struct containing NS5 data
+    %   - A cell array of NS5 file paths (concatenates in order)
+    %
+    % Inputs:
+    %   - ns5: (char, struct, or cell array of char) NS5 data input.
+    %   - save_path: (char) Path to save the binary file.
+    %
+    % Optional Parameters:
+    %   - 'CHANNELS': (numeric, default = all channels)
+    %   - 'CHUNK_SIZE': (numeric, default = 1e6) Rows processed at a time.
+    %
+    % Example:
+    %   convert_ns5ToBin({'file1.ns5', 'file2.ns5'}, 'output.bin');
 
-p = inputParser;
-addRequired(p, 'ns5', @(x) (ischar(x) || isstruct(x) || iscell(x)));
-addRequired(p, 'save_path', @(x) ischar(x) || isstring(x));
-addParameter(p, 'CHANNELS', [], @isnumeric); 
+    %defaultRAW_PATH  =  '/Volumes/lab_NHPdata';
+    defaultRAW_PATH  =  '/Volumes/home/DATA';
 
-% Parse inputs
-parse(p, ns5, save_path, varargin{:});
-CHANNELS = p.Results.CHANNELS;
+    p = inputParser;
+    addRequired(p, 'session_name', @ischar);
+    addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
+    addParameter(p, 'CHANNELS', [], @isnumeric); 
 
-% Open file for writing
-fid_write = fopen(save_path, 'w');
+    parse(p, session_name, varargin{:});
+    RAW_PATH = p.Results.RAW_DATA_PATH;
+    CHANNELS = p.Results.CHANNELS; 
 
-for j = 1:length(ns5)
-    fid_read = fopen
-end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
+    raw_files = dir(filePattern);
+    raw_filenames = {raw_files.name}.';
+    nevnames = cellfun(@(q) q(1:end-4), raw_filenames, 'uni', 0);
+    raw_filepaths = arrayfun(@(x) fullfile(x.folder, x.name), raw_files, 'UniformOutput', false);
 
+    recording_times = cellfun(@(l) l.hdr.timeOrigin, cellfun(@(q) read_nsx(q,'readdata',false), raw_filepaths, 'uni', 0), 'uni', 0);
+    [~,idx] = sort(recording_times);
+    nevnames = nevnames(idx);
+    nevpaths = raw_filepaths(idx);
 
-    for i = 1:numel(ns5)
-        fprintf('\n---- binning raw data for task %d/%d ----\n', i, numel(ns5));
-        write_ns5_to_bin(ns5{i}, fileID, CHANNELS, CHUNK_SIZE);
+    % Define possible task keywords
+    task_keywords = {'rfmp', 'rfMapping', 'purs', 'pursuit', 'mdir', 'dirmem', 'fstm'};
+    
+    % Initialize cell array for tasks
+    tasks = cell(size(nevnames));
+    
+    % Loop through each nevname
+    for i = 1:numel(nevnames)
+        name = nevnames{i};
+        found = false;
+        for j = 1:numel(task_keywords)
+            pattern = [task_keywords{j}, '\w*'];  % keyword followed by letters/numbers
+            match = regexp(name, pattern, 'match', 'once');
+            if ~isempty(match)
+                tasks{i} = match;
+                found = true;
+                break;
+            end
+        end
     end
-else
-    write_ns5_to_bin(ns5, fileID, CHANNELS, CHUNK_SIZE);
-end
 
-% Close file
-fclose(fileID);
+    tic
 
-end
-
-function write_ns5_to_bin(ns5, fileID, CHANNELS, CHUNK_SIZE)
-    % Reads NS5 file and writes it to an open binary file.
-    
-    if isstruct(ns5)
-        this_ns5 = ns5.data;
-    elseif ischar(ns5)
-        [~, out_ns5, ~] = extract_nevout(ns5, 'SPIKE_SORT', false, 'READ_LFP', false);
-        this_ns5 = out_ns5.data;
-    else
-        error('Unsupported data type for ns5 input.');
+    full_bin_path = fullfile(RAW_PATH, session_name, [session_name, '.bin']);
+    if exist(full_bin_path, 'file') == 2
+        delete(full_bin_path);
     end
-    
-    % Ensure data is in correct orientation
-    if size(this_ns5,1) < size(this_ns5,2)
-        this_ns5 = this_ns5';
-    end
-    
-    this_ns5 = this_ns5(:, ismember(out_ns5.hdr.label, string(1:512)));
-    if ~isempty(CHANNELS)
-        this_ns5 = this_ns5(:, CHANNELS);
-    end
-    
-    
 
-    % Convert data to int16
-    this_ns5 = int16(this_ns5);
-    
-    % Write data in chunks with a progress bar
-    numRows = size(this_ns5, 1);
-    numChunks = ceil(numRows / CHUNK_SIZE);
-    % h = waitbar(0, 'Writing data...');
-    
-    for chunkIdx = 1:numChunks
-        startIdx = (chunkIdx - 1) * CHUNK_SIZE + 1;
-        endIdx = min(chunkIdx * CHUNK_SIZE, numRows);
+    for nevnum = 1:length(nevnames)
+        nevpath = nevpaths{nevnum};
+        this_task = tasks{nevnum};
+
+        fprintf('\n---- generating nev_out for %s ----\n', this_task);
         
-        % Write chunk to file
-        fwrite(fileID, this_ns5(startIdx:endIdx, :), 'int16');
-        
+        [~, out_ns5, ~] = extract_nevout(nevpath);
+
+        if ~contains(this_task,'fstm')
+            this_ns5 = out_ns5.data(ismember(out_ns5.hdr.label, string(1:512)),:);
+            if ~isempty(this_ns5)
+                fprintf('\n---- writing to bin for %s ----\n', this_task);
+    
+                if ~isempty(CHANNELS)
+                    this_ns5 = this_ns5(CHANNELS,:);
+                end
+
+                fid_write = fopen(full_bin_path, 'a'); % Open file in append mode ('a')
+                fwrite(fid_write, this_ns5, 'int16');
+    
+                fclose(fid_write);  
+            else
+                fprintf('\n---- no raw signal for %s ----\n', this_task);
+            end
+        end
     end
     
 

@@ -18,7 +18,6 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar);
     addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
-    addParameter(p, 'SAVE_RAW', false, @islogical); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
     addParameter(p, 'DRIFT_CORRECTED', false, @islogical);
     
@@ -29,7 +28,6 @@ function process_fullRecording(session_name,varargin)
     NEV_PATH = p.Results.NEVUTIL_PATH;
     PROBE_TYPE = p.Results.PROBE_TYPE;
     NET_PATH = p.Results.NASNET_PATH;
-    SAVE_RAW = p.Results.SAVE_RAW;
     PARSE_KS = p.Results.PARSE_KILOSORT;
     DRIFT_CORRECTED = p.Results.DRIFT_CORRECTED;
 
@@ -100,13 +98,6 @@ function process_fullRecording(session_name,varargin)
     
     S1 = struct();
 
-    if SAVE_RAW % only used for plexon
-        full_bin_path = fullfile(OUT_PATH, filename, [filename, '.bin']);
-        if exist(full_bin_path, 'file') == 2
-            delete(full_bin_path);
-        end
-    end
-
     lastFileEnd = 0; last_alignID = 0; goodFlag = true;
     for nevnum = 1:length(nevnames)
         nevpath = nevpaths{nevnum};
@@ -154,6 +145,8 @@ function process_fullRecording(session_name,varargin)
                 these_alignTimes = alignTimes(end-313:end);
             end
 
+            tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
+
         elseif isequal(PROBE_TYPE, 'plex')
             if exist([nevpath,'.ns2'], 'file') == 2
                 [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', true);
@@ -167,27 +160,7 @@ function process_fullRecording(session_name,varargin)
                 tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
             end
 
-            % Save out_ns5 to raw .bin
-            if SAVE_RAW
-                if ~contains(this_task,'fstm')
-                    this_ns5 = out_ns5.data(ismember(out_ns5.hdr.label, string(1:512)),:);
-                    if ~isempty(this_ns5)
-                        fprintf('\n---- writing to bin for %s ----\n', this_task);
-    
-                        this_ns5 = this_ns5(mappings.ripChan_num,:);
-                        fid_write = fopen(full_bin_path, 'a'); % Open file in append mode ('a')
-                        fwrite(fid_write, this_ns5, 'int16');
-    
-                        fclose(fid_write);  
-                    else
-                        fprintf('\n---- no raw signal for %s ----\n', this_task);
-                    end
-                end
-            end
-
         end
-
-        tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
 
         % add to ns5_samps
         % if ~contains(this_task,'fstm')
