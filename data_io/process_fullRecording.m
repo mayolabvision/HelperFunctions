@@ -19,7 +19,7 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
-    addParameter(p, 'DRIFT_CORRECT_TYPE', 'none', @islogical);
+    addParameter(p, 'DRIFT_CORRECT_TYPE', 'none', @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
