@@ -51,11 +51,11 @@ function ia_mdirRasters(data_path,varargin)
     angle_order = [6,3,2,1,4,7,8,9];
     distances = sort(unique(T.distance));
 
-    if IMEC==0
-        line_color = {[123,44,191]./255; [191,44,186]./255};
-        tick_color = {[73,26,114]./255; [114,26,111]./255};
-        sem_shade = {[228,212,242]./255; [242,212,241]./255};
-    else
+    if IMEC==0 % purples/pinks
+        line_color = {[123,44,191]./255; [230,34,172]./255};
+        tick_color = {[98,35,152]./255; [184,27,137]./255};
+        sem_shade = {[228,212,242]./255; [250,210,238]./255};
+    else % greens/blues
         line_color = {[42,157,143]./255; [42,114,157]./255};
         tick_color = {[25,94,85]./255; [25,68,94]./255};
         sem_shade = {[212,235,232]./255; [212,226,235]./255};
@@ -79,7 +79,7 @@ function ia_mdirRasters(data_path,varargin)
     for u=1:length(units)
         unit = units(u);
         if ~exist(fullfile(fig_path, sprintf('imec%d_unit%04d.png', IMEC, unit)), 'file')
-            f3a = figure; %('Visible','off');
+            f3a = figure('Visible','off');
             f3a.Position = [100 100 1800 900];
         
             y_lims = []; % Store y-axis limits
@@ -103,69 +103,73 @@ function ia_mdirRasters(data_path,varargin)
                     frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
                 else
                     [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
-                    for dist = 1:numel(distances)
-                        line_colors(these_trls.distance==distances(dist)) = line_color(dist);
-                        tick_colors(these_trls.distance==distances(dist)) = tick_color(dist);
-                        sem_shades(these_trls.distance==distances(dist)) = sem_shade(dist);
+                    for dd = 1:numel(distances)
+                        line_colors(these_trls.distance==distances(dd)) = line_color(dd);
+                        tick_colors(these_trls.distance==distances(dd)) = tick_color(dd);
+                        sem_shades(these_trls.distance==distances(dd)) = sem_shade(dd);
 
-                        frs_perAng{ang,dist} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.distance==distances(dist)), 'uni', 1);
+                        frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.distance==distances(dd)), 'uni', 1);
                     end
 
-                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors)
+                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
                 end
         
                 yyaxis left;
                 ax = gca;
                 y_lims = [y_lims; ax.YLim];
-            
-                frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
         
             end
         
             % Pad each cell with NaNs to match maxLength
-            maxLength = max(cellfun(@numel, frs_perAng));
-            frs_perAng = cellfun(@(x) [x; nan(maxLength - numel(x), 1)]', frs_perAng, 'UniformOutput', false);
-            
-            stimrate = vertcat(frs_perAng{:})';
-            
-            % Generate randomized index of stimrate values, WITH REPLACEMENT
-            shuffles = 1000;
-            rhoPst = [];
-            
-            for sh=1:shuffles
-                randind=randi( (size(stimrate,1)*size(stimrate,2)), size(stimrate,1), size(stimrate,2) );
-                permutedStimrate = stimrate(randind);
-                rhoPst = [rhoPst; mean(permutedStimrate, 'omitnan')];
-            end
-            
-            sorted_rhoPst=sort(rhoPst);
-            rhoLst = sorted_rhoPst(shuffles*.05,:); % 95% lower confidence interval
-            rhoUst = sorted_rhoPst(shuffles-(shuffles*.05),:); % 95% upper confidence interval
-            
-            % calculate tuning preferences
-            %theta = 0:360/length(a.CND):360; theta(end)=[];
-            theta = 0:45:315;
-            [visds, visdp] = tuningbias(theta,mean(stimrate,'omitnan'));
-            
-            subplot(3,3,5)
-            rho = mean(stimrate,'omitnan');
-            dst = sprintf('%0.2f',visds);
-            dpt = sprintf('%0.2f',visdp);
-            polarplot(deg2rad([theta 0]),[rho rho(1)],'ko-',...
-                'markerfacecolor','k','linewidth',3)
-            hold on
-            polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'o--','LineWidth',2,'Color',line_color);
-            polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'o--','LineWidth',2,'Color',line_color);   
-            
-            h1=polarplot(deg2rad(visdp),max(rho),'k^'); % Plot black triangle at best dir
-            txd1 = get(h1,'ThetaData');
-            tyd1 = get(h1,'RData');
-            set(h1,'ThetaData',txd1(1),'RData',tyd1(1));
-            set(h1,'markersize',10,'markerfacecolor','k'); hold off;
-            title(['VisDir: ',dpt,', Sel: ',dst]);
-            prettyFig
-            
-            
+            maxLength = max(cellfun(@numel, frs_perAng)); maxLength = max(maxLength);
+
+            str_title = deal(cell(1,numel(distances)));
+            for dd = 1:length(distances)
+                frs_perAng2 = cellfun(@(x) [x; nan(maxLength - numel(x), 1)]', frs_perAng(:,dd), 'UniformOutput', false);
+                
+                stimrate = vertcat(frs_perAng2{:})';
+                
+                % Generate randomized index of stimrate values, WITH REPLACEMENT
+                shuffles = 1000;
+                rhoPst = [];
+                
+                for sh=1:shuffles
+                    randind=randi( (size(stimrate,1)*size(stimrate,2)), size(stimrate,1), size(stimrate,2) );
+                    permutedStimrate = stimrate(randind);
+                    rhoPst = [rhoPst; mean(permutedStimrate, 'omitnan')];
+                end
+                
+                sorted_rhoPst=sort(rhoPst);
+                rhoLst = sorted_rhoPst(shuffles*.05,:); % 95% lower confidence interval
+                rhoUst = sorted_rhoPst(shuffles-(shuffles*.05),:); % 95% upper confidence interval
+                
+                % calculate tuning preferences
+                %theta = 0:360/length(a.CND):360; theta(end)=[];
+                theta = 0:45:315;
+                [visds, visdp] = tuningbias(theta,mean(stimrate,'omitnan'));
+                
+                if dd==1
+                    subplot(3,3,5)
+                end
+                rho = mean(stimrate,'omitnan');
+                h1(dd) = polarplot(deg2rad([theta 0]),[rho rho(1)],'o-',...
+                    'markerfacecolor',line_color{dd},'linewidth',3,'color',line_color{dd});
+                hold on
+                polarplot(deg2rad([theta 0]),[rhoLst rhoLst(1)],'o--','LineWidth',2,'Color',sem_shade{dd});
+                polarplot(deg2rad([theta 0]),[rhoUst rhoUst(1)],'o--','LineWidth',2,'Color',sem_shade{dd});   
+                
+                polarplot(deg2rad(visdp), max(rho), '^', 'MarkerFaceColor', line_color{dd}, 'MarkerEdgeColor', line_color{dd}, 'MarkerSize', 10);
+
+                tcolor = tick_color{dd};
+                str_title{dd} = sprintf('%d deg -- VisDir: %0.2f, Sel: %0.2f', distances(dd), visdp, visds);
+            end 
+
+            title(str_title);
+               
+            legend_labels = arrayfun(@(d) sprintf('%d deg', distances(d)), 1:length(distances), 'UniformOutput', false);
+            legend(h1, legend_labels, 'Location', 'best');
+            prettyFig;
+
             % Find the global y-axis limits
             global_y_lim = [min(y_lims(:,1)), max(y_lims(:,2))];
             
@@ -177,7 +181,7 @@ function ia_mdirRasters(data_path,varargin)
                     ylim(global_y_lim);
                 end
             end
-            
+
             han=axes(f3a,'visible','off'); 
             han.Title.Visible='on';
             han.XLabel.Visible='on';
@@ -194,7 +198,6 @@ function ia_mdirRasters(data_path,varargin)
         else
             fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
         end
-
     end
     fprintf('\n------------------------------\n')
 end
