@@ -6,6 +6,7 @@ function ia_pursRasters(data_path,varargin)
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'targ', @ischar);
+    addParameter(p, 'PURE_ONLY', false, @islogical)
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
     
@@ -14,6 +15,7 @@ function ia_pursRasters(data_path,varargin)
     IMEC = p.Results.IMEC;
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
+    PURE_ONLY = p.Results.PURE_ONLY;
     X_LIMITS = p.Results.X_LIMITS;
     JOB_ID = p.Results.JOB_ID;
 
@@ -26,11 +28,19 @@ function ia_pursRasters(data_path,varargin)
 
     if isequal(ALIGN,'targ')
         FR_WIN = [50,250];
-        fig_path = fullfile(FIG_PATH, 'targ_aligned');
+        if PURE_ONLY
+            fig_path = fullfile(FIG_PATH, 'targ_aligned', 'pure_only');
+        else
+            fig_path = fullfile(FIG_PATH, 'targ_aligned', 'all_trls');
+        end
         xlab = 'time aligned to target motion onset (ms)';
     elseif isequal(ALIGN,'purs')
         FR_WIN = [-50,50];
-        fig_path = fullfile(FIG_PATH, 'purs_aligned');
+        if PURE_ONLY
+            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'pure_only');
+        else
+            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'all_trls');
+        end
         xlab = 'time aligned to pursuit onset (ms)';
     end
     if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
@@ -45,7 +55,11 @@ function ia_pursRasters(data_path,varargin)
         T = [T; S.(matchingFields{mm}).data];
     end
 
-    T = T(T.result=='CORRECT',:);
+    if PURE_ONLY
+        T = T(T.result=='CORRECT' & T.pursType=='pure',:);
+    else
+        T = T(T.result=='CORRECT',:);
+    end
     
     angles = sort(unique(T.angle))';
     angle_order = [6,3,2,1,4,7,8,9];
@@ -188,9 +202,17 @@ function ia_pursRasters(data_path,varargin)
             xlabel(han,{'';xlab},'fontsize',16);
         
             if (IMEC)==0
-                title(han,sprintf('%s --- LEFT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                if PURE_ONLY
+                    title(han,sprintf('%s (PURE ONLY) --- LEFT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                else
+                    title(han,sprintf('%s --- LEFT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                end
             else
-                title(han,sprintf('%s --- RIGHT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                if PURE_ONLY
+                    title(han,sprintf('%s (PURE ONLY) --- RIGHT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                else
+                    title(han,sprintf('%s --- RIGHT --- cluster %d',filename,unit),'fontsize',20,'interpreter','none')
+                end
             end
         
             print(f3a, fullfile(fig_path, sprintf('imec%d_unit%04d.png', (IMEC), unit)), '-dpng', '-r200');
