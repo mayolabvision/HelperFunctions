@@ -35,8 +35,10 @@ TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
 FR_WINDOW = p.Results.FR_WINDOW;
 
-unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
-unique_sem_shades = num2cell(unique(cell2mat(SEM_SHADE),'rows'),2);
+if iscell(LINE_COLOR)
+    unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
+    unique_sem_shades = num2cell(unique(cell2mat(SEM_SHADE),'rows'),2);
+end
 
 %% Raster Plot
 yyaxis right; 

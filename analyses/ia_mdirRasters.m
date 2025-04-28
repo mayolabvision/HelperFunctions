@@ -99,7 +99,7 @@ function ia_mdirRasters(data_path,varargin)
                 subplot(3,3,angle_order(ang))
 
                 if numel(distances)==1
-                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1})
+                    raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN)
                     frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
                 else
                     [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
