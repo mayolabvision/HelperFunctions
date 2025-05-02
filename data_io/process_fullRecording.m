@@ -193,7 +193,8 @@ function process_fullRecording(session_name,varargin)
 
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
-                kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
+                %kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
+                kilosort4_path = fullfile('/Volumes/home/DATA/Ya_250429_s385_g0/Ya_250429_s385_g0_imec0', ['kilosort4_', RUN_TYPE]);
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);

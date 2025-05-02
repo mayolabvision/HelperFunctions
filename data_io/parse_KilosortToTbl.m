@@ -61,7 +61,8 @@ for ii = 1:length(kilo_files2)
 end
 %clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
 %clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
-kilosort.clusters = clusters;
+cluster_sum = readtable(fullfile(ks_path,'cluster_summary.csv'));
+kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters', 'KSLabel_cc'})];
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);
 spike_times_sec = double(kilosort.spike_times)./30000;
