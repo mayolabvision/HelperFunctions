@@ -23,16 +23,28 @@ function ia_rfMaps(data_path,varargin)
     end
     if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
 
-    if isnan(JOB_ID)
-        units = (1:height(S.kilosort(IMEC+1).clusters)) - 1;
-    else
-        all_units = 1:height(S.kilosort(IMEC+1).clusters);
+    units = S.kilosort(IMEC+1).clusters.cluster;
+    chans = S.kilosort(IMEC+1).clusters.chan;
+    amps  = S.kilosort(IMEC+1).clusters.amp;
+    contams = S.kilosort(IMEC+1).clusters.ContamPct;
+    kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
+
+    if ~isnan(JOB_ID)
+        all_units = units + 1;
         % Split into 50 chunks as a cell array
+        n_chunks = 50;
         chunks = arrayfun(@(i) all_units(...
-            floor((i-1)*numel(all_units)/50)+1 : ...
-            floor(i*numel(all_units)/50)), ...
-            1:50, 'UniformOutput', false);
-        units = (chunks{(JOB_ID+1)}) - 1;
+            floor((i-1)*numel(all_units)/n_chunks)+1 : ...
+            floor(i*numel(all_units)/n_chunks)), ...
+            1:n_chunks, 'UniformOutput', false);
+        ids = (chunks{(JOB_ID+1)});
+
+        units = units(ids);
+        chans = chans(ids);
+        amps = amps(ids);
+        contams = contams(ids);
+        kslabs = kslabs(ids);
+        
     end
     
     % Find rfmp or rfMapping fields
@@ -45,8 +57,8 @@ function ia_rfMaps(data_path,varargin)
     end
 
     for u=1:length(units)
-        unit = units(u);
-        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d.png', IMEC, unit)), 'file')
+        unit = units(u); 
+        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
             [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
         
             f2a = figure('Visible','off');
@@ -54,13 +66,15 @@ function ia_rfMaps(data_path,varargin)
             tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
             
             if (IMEC)==0
-                title(tl,sprintf('%s --- LEFT --- cluster %d',filename, unit),'fontsize',20,'interpreter','none')
+                title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                subtitle(tl, sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
             else
-                title(tl,sprintf('%s --- RIGHT --- cluster %d',filename, unit),'fontsize',20,'interpreter','none')
+                title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                subtitle(tl, sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
             end
             %subtitle(tl,sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth),'fontsize',16,'interpreter','none')
             
-            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d.png', IMEC, unit)), '-dpng', '-r200');
+            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
             fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
         else
             fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
