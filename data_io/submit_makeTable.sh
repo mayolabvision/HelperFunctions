@@ -20,7 +20,7 @@ conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 
 # Assign variables from positional parameters
 SESSION="$1"
-DRIFT_CORRECT_TYPE="${2:-None}"
+RUN_TYPE="${2:-unleashed}"
 
 # Define the varargin parameters
 RAW_PATH='/ix1/pmayo/lab_NHPdata'
@@ -32,22 +32,16 @@ PARSE_KS="true"
 
 echo "PROBE_TYPE: $PROBE_TYPE"
 echo "PARSE_KS: $PARSE_KS"
-echo "DRIFT_CORRECT_TYPE: $DRIFT_CORRECT_TYPE"
+echo "RUN_TYPE: $RUN_TYPE"
 
-if [ "$DRIFT_CORRECT_TYPE" == "None" ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_none"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_none"
-    DRIFT="false"
-elif [ "$DRIFT_CORRECT_TYPE" == "medicine" ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_medicine"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_medicine"
-    DRIFT="true"
-elif [ "$DRIFT_CORRECT_TYPE" == "kilosort" ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_kilosort"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_kilosort"
-    DRIFT="true"
+if [ "$RUN_TYPE" == "unleashed" ]; then
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_unleashed"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_unleashed"
+elif [ "$RUN_TYPE" == "barebones" ]; then
+    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_barebones"
+    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_barebones"
 else
-    echo "Error: Invalid DRIFT_CORRECT_TYPE value '$DRIFT_CORRECT_TYPE'. Must be 'None', 'kilosort', or 'medicine'."
+    echo "Error: Invalid RUN_TYPE value '$RUN_TYPE'. Must be 'unleashed' or 'barebones'."
     exit 1
 fi
 
@@ -88,7 +82,7 @@ try
         'NEVUTIL_PATH', '$NEV_PATH', ...
         'PROBE_TYPE', '$PROBE_TYPE', ...
         'PARSE_KILOSORT', evalin('base', '$PARSE_KS'), ...
-        'DRIFT_CORRECT_TYPE', '$DRIFT_CORRECT_TYPE');
+        'RUN_TYPE', '$RUN_TYPE');
 catch err
     disp('ERROR in process_fullRecording:');
     disp(getReport(err));

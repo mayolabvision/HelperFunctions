@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --cluster=smp
 #SBATCH --partition=high-mem
-#SBATCH --job-name=purs
+#SBATCH --job-name=mdir
 #SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
@@ -22,40 +22,31 @@ module purge
 module load matlab/R2023a
 
 #########INPUTS##########
-
 SESSION="$1"
-ALIGN="${2:-targ}"
+ALIGN="$2"
 IMEC="${3:-0}"
-DRIFT_CORRECT_TYPE="${4:-None}"
+RUN_TYPE="${4:-unleashed}"
+
+HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
 echo "ALIGN: $ALIGN"
-echo "DRIFT_CORRECT_TYPE: $DRIFT_CORRECT_TYPE"
+echo "RUN_TYPE: $RUN_TYPE"
 
-########################
-
-# Define the varargin parameters
-HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-
-if [ "$DRIFT_CORRECT_TYPE" == "medicine" ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_medicine/purs/unit_rasters"
-elif [ "$DRIFT_CORRECT_TYPE" == "kilosort" ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_kilosort.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_kilosort/purs/unit_rasters"
-else
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_none.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_none/purs/unit_rasters"
-fi
+DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_${RUN_TYPE}.mat"
+FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/mdir_rasters"
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
 
+########################
+
+# First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
-fprintf('Running ia_pursRasters for $1\n');
-ia_pursRasters('$DATA_PATH', ...
+fprintf('Running ia_mdirRasters for $1\n');
+ia_mdirRasters('$DATA_PATH', ...
     'IMEC', $IMEC, ...
     'ALIGN', '$ALIGN', ...
     'FIG_PATH', '$FIG_PATH', ...

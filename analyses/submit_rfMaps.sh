@@ -1,16 +1,17 @@
 #!/bin/bash -l
 #SBATCH --cluster=smp
-#SBATCH --partition=smp
+#SBATCH --partition=high-mem
 #SBATCH --job-name=rfmp
 #SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=16G
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59
-#SBATCH --array=0-49
+#SBATCH --array=0-99
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
 echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
@@ -24,30 +25,21 @@ module load matlab/R2023a
 
 SESSION="$1"
 IMEC="${2:-0}"
-DRIFT_CORRECT_TYPE="${3:-None}"
+RUN_TYPE="${3:-unleashed}"
+
+HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
-echo "DRIFT_CORRECT_TYPE: $DRIFT_CORRECT_TYPE"
+echo "RUN_TYPE: $RUN_TYPE"
 
-########################
-
-# Define the varargin parameters
-HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
-
-if [ "$DRIFT_CORRECT_TYPE" == "medicine" ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_medicine.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_medicine/rfmp/unit_heatmaps"
-elif [ "$DRIFT_CORRECT_TYPE" == "kilosort" ]; then
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_kilosort.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_kilosort/rfmp/unit_heatmaps"
-else
-    DATA_PATH="/ix1/pmayo/lab_NHPdata/${1}/${1}_none.mat"
-    FIG_PATH="/ix1/pmayo/lab_NHPdata/${1}/figs/kilosort4_none/rfmp/unit_heatmaps"
-fi
+DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_${RUN_TYPE}.mat"
+FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/rfmp_heatmaps"
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
+
+########################
 
 matlab -nodisplay <<EOF
 try

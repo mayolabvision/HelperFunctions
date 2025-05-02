@@ -19,7 +19,7 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
-    addParameter(p, 'DRIFT_CORRECT_TYPE', 'none', @ischar);
+    addParameter(p, 'RUN_TYPE', 'unleashed', @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
@@ -29,7 +29,7 @@ function process_fullRecording(session_name,varargin)
     PROBE_TYPE = p.Results.PROBE_TYPE;
     NET_PATH = p.Results.NASNET_PATH;
     PARSE_KS = p.Results.PARSE_KILOSORT;
-    DRIFT_CORRECT_TYPE = p.Results.DRIFT_CORRECT_TYPE;
+    RUN_TYPE = p.Results.RUN_TYPE;
 
     addpath(genpath(NEV_PATH));
 
@@ -193,13 +193,7 @@ function process_fullRecording(session_name,varargin)
 
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
-                if isequal(DRIFT_CORRECT_TYPE,'medicine')
-                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_medicine');
-                elseif isequal(DRIFT_CORRECT_TYPE, 'kilosort')
-                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_kilosort');
-                else
-                    kilosort4_path = fullfile(imec_dirs{imec},'kilosort4_none');
-                end
+                kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
@@ -232,14 +226,9 @@ function process_fullRecording(session_name,varargin)
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
-
-    if isequal(DRIFT_CORRECT_TYPE, 'medicine')
-        save(fullfile(OUT_PATH,session_name,[session_name,'_medicine.mat']), 'S', '-v7.3');
-    elseif isequal(DRIFT_CORRECT_TYPE, 'kilosort')
-        save(fullfile(OUT_PATH,session_name,[session_name,'_kilosort.mat']), 'S', '-v7.3');
-    else
-        save(fullfile(OUT_PATH,session_name,[session_name,'_none.mat']), 'S', '-v7.3');
-    end 
+    
+    save(fullfile(OUT_PATH,session_name,sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
+    
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
     fprintf(sprintf('Total elapsed time was %2.2f minutes',tc/60))
