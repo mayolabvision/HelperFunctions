@@ -1,17 +1,16 @@
 #!/bin/bash -l
 #SBATCH --cluster=smp
-#SBATCH --partition=high-mem
+#SBATCH --partition=smp
 #SBATCH --job-name=rfmp
 #SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=16G
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59
-#SBATCH --array=0-99
+#SBATCH --array=0-49
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
 echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
