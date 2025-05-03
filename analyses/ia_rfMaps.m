@@ -67,13 +67,18 @@ function ia_rfMaps(data_path,varargin)
             
             if (IMEC)==0
                 title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
-                subtitle(tl, sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
             else
                 title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
-                subtitle(tl, sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
             end
-            %subtitle(tl,sprintf('%s (ripChan = %d, depth = %2.3f mm)',chan_name, S.channels.ripChan_num(good_chans(unit)), chan_depth),'fontsize',16,'interpreter','none')
+            subtitle(tl, sprintf('ks_label = %s, mean amp = %.2f uV, contam_pct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
             
+            annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                'String', sprintf('N = %d', min(min(min(cellfun(@length, frs{1}))))), ...
+                'FontSize', 16, ...
+                'EdgeColor', 'none', ...
+                'HorizontalAlignment', 'right');
+            
+
             print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
             fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
         else
