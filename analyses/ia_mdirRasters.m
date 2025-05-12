@@ -8,6 +8,7 @@ function ia_mdirRasters(data_path,varargin)
     addParameter(p, 'ALIGN', 'stim', @ischar);
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
+    addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     
     parse(p, data_path, varargin{:});
     data_path = p.Results.data_path;
@@ -16,6 +17,7 @@ function ia_mdirRasters(data_path,varargin)
     ALIGN = p.Results.ALIGN;
     X_LIMITS = p.Results.X_LIMITS;
     JOB_ID = p.Results.JOB_ID;
+    N_CHUNKS = p.Results.N_CHUNKS;
 
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
@@ -36,13 +38,16 @@ function ia_mdirRasters(data_path,varargin)
     if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
 
 
-    % Find rfmp or rfMapping fields
+    % Find mdir or dirmem fields
     fields = fieldnames(S);
     matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
     
     T = []; 
     for mm = 1:numel(matchingFields)
-        T = [T; S.(matchingFields{mm}).data];
+        tt = S(matchingFields{mm}).tbl;
+        vars = {'angle', 'distance', 'result', 'TARG_ON', 'SACCADE', 'trialName'};
+        vars = [vars, intersect({'spiketimes_imec0','spiketimes_imec1'}, tt.Properties.VariableNames)];
+        T = [T; tt(:, vars)];
     end
 
     T = T(T.result=='CORRECT',:);
@@ -52,34 +57,33 @@ function ia_mdirRasters(data_path,varargin)
     distances = sort(unique(T.distance));
 
     if IMEC==0 % purples/pinks
-        line_color = {[123,44,191]./255; [230,34,172]./255};
-        tick_color = {[98,35,152]./255; [184,27,137]./255};
-        sem_shade = {[228,212,242]./255; [250,210,238]./255};
+        line_color = {[123,44,191]./255; [230,34,172]./255; [191,44,44]./255};
+        tick_color = {[98,35,152]./255; [184,27,137]./255; [152,35,35]./255};
+        sem_shade = {[228,212,242]./255; [250,210,238]./255; [242,212,212]./255};
     else % greens/blues
-        line_color = {[42,157,143]./255; [42,114,157]./255};
-        tick_color = {[25,94,85]./255; [25,68,94]./255};
-        sem_shade = {[212,235,232]./255; [212,226,235]./255};
+        line_color = {[42,157,143]./255; [42,114,157]./255; [89,157,42]./255};
+        tick_color = {[25,94,85]./255; [25,68,94]./255}; [53,94,25]./255;
+        sem_shade = {[212,235,232]./255; [212,226,235]./255; [221,235,212]./255};
     end
-    
-    units = S.kilosort(IMEC+1).clusters.cluster;
-    chans = S.kilosort(IMEC+1).clusters.chan;
-    amps  = S.kilosort(IMEC+1).clusters.amp;
+
+    units = S.kilosort(IMEC+1).clusters.cluster_id;
+    chans = S.kilosort(IMEC+1).clusters.channel_id;
+    snrs  = S.kilosort(IMEC+1).clusters.snr;
     contams = S.kilosort(IMEC+1).clusters.ContamPct;
     kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
 
     if ~isnan(JOB_ID)
         all_units = units + 1;
         % Split into 50 chunks as a cell array
-        n_chunks = 100;
         chunks = arrayfun(@(i) all_units(...
-            floor((i-1)*numel(all_units)/n_chunks)+1 : ...
-            floor(i*numel(all_units)/n_chunks)), ...
-            1:n_chunks, 'UniformOutput', false);
+            floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
+            floor(i*numel(all_units)/N_CHUNKS)), ...
+            1:N_CHUNKS, 'UniformOutput', false);
         ids = (chunks{(JOB_ID+1)});
 
         units = units(ids);
         chans = chans(ids);
-        amps = amps(ids);
+        snrs = snrs(ids);
         contams = contams(ids);
         kslabs = kslabs(ids);
         
@@ -201,12 +205,12 @@ function ia_mdirRasters(data_path,varargin)
             if (IMEC)==0
                 title(han, {
                     sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none');
             else
                 title(han, {
                     sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none');
             end
         

@@ -2,12 +2,11 @@
 #SBATCH --cluster=smp
 #SBATCH --partition=high-mem
 #SBATCH --job-name=purs
-#SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
+#SBATCH --error=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=16G
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=4
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59
@@ -23,21 +22,25 @@ module load matlab/R2023a
 
 #########INPUTS##########
 SESSION="$1"
-ALIGN="$2"
-PURE_ONLY="${3:-0}"
-IMEC="${4:-0}"
-RUN_TYPE="${5:-unleashed}"
+IMEC="${2:-0}"
+RUN_TYPE="${3:-unleashed}"
+SWEEP_NAME="${4:-none}"
 
+ALIGN="targ"
+PURE_ONLY="1"
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
-echo "ALIGN: $ALIGN"
-echo "PURE_ONLY: $PURE_ONLY"
 echo "RUN_TYPE: $RUN_TYPE"
 
-DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_${RUN_TYPE}.mat"
-FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/purs_rasters"
+if [[ "$RUN_TYPE" == "sweep" ]]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}_${SWEEP_NAME}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/${SWEEP_NAME}/purs_rasters"
+else
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/purs_rasters"
+fi
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
@@ -52,7 +55,8 @@ ia_pursRasters('$DATA_PATH', ...
     'ALIGN', '$ALIGN', ...
     'PURE_ONLY', logical(str2double('$PURE_ONLY')), ...
     'FIG_PATH', '$FIG_PATH', ...
-    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
 exit
 EOF
 

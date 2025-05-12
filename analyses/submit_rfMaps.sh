@@ -2,7 +2,7 @@
 #SBATCH --cluster=smp
 #SBATCH --partition=smp
 #SBATCH --job-name=rfmp
-#SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
+#SBATCH --error=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -25,6 +25,7 @@ module load matlab/R2023a
 SESSION="$1"
 IMEC="${2:-0}"
 RUN_TYPE="${3:-unleashed}"
+SWEEP_NAME="${4:-none}"
 
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
@@ -32,8 +33,13 @@ echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
 echo "RUN_TYPE: $RUN_TYPE"
 
-DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_${RUN_TYPE}.mat"
-FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/rfmp_heatmaps"
+if [[ "$RUN_TYPE" == "sweep" ]]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}_${SWEEP_NAME}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/${SWEEP_NAME}/rfmp_heatmaps"
+else
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/rfmp_heatmaps"
+fi
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
@@ -47,7 +53,8 @@ try
     ia_rfMaps('$DATA_PATH', ...
         'IMEC', $IMEC, ...
         'FIG_PATH', '$FIG_PATH', ...
-        'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
+        'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')),...
+        'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
 catch err
     disp('ERROR in ia_rfMaps:');
     disp(getReport(err));

@@ -6,12 +6,14 @@ function ia_rfMaps(data_path,varargin)
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
+    addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     
     parse(p, data_path, varargin{:});
     data_path = p.Results.data_path;
     FIG_PATH = p.Results.FIG_PATH;
     IMEC = p.Results.IMEC;
     JOB_ID = p.Results.JOB_ID;
+    N_CHUNKS = p.Results.N_CHUNKS;
 
     fprintf('\n------------------------------\n')
     load(data_path,'S');
@@ -23,25 +25,24 @@ function ia_rfMaps(data_path,varargin)
     end
     if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
 
-    units = S.kilosort(IMEC+1).clusters.cluster;
-    chans = S.kilosort(IMEC+1).clusters.chan;
-    amps  = S.kilosort(IMEC+1).clusters.amp;
+    units = S.kilosort(IMEC+1).clusters.cluster_id;
+    chans = S.kilosort(IMEC+1).clusters.channel_id;
+    snrs  = S.kilosort(IMEC+1).clusters.snr;
     contams = S.kilosort(IMEC+1).clusters.ContamPct;
     kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
 
     if ~isnan(JOB_ID)
         all_units = units + 1;
         % Split into 50 chunks as a cell array
-        n_chunks = 50;
         chunks = arrayfun(@(i) all_units(...
-            floor((i-1)*numel(all_units)/n_chunks)+1 : ...
-            floor(i*numel(all_units)/n_chunks)), ...
-            1:n_chunks, 'UniformOutput', false);
+            floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
+            floor(i*numel(all_units)/N_CHUNKS)), ...
+            1:N_CHUNKS, 'UniformOutput', false);
         ids = (chunks{(JOB_ID+1)});
 
         units = units(ids);
         chans = chans(ids);
-        amps = amps(ids);
+        snr = snrs(ids);
         contams = contams(ids);
         kslabs = kslabs(ids);
         
@@ -53,7 +54,7 @@ function ia_rfMaps(data_path,varargin)
 
     T = []; 
     for mm = 1:numel(matchingFields)
-        T = [T; S.(matchingFields{mm}).data];
+        T = [T; S.(matchingFields{mm}).tbl];
     end
 
     for u=1:length(units)
@@ -70,10 +71,10 @@ function ia_rfMaps(data_path,varargin)
             else
                 title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
             end
-            subtitle(tl, sprintf('ks_label = %s, mean amp = %.2f uV, contam_pct = %.1f%%', kslabs{u}, amps(u), contams(u)),'fontsize',16,'interpreter','none')
+            subtitle(tl, sprintf('ks_label = %s, snr = %.2f uV, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
             
             annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
-                'String', sprintf('N = %d', min(min(min(cellfun(@length, frs{1}))))), ...
+                'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
                 'FontSize', 16, ...
                 'EdgeColor', 'none', ...
                 'HorizontalAlignment', 'right');
