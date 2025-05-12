@@ -9,6 +9,7 @@ function ia_pursRasters(data_path,varargin)
     addParameter(p, 'PURE_ONLY', false, @islogical)
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
+    addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     
     parse(p, data_path, varargin{:});
     data_path = p.Results.data_path;
@@ -18,6 +19,7 @@ function ia_pursRasters(data_path,varargin)
     PURE_ONLY = p.Results.PURE_ONLY;
     X_LIMITS = p.Results.X_LIMITS;
     JOB_ID = p.Results.JOB_ID;
+    N_CHUNKS = p.Results.N_CHUNKS;
 
     load(data_path,'S');
     [parent_path, filename, ~] = fileparts(data_path);
@@ -29,7 +31,7 @@ function ia_pursRasters(data_path,varargin)
     if isequal(ALIGN,'targ')
         FR_WIN = [50,250];
         if PURE_ONLY
-            fig_path = fullfile(FIG_PATH, 'targ_aligned', 'pure_only');
+            fig_path = fullfile(FIG_PATH);
         else
             fig_path = fullfile(FIG_PATH, 'targ_aligned', 'all_trls');
         end
@@ -52,7 +54,7 @@ function ia_pursRasters(data_path,varargin)
     
     T = []; 
     for mm = 1:numel(matchingFields)
-        T = [T; S.(matchingFields{mm}).data];
+        T = [T; S.(matchingFields{mm}).tbl];
     end
 
     if PURE_ONLY
@@ -74,26 +76,25 @@ function ia_pursRasters(data_path,varargin)
         tick_color = {[25,94,85]./255; [25,68,94]./255};
         sem_shade = {[212,235,232]./255; [212,226,235]./255};
     end
-    
-    units = S.kilosort(IMEC+1).clusters.cluster;
-    chans = S.kilosort(IMEC+1).clusters.chan;
-    amps  = S.kilosort(IMEC+1).clusters.amp;
+
+    units = S.kilosort(IMEC+1).clusters.cluster_id;
+    chans = S.kilosort(IMEC+1).clusters.channel_id;
+    snrs  = S.kilosort(IMEC+1).clusters.snr;
     contams = S.kilosort(IMEC+1).clusters.ContamPct;
     kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
 
     if ~isnan(JOB_ID)
         all_units = units + 1;
         % Split into 50 chunks as a cell array
-        n_chunks = 100;
         chunks = arrayfun(@(i) all_units(...
-            floor((i-1)*numel(all_units)/n_chunks)+1 : ...
-            floor(i*numel(all_units)/n_chunks)), ...
-            1:n_chunks, 'UniformOutput', false);
+            floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
+            floor(i*numel(all_units)/N_CHUNKS)), ...
+            1:N_CHUNKS, 'UniformOutput', false);
         ids = (chunks{(JOB_ID+1)});
 
         units = units(ids);
         chans = chans(ids);
-        amps = amps(ids);
+        snrs = snrs(ids);
         contams = contams(ids);
         kslabs = kslabs(ids);
         
@@ -216,24 +217,24 @@ function ia_pursRasters(data_path,varargin)
                 if PURE_ONLY
                     title(han, {
                     sprintf('%s (PURE ONLY) --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none');
                 else
                     title(han, {
                     sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none');
                 end
             else
                 if PURE_ONLY
                     title(han, {
                     sprintf('%s (PURE ONLY) --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none'); 
                 else
                     title(han, {
                     sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                    sprintf('KS_label = %s, mean amp = %.2f uV, ContamPct = %.1f%%', kslabs{u}, amps(u), contams(u))
+                    sprintf('KS_label = %s, snr = %.2f uV, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                 }, 'fontsize', 16, 'interpreter', 'none');
                 end
             end

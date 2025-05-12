@@ -20,16 +20,18 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
     addParameter(p, 'RUN_TYPE', 'unleashed', @ischar);
+    addParameter(p, 'SWEEP_NAME', 'none', @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
-    RAW_PATH = p.Results.RAW_DATA_PATH;
-    OUT_PATH = p.Results.OUT_DATA_PATH;
-    NEV_PATH = p.Results.NEVUTIL_PATH;
+    RAW_PATH   = p.Results.RAW_DATA_PATH;
+    OUT_PATH   = p.Results.OUT_DATA_PATH;
+    NEV_PATH   = p.Results.NEVUTIL_PATH;
     PROBE_TYPE = p.Results.PROBE_TYPE;
-    NET_PATH = p.Results.NASNET_PATH;
-    PARSE_KS = p.Results.PARSE_KILOSORT;
-    RUN_TYPE = p.Results.RUN_TYPE;
+    NET_PATH   = p.Results.NASNET_PATH;
+    PARSE_KS   = p.Results.PARSE_KILOSORT;
+    RUN_TYPE   = p.Results.RUN_TYPE;
+    SWEEP_NAME = p.Results.SWEEP_NAME;
 
     addpath(genpath(NEV_PATH));
 
@@ -120,30 +122,43 @@ function process_fullRecording(session_name,varargin)
             end
     
             [np_mask, ripple_mask] = match_syncPulses_RipToNP(np_pulse_timeStamps, ripple_pulse_timeStamps);
-    
-    
-            if goodFlag % only used for kendra_scrappy_0136a_g0
-                if sum(np_mask) >= numel(ripple_mask)
-                    these_alignTimes = alignTimes(np_mask);
-                    goodFlag = true;
-        
-                elseif sum(np_mask) < numel(ripple_mask) % only used for kendra_scrappy_0136a_g0
-                    first_block_start = find(np_mask, 1, 'first');
-                    first_block_end = first_block_start + find(~np_mask(first_block_start:end), 1, 'first') - 2;
-                    first_zero_index = first_block_end + 1;
-     
-                    good_alignTimes1 = alignTimes(first_block_start:first_block_end);
-                    remaining_alignTimes = alignTimes(first_zero_index:end);
-                    good_alignTimes2 = remaining_alignTimes(1:696);
-        
-                    these_alignTimes = [good_alignTimes1; good_alignTimes2];
-                    dat(772:869) = [];
-        
-                    goodFlag = false;
+            fprintf('\n dat has %d rows', numel(dat))
+            fprintf('\n np_mask = %d/%d, ripple_mask = %d/%d \n', sum(np_mask), length(np_mask), sum(ripple_mask), length(ripple_mask))  
+   
+            if isequal(session_name,'kendra_scrappy_0136a_g0') 
+                if goodFlag % only used for kendra_scrappy_0136a_g0
+                    if sum(np_mask) >= numel(ripple_mask)
+                        these_alignTimes = alignTimes(np_mask);
+                        goodFlag = true;
+
+                        if numel(ripple_mask) ~= sum(ripple_mask)
+                            dat = dat(ripple_mask);
+                            fprintf('\n dat has %d rows', numel(dat))
+                        end
+                    elseif sum(np_mask) < numel(ripple_mask) % only used for kendra_scrappy_0136a_g0
+                        first_block_start = find(np_mask, 1, 'first');
+                        first_block_end = first_block_start + find(~np_mask(first_block_start:end), 1, 'first') - 2;
+                        first_zero_index = first_block_end + 1;
+         
+                        good_alignTimes1 = alignTimes(first_block_start:first_block_end);
+                        remaining_alignTimes = alignTimes(first_zero_index:end);
+                        good_alignTimes2 = remaining_alignTimes(1:696);
+            
+                        these_alignTimes = [good_alignTimes1; good_alignTimes2];
+                        dat(772:869) = [];
+            
+                        goodFlag = false;
+                    end
+                else
+                    these_alignTimes = alignTimes(end-313:end);
                 end
             else
-                these_alignTimes = alignTimes(end-313:end);
-            end
+                these_alignTimes = alignTimes(np_mask);
+                if sum(np_mask) < length(ripple_mask)
+                    dat = dat(ripple_mask);
+                    fprintf('\n dat NOW has %d rows', numel(dat))
+                end
+            end 
 
             tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
 
@@ -194,7 +209,9 @@ function process_fullRecording(session_name,varargin)
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
             for imec = 1:numel(imec_dirs)
                 kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
-                %kilosort4_path = fullfile('/Volumes/home/DATA/Ya_250429_s385_g0/Ya_250429_s385_g0_imec0', ['kilosort4_', RUN_TYPE]);
+                if isequal(RUN_TYPE,'sweep')
+                    kilosort4_path = fullfile(kilosort4_path, SWEEP_NAME);
+                end
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
@@ -221,14 +238,20 @@ function process_fullRecording(session_name,varargin)
             end
         end
 
-        S1.(this_task).data = tbl;
+        S1.(this_task).dat = dat;
+        S1.(this_task).tbl = tbl;
     
     end
 
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
-    
-    save(fullfile(OUT_PATH,session_name,sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
+   
+    if ~exist(fullfile(OUT_PATH, session_name, 'tables'), 'dir'), mkdir(fullfile(OUT_PATH, session_name, 'tables')); end 
+    if isequal(RUN_TYPE,'sweep')
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');
+    else
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
+    end 
     
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');

@@ -21,6 +21,20 @@ conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 # Assign variables from positional parameters
 SESSION="$1"
 RUN_TYPE="${2:-unleashed}"
+SWEEP_NAME="${4:-none}"
+
+echo "SESSION: $SESSION"
+echo "RUN_TYPE: $RUN_TYPE"
+
+KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_${RUN_TYPE}"
+KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_${RUN_TYPE}"
+
+if [[ "$RUN_TYPE" == "sweep" ]]; then
+    KILO4_PATH0="${KILO4_PATH0}/${SWEEP_NAME}"
+    KILO4_PATH1="${KILO4_PATH1}/${SWEEP_NAME}"
+fi
+echo "KILO4_PATH0: $KILO4_PATH0"
+
 
 # Define the varargin parameters
 RAW_PATH='/ix1/pmayo/lab_NHPdata'
@@ -34,18 +48,7 @@ echo "PROBE_TYPE: $PROBE_TYPE"
 echo "PARSE_KS: $PARSE_KS"
 echo "RUN_TYPE: $RUN_TYPE"
 
-if [ "$RUN_TYPE" == "unleashed" ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_unleashed"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_unleashed"
-elif [ "$RUN_TYPE" == "barebones" ]; then
-    KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_barebones"
-    KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_barebones"
-else
-    echo "Error: Invalid RUN_TYPE value '$RUN_TYPE'. Must be 'unleashed' or 'barebones'."
-    exit 1
-fi
-
-echo "KILO4_PATH0: $KILO4_PATH0"
+##########################################################################3
 
 # Convert .npy files in kilosort4 directory to .mat
 python -c "
@@ -82,7 +85,8 @@ try
         'NEVUTIL_PATH', '$NEV_PATH', ...
         'PROBE_TYPE', '$PROBE_TYPE', ...
         'PARSE_KILOSORT', evalin('base', '$PARSE_KS'), ...
-        'RUN_TYPE', '$RUN_TYPE');
+        'RUN_TYPE', '$RUN_TYPE', ...
+        'SWEEP_NAME', '$SWEEP_NAME');
 catch err
     disp('ERROR in process_fullRecording:');
     disp(getReport(err));

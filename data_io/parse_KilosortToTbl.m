@@ -32,17 +32,6 @@ for i = 1:length(kilo_files1)
     kilosort.(kname) = loaded_var;
 end
 
-% kilosort.channel_positions = channel_positions;
-% kilosort.channel_map = channel_map;
-% kilosort.channel_shanks = channel_shanks;
-% kilosort.pc_feature_ind = pc_feature_ind;
-% kilosort.similar_templates = similar_templates;
-% kilosort.templates = templates;
-% kilosort.templates_ind = templates_ind;
-% kilosort.whitening_mat = whitening_mat;
-% kilosort.whitening_mat_dat = whitening_mat_dat;
-% kilosort.whitening_mat_inv = whitening_mat_inv;
-
 % .tsv files
 kilo_files2 = dir(fullfile(ks_path, '*.tsv'));
 [~, sort_idx] = sort({kilo_files2.name}.');

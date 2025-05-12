@@ -2,7 +2,7 @@
 #SBATCH --cluster=smp
 #SBATCH --partition=high-mem
 #SBATCH --job-name=mdir
-#SBATCH --error=/ix1/pmayo/matlab/outfiles/error_%A_%a.err
+#SBATCH --error=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -23,25 +23,31 @@ module load matlab/R2023a
 
 #########INPUTS##########
 SESSION="$1"
-ALIGN="$2"
-IMEC="${3:-0}"
-RUN_TYPE="${4:-unleashed}"
+IMEC="${2:-0}"
+RUN_TYPE="${3:-unleashed}"
+SWEEP_NAME="${4:-none}"
 
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
 echo "IMEC: $IMEC"
-echo "ALIGN: $ALIGN"
 echo "RUN_TYPE: $RUN_TYPE"
 
-DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_${RUN_TYPE}.mat"
-FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/mdir_rasters"
+if [[ "$RUN_TYPE" == "sweep" ]]; then
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}_${SWEEP_NAME}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/${SWEEP_NAME}/mdir_rasters"
+else
+    DATA_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/tables/${SESSION}_${RUN_TYPE}.mat"
+    FIG_PATH="/ix1/pmayo/lab_NHPdata/${SESSION}/figs/kilosort4_${RUN_TYPE}/mdir_rasters"
+fi
 
 echo "DATA_PATH: $DATA_PATH"
 echo "FIG_PATH: $FIG_PATH"
 
 ########################
 
+ALIGN="stim"
+echo "ALIGN: $ALIGN"
 # First MATLAB call: run process_NeuropixRecording_KKN
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
@@ -50,7 +56,22 @@ ia_mdirRasters('$DATA_PATH', ...
     'IMEC', $IMEC, ...
     'ALIGN', '$ALIGN', ...
     'FIG_PATH', '$FIG_PATH', ...
-    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')));
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
+exit
+EOF
+
+ALIGN="sacc"
+echo "ALIGN: $ALIGN"
+matlab -nodisplay <<EOF
+addpath(genpath('$HELPERS_PATH'));
+fprintf('Running ia_mdirRasters for $1\n');
+ia_mdirRasters('$DATA_PATH', ...
+    'IMEC', $IMEC, ...
+    'ALIGN', '$ALIGN', ...
+    'FIG_PATH', '$FIG_PATH', ...
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
 exit
 EOF
 
