@@ -21,9 +21,8 @@ function ia_rfMaps(data_path,varargin)
     fprintf(sprintf('\n----Data loaded for %s----\n',filename))
 
     if isempty(FIG_PATH)
-        FIG_PATH = fullfile(parent_path, 'figs', 'rfmp', 'unit_heatmaps');
+        FIG_PATH = fullfile(parent_path, 'figs', 'rfmp_heatmaps');
     end
-    if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
 
     units = S.kilosort(IMEC+1).clusters.cluster_id;
     chans = S.kilosort(IMEC+1).clusters.channel_id;
@@ -52,38 +51,82 @@ function ia_rfMaps(data_path,varargin)
     fields = fieldnames(S);
     matchingFields = fields(contains(fields, {'rfmp', 'rfMapping'}, 'IgnoreCase', true));
 
-    T = []; 
+    num_conditions = [];
     for mm = 1:numel(matchingFields)
-        T = [T; S.(matchingFields{mm}).tbl];
+        stimuli = cell2mat(vertcat(S.(matchingFields{mm}).tbl.conditions{:}));
+        num_conditions = [num_conditions; length(sort(unique(stimuli(:,1))).') * length(sort(unique(stimuli(:,2))).')];
     end
 
-    for u=1:length(units)
-        unit = units(u); 
-        if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
-            [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
-        
-            f2a = figure('Visible','off');
-            f2a.Position = [100 100 1800 900];
-            tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
-            
-            if (IMEC)==0
-                title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
-            else
-                title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
-            end
-            subtitle(tl, sprintf('ks_label = %s, snr = %.2f uV, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
-            
-            annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
-                'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
-                'FontSize', 16, ...
-                'EdgeColor', 'none', ...
-                'HorizontalAlignment', 'right');
-            
+    if numel(unique(num_conditions))==1
+        if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end    
+        T = []; 
+        for mm = 1:numel(matchingFields)
+            T = [T; S.(matchingFields{mm}).tbl];
+        end
 
-            print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
-            fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
-        else
-            fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
+        for u=1:length(units)
+            unit = units(u); 
+            if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
+                [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
+            
+                f2a = figure('Visible','off');
+                f2a.Position = [100 100 1800 900];
+                tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
+                
+                if (IMEC)==0
+                    title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                else
+                    title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                end
+                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
+                
+                annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                    'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
+                    'FontSize', 16, ...
+                    'EdgeColor', 'none', ...
+                    'HorizontalAlignment', 'right');
+                
+
+                print(f2a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
+                fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
+            else
+                fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
+            end
+        end
+    else
+        for mm = 1:numel(matchingFields)
+            T = S.(matchingFields{mm}).tbl;
+            if ~exist(fullfile(FIG_PATH, matchingFields{mm}), 'dir'), mkdir(fullfile(FIG_PATH, matchingFields{mm})); end    
+
+            for u=1:length(units)
+                unit = units(u); 
+                if ~exist(fullfile(FIG_PATH, matchingFields{mm}, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
+                    [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
+                
+                    f2a = figure('Visible','off');
+                    f2a.Position = [100 100 1800 900];
+                    tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
+                    
+                    if (IMEC)==0
+                        title(tl,sprintf('%s_%s --- LEFT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',20,'interpreter','none')
+                    else
+                        title(tl,sprintf('%s_%s --- RIGHT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',20,'interpreter','none')
+                    end
+                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
+                    
+                    annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                        'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
+                        'FontSize', 16, ...
+                        'EdgeColor', 'none', ...
+                        'HorizontalAlignment', 'right');
+                    
+
+                    print(f2a, fullfile(FIG_PATH, matchingFields{mm}, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
+                    fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
+                else
+                    fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
+                end
+            end
         end
     end
     fprintf('\n------------------------------\n')
