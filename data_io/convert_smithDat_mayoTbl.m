@@ -73,12 +73,12 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     tbl = table();
 
     % re-arranging table to be easier to access data 
-    tbl.trialName = cellfun(@(q) [TASK_NAME,char('.'),char(string(q))], num2cell(1:height(tbl1))','uni',0);
+    tbl.trialName = cellfun(@(q) [TASK_NAME, '.', sprintf('%04d', q)], num2cell(1:height(tbl1))', 'uni', 0);
     tbl.trialName = categorical(string(tbl.trialName));
     % tbl.block = tbl1.block;
     
     % Pull out conditions from trial names, separated by ';' delimeter
-    if contains(TASK_NAME, 'rfmp')
+    if any(contains(TASK_NAME, {'rfmp', 'rfMapping'}))
         % Define the function to process each string
         process_string = @(input_str) [...
             str2double(cellfun(@(x) x{1}, regexp(input_str, 'xpos=([-0-9]+)', 'tokens'), 'UniformOutput', false))', ...
@@ -86,8 +86,9 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         ];
 
         % Apply the function to each cell in conditions
-        conditions = cellfun(process_string, tbl1.text, 'uni', 0);
+        conditions = cellfun(@(q) round(pix2deg(q, tbl1(1,:).params.block.screenDistance, tbl1(1,:).params.block.pixPerCM)), cellfun(process_string, tbl1.text, 'uni', 0), 'uni', 0);
         tbl.conditions = cellfun(@(q) num2cell(q,2), conditions, 'uni', 0);
+
     else
         pattern = '([^0-9;]+)(?==)';
         matches = cellfun(@(q) regexp(q, pattern, 'match'), tbl1.text, 'uni', 0);
@@ -125,7 +126,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         % end
     end
 
-    if contains(TASK_NAME, 'purs')
+    if any(contains(TASK_NAME, {'purs','pursuit'}))
         tbl1.result(tbl1.result==0 | tbl1.result==154) = 167;
     end
 
@@ -161,6 +162,8 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     end
 
     tbl.params = tbl1.params;
+
+
 
     eyePos = cellfun(@(x,y) filterEyeTraces_EyeLink(x(:,y:end),'SAMPLING_FREQUENCY',1000,'CUTOFF_FREQUENCY',84,'PLOT_TRIAL',false), tbl1.eyedata, trialStarts, 'uni', 0);
     eyeVel = cellfun(@(q) calcDerivative_eyeTraces(q), cellfun(@(x,y) filterEyeTraces_EyeLink(x(:,y:end),'SAMPLING_FREQUENCY',1000,'CUTOFF_FREQUENCY',40,'PLOT_TRIAL',false), tbl1.eyedata, trialStarts, 'uni', 0), 'uni', 0);
@@ -245,8 +248,13 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     end
 
     %%%%%%%%%%%%% task-specific re-arranging and calculations %%%%%%%%%%%%%
-    if contains(TASK_NAME, 'mdir')
+    if any(contains(TASK_NAME, {'mdir', 'dirmem'}))
         tbl(:, 'MEM_GUIDED_SACC') = [];
+
+        if ~ismember('distance', tbl.Properties.VariableNames)
+            tbl.distance = cellfun(@(q) q.distance, {tbl.params.block}.', 'uni', 1);
+            tbl = movevars(tbl,{'distance'},'After','angle');
+        end
         tbl.distance = cellfun(@(q) round(pix2deg(q,tbl(1,:).params.block.screenDistance,tbl(1,:).params.block.pixPerCM)), num2cell(tbl.distance), 'uni', 1);
 
         if all(ismember({'targetOnsetDelay', 'delay'}, tbl.Properties.VariableNames))
@@ -254,10 +262,10 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
 
             tbl = movevars(tbl,{'targetOnsetDelay','delay','fixDuration'},'Before','result');
         end
-    elseif contains(TASK_NAME, 'purs')
+    elseif any(contains(TASK_NAME, {'purs','pursuit'}))
         % Define the columns to replace and their new names
-        cols_to_replace = {'TARG_ON', 'TARG_OFF'};
-        new_names = {'PURSUIT_TARG_ON', 'PURSUIT_TARG_OFF'};
+        cols_to_replace = {'TARG_ON', 'PURSUIT_TARG', 'TARG_OFF'};
+        new_names = {'PURSUIT_TARG_ON', 'PURSUIT_TARG_ON', 'PURSUIT_TARG_OFF'};
         
         % Loop through each column to check and replace
         for i = 1:numel(cols_to_replace)
@@ -299,7 +307,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl = movevars(tbl,{'pursuitOnset','pursuitLatency','msOffset','pursType','csTimes','csVelocity','csAngle'},'Before','result');
         tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG_ON');
 
-    elseif contains(TASK_NAME, 'rfmp') && ismember('STIM_ON', tbl.Properties.VariableNames)
+    elseif any(contains(TASK_NAME, {'rfmp','rfMapping'})) && ismember('STIM_ON', tbl.Properties.VariableNames)
         tbl.STIM_ON(tbl.result~='CORRECT') = cellfun(@(q) q(1:end-1), tbl.STIM_ON(tbl.result~='CORRECT'), 'uni', 0);
         tbl.conditions(tbl.result~="CORRECT") = cellfun(@(q) q(1:end-1), tbl.conditions(tbl.result~='CORRECT'), 'uni', 0);
     end
@@ -314,6 +322,10 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
 
     if ismember('IGNORED', tbl.Properties.VariableNames) && ismember('CORRECT', tbl.Properties.VariableNames)
         tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
+    end
+
+    if any(contains(TASK_NAME, {'rfmp', 'rfMapping'}))
+        tbl = tbl(~cellfun(@(q) any(isnan(q)), tbl.STIM_OFF, 'uni', 1),:);
     end
 
 end

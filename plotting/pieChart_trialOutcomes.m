@@ -43,6 +43,9 @@ function pieChart_trialOutcomes(trialOutcomes, taskname, all_results)
             end
         end
     end
+    % Set label font size (short version)
+    set(findall(h, 'Type', 'text'), 'FontSize', 8);
+
 
     % Add title
     title({'';'';sprintf('%s (%d correct / %d total trials)', taskname, sum(trialOutcomes=="CORRECT"), length(trialOutcomes))},'fontsize',14);

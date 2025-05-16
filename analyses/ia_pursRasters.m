@@ -1,11 +1,12 @@
-function ia_mdirRasters(data_path,varargin)
+function ia_pursRasters(data_path,varargin)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     p = inputParser;
     addRequired(p, 'data_path', @ischar);
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'FIG_PATH', [], @ischar);
-    addParameter(p, 'ALIGN', 'stim', @ischar);
+    addParameter(p, 'ALIGN', 'targ', @ischar);
+    addParameter(p, 'PURE_ONLY', false, @islogical)
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
@@ -15,6 +16,7 @@ function ia_mdirRasters(data_path,varargin)
     IMEC = p.Results.IMEC;
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
+    PURE_ONLY = p.Results.PURE_ONLY;
     X_LIMITS = p.Results.X_LIMITS;
     JOB_ID = p.Results.JOB_ID;
     N_CHUNKS = p.Results.N_CHUNKS;
@@ -23,47 +25,57 @@ function ia_mdirRasters(data_path,varargin)
     [parent_path, filename, ~] = fileparts(data_path);
 
     if isempty(FIG_PATH)
-        FIG_PATH = fullfile(parent_path, 'figs', 'mdir', 'unit_rasters');
+        FIG_PATH = fullfile(parent_path, 'figs', 'purs', 'unit_rasters');
     end
 
-    if isequal(ALIGN,'stim')
-        FR_WIN = [50,150];
-        fig_path = fullfile(FIG_PATH, 'stim_aligned');
-        xlab = 'time aligned to target onset (ms)';
-    elseif isequal(ALIGN,'sacc')
+    if isequal(ALIGN,'targ')
+        FR_WIN = [50,250];
+        if PURE_ONLY
+            fig_path = fullfile(FIG_PATH);
+        else
+            fig_path = fullfile(FIG_PATH, 'targ_aligned', 'all_trls');
+        end
+        xlab = 'time aligned to target motion onset (ms)';
+    elseif isequal(ALIGN,'purs')
         FR_WIN = [-50,50];
-        fig_path = fullfile(FIG_PATH, 'sacc_aligned');
-        xlab = 'time aligned to saccade onset (ms)';
+        if PURE_ONLY
+            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'pure_only');
+        else
+            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'all_trls');
+        end
+        xlab = 'time aligned to pursuit onset (ms)';
     end
 
-    % Find mdir or dirmem fields
+    % Find rfmp or rfMapping fields
     fields = fieldnames(S);
-    matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
+    matchingFields = fields(contains(fields, {'purs', 'pursuit'}, 'IgnoreCase', true));
     
     if ~isempty(matchingFields)
         if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
+
         T = []; 
         for mm = 1:numel(matchingFields)
-            tt = S.(matchingFields{mm}).tbl;
-            vars = {'angle', 'distance', 'result', 'TARG_ON', 'SACCADE', 'trialName'};
-            vars = [vars, intersect({'spiketimes_imec0','spiketimes_imec1'}, tt.Properties.VariableNames)];
-            T = [T; tt(:, vars)];
+            T = [T; S.(matchingFields{mm}).tbl];
         end
 
-        T = T(T.result=='CORRECT',:);
+        if PURE_ONLY
+            T = T(T.result=='CORRECT' & T.pursType=='pure',:);
+        else
+            T = T(T.result=='CORRECT',:);
+        end
         
         angles = sort(unique(T.angle))';
         angle_order = [6,3,2,1,4,7,8,9];
-        distances = sort(unique(T.distance));
+        speeds = sort(unique(T.pursuitSpeed));
 
         if IMEC==0 % purples/pinks
-            line_color = {[123,44,191]./255; [230,34,172]./255; [191,44,44]./255};
-            tick_color = {[98,35,152]./255; [184,27,137]./255; [152,35,35]./255};
-            sem_shade = {[228,212,242]./255; [250,210,238]./255; [242,212,212]./255};
+            line_color = {[123,44,191]./255; [230,34,172]./255};
+            tick_color = {[98,35,152]./255; [184,27,137]./255};
+            sem_shade = {[228,212,242]./255; [250,210,238]./255};
         else % greens/blues
-            line_color = {[42,157,143]./255; [42,114,157]./255; [89,157,42]./255};
-            tick_color = {[25,94,85]./255; [25,68,94]./255}; [53,94,25]./255;
-            sem_shade = {[212,235,232]./255; [212,226,235]./255; [221,235,212]./255};
+            line_color = {[42,157,143]./255; [42,114,157]./255};
+            tick_color = {[25,94,85]./255; [25,68,94]./255};
+            sem_shade = {[212,235,232]./255; [212,226,235]./255};
         end
 
         units = S.kilosort(IMEC+1).clusters.cluster_id;
@@ -89,7 +101,6 @@ function ia_mdirRasters(data_path,varargin)
             
         end
         
-        
         imec_name = ['spiketimes_imec' num2str(IMEC)];
         for u=1:length(units)
             unit = units(u);
@@ -98,32 +109,32 @@ function ia_mdirRasters(data_path,varargin)
                 f3a.Position = [100 100 1800 900];
             
                 y_lims = []; % Store y-axis limits
-                frs_perAng = cell(length(angles),length(distances));
+                frs_perAng = cell(length(angles),length(speeds));
                 for ang = 1:length(angles)
                     these_trls = T(T.angle==angles(ang),:);
 
                     these_trls.trialName = categorical(regexprep( cellstr(these_trls.trialName), 'mdir1\.(\d+)', 'mdir1.${sprintf(''%04d'', str2double($1))}'));
-                    these_trls = sortrows(these_trls, {'distance', 'trialName'});
+                    these_trls = sortrows(these_trls, {'pursuitSpeed', 'trialName'});
 
-                    if isequal(ALIGN,'stim')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
-                    elseif isequal(ALIGN,'sacc')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
+                    if isequal(ALIGN,'targ')
+                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.PURSUIT_TARG_ON), 'uni', 0);
+                    elseif isequal(ALIGN,'purs')
+                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.pursuitOnset), 'uni', 0);
                     end
 
                     subplot(3,3,angle_order(ang))
 
-                    if numel(distances)==1
+                    if numel(speeds)==1
                         raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN)
                         frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
                     else
                         [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
-                        for dd = 1:numel(distances)
-                            line_colors(these_trls.distance==distances(dd)) = line_color(dd);
-                            tick_colors(these_trls.distance==distances(dd)) = tick_color(dd);
-                            sem_shades(these_trls.distance==distances(dd)) = sem_shade(dd);
+                        for dd = 1:numel(speeds)
+                            line_colors(these_trls.pursuitSpeed==speeds(dd)) = line_color(dd);
+                            tick_colors(these_trls.pursuitSpeed==speeds(dd)) = tick_color(dd);
+                            sem_shades(these_trls.pursuitSpeed==speeds(dd)) = sem_shade(dd);
 
-                            frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.distance==distances(dd)), 'uni', 1);
+                            frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.pursuitSpeed==speeds(dd)), 'uni', 1);
                         end
 
                         raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
@@ -138,8 +149,8 @@ function ia_mdirRasters(data_path,varargin)
                 % Pad each cell with NaNs to match maxLength
                 maxLength = max(cellfun(@numel, frs_perAng)); maxLength = max(maxLength);
 
-                str_title = deal(cell(1,numel(distances)));
-                for dd = 1:length(distances)
+                str_title = deal(cell(1,numel(speeds)));
+                for dd = 1:length(speeds)
                     frs_perAng2 = cellfun(@(x) [x; nan(maxLength - numel(x), 1)]', frs_perAng(:,dd), 'UniformOutput', false);
                     
                     stimrate = vertcat(frs_perAng2{:})';
@@ -176,12 +187,12 @@ function ia_mdirRasters(data_path,varargin)
                     polarplot(deg2rad(visdp), max(rho), '^', 'MarkerFaceColor', line_color{dd}, 'MarkerEdgeColor', line_color{dd}, 'MarkerSize', 10);
 
                     tcolor = tick_color{dd};
-                    str_title{dd} = sprintf('%d deg -- VisDir: %0.2f, Sel: %0.2f', distances(dd), visdp, visds);
+                    str_title{dd} = sprintf('%d deg/s -- VisDir: %0.2f, Sel: %0.2f', speeds(dd), visdp, visds);
                 end 
 
                 title(str_title);
                    
-                legend_labels = arrayfun(@(d) sprintf('%d deg', distances(d)), 1:length(distances), 'UniformOutput', false);
+                legend_labels = arrayfun(@(d) sprintf('%d deg/s', speeds(d)), 1:length(speeds), 'UniformOutput', false);
                 legend(h1, legend_labels, 'Location', 'best');
                 prettyFig;
 
@@ -201,17 +212,32 @@ function ia_mdirRasters(data_path,varargin)
                 han.Title.Visible='on';
                 han.XLabel.Visible='on';
                 xlabel(han,{'';xlab},'fontsize',16);
+
             
                 if (IMEC)==0
-                    title(han, {
+                    if PURE_ONLY
+                        title(han, {
+                        sprintf('%s (PURE ONLY) --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
+                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                    }, 'fontsize', 16, 'interpreter', 'none');
+                    else
+                        title(han, {
                         sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
                         sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
+                    end
                 else
-                    title(han, {
+                    if PURE_ONLY
+                        title(han, {
+                        sprintf('%s (PURE ONLY) --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
+                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                    }, 'fontsize', 16, 'interpreter', 'none'); 
+                    else
+                        title(han, {
                         sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
                         sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
+                    end
                 end
             
                 print(f3a, fullfile(fig_path, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
@@ -219,6 +245,8 @@ function ia_mdirRasters(data_path,varargin)
             else
                 fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
             end
+
+            blah = 1;
         end
     end
     fprintf('\n------------------------------\n')

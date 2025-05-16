@@ -81,7 +81,7 @@ function [tl, num_pure] = eyeTraces_pursSplitByConditions(T, rt, varargin)
             if ismember('PURSUIT_TARG', T.Properties.VariableNames)
                 targetOnsets = T.PURSUIT_TARG(validTrials);
             else
-                targetOnsets = T.TARG_ON(validTrials);
+                targetOnsets = T.PURSUIT_TARG_ON(validTrials);
             end
             
             % Store angles for trials without catch-up saccades

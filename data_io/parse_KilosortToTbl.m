@@ -32,17 +32,6 @@ for i = 1:length(kilo_files1)
     kilosort.(kname) = loaded_var;
 end
 
-% kilosort.channel_positions = channel_positions;
-% kilosort.channel_map = channel_map;
-% kilosort.channel_shanks = channel_shanks;
-% kilosort.pc_feature_ind = pc_feature_ind;
-% kilosort.similar_templates = similar_templates;
-% kilosort.templates = templates;
-% kilosort.templates_ind = templates_ind;
-% kilosort.whitening_mat = whitening_mat;
-% kilosort.whitening_mat_dat = whitening_mat_dat;
-% kilosort.whitening_mat_inv = whitening_mat_inv;
-
 % .tsv files
 kilo_files2 = dir(fullfile(ks_path, '*.tsv'));
 [~, sort_idx] = sort({kilo_files2.name}.');
@@ -59,9 +48,10 @@ for ii = 1:length(kilo_files2)
         clusters = cc2;
     end
 end
-clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
-clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
-kilosort.clusters = clusters;
+%clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
+%clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
+cluster_sum = readtable(fullfile(ks_path,'cluster_summary.csv'));
+kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters', 'KSLabel_cc'})];
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);
 spike_times_sec = double(kilosort.spike_times)./30000;

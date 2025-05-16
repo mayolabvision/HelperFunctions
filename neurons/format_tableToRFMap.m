@@ -55,8 +55,8 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     stimuli = cell2mat(vertcat(tbl.conditions{:}));
-    xvals = sort(unique(stimuli(:,1)));
-    yvals = sort(unique(stimuli(:,2)));
+    xvals = sort(unique(stimuli(:,1))).';
+    yvals = sort(unique(stimuli(:,2))).';
 
     bin_edges = arrayfun(@(x) [(FIRST_BIN + ((x*BIN_STEP)-BIN_STEP)),(FIRST_BIN + ((x*BIN_STEP)-BIN_STEP) + BIN_WIDTH)], 1:N_BINS, 'UniformOutput', false);
 
@@ -88,7 +88,7 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
             end
         end
         all_FRs{unit} = FRs;
-        fprintf(sprintf('\n----Unit %.2d complete----',UNITS(unit)))
+        % fprintf(sprintf('\n----Unit %.2d complete----',UNITS(unit)))
     end
-    fprintf('\n----------------------\n')
+    % fprintf('\n----------------------\n')
 end
