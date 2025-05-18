@@ -122,8 +122,8 @@ function process_fullRecording(session_name,varargin)
             end
     
             [np_mask, ripple_mask] = match_syncPulses_RipToNP(np_pulse_timeStamps, ripple_pulse_timeStamps);
-            fprintf('\n dat has %d rows', numel(dat))
-            fprintf('\n np_mask = %d/%d, ripple_mask = %d/%d \n', sum(np_mask), length(np_mask), sum(ripple_mask), length(ripple_mask))  
+            fprintf('\n dat has %d rows\n', numel(dat))
+            fprintf('np_mask = %d/%d, ripple_mask = %d/%d \n', sum(np_mask), length(np_mask), sum(ripple_mask), length(ripple_mask))  
    
             if isequal(session_name,'kendra_scrappy_0136a_g0') 
                 if goodFlag % only used for kendra_scrappy_0136a_g0
@@ -215,7 +215,7 @@ function process_fullRecording(session_name,varargin)
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
-                    kilosort.imec = imec-1;
+                    kilosort.imec = imec;
                     fields = fieldnames(kilosort);
                     fields(strcmp(fields, 'imec')) = [];
                     kilosort = orderfields(kilosort, ['imec'; fields]);
@@ -305,7 +305,7 @@ function process_fullRecording(session_name,varargin)
         for imec = 1:size(S.kilosort,1)
             if ~isempty(trlAvg_frs_all{imec})
                 % MOTOR (PURSUIT)
-                [pur_sel_dir, pur_pref_dir, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
+                [pur_sel_dir, pur_pref_dir, ~, ~, ~] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
                 S.kilosort(imec).clusters.pur_sel_dir = pur_sel_dir;
                 S.kilosort(imec).clusters.pur_pref_dir = pur_pref_dir;
             end

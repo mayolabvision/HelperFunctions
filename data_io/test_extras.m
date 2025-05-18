@@ -1,8 +1,8 @@
 clear
 clc
 
-data_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0_unleashed.mat';
-fig_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0/figs';
+data_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0131a_g0_sweep_00000-bs002-wh032-tu09-tl08-at020-ct025.mat';
+%fig_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0/figs';
 
 %data_path = '/Users/kendranoneman/Data/NP_DATA/Ya_250506_s390_g0_unleashed.mat';
 
