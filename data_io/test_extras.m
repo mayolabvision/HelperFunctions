@@ -1,10 +1,10 @@
 clear
 clc
 
-%data_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0/tables/kendra_scrappy_0124a_g0_unleashed.mat';
-%fig_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0/figs';
+data_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0_unleashed.mat';
+fig_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0/figs';
 
-data_path = '/Users/kendranoneman/Data/NP_DATA/Ya_250506_s390_g0_unleashed.mat';
+%data_path = '/Users/kendranoneman/Data/NP_DATA/Ya_250506_s390_g0_unleashed.mat';
 
 load(data_path,'S');
 
