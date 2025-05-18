@@ -245,6 +245,14 @@ function process_fullRecording(session_name,varargin)
             end
         end
 
+        % Remove bad trials
+        colnames = {'spiketimes_imec0', 'spiketimes_imec1'};
+        col_found = colnames(ismember(colnames, tbl.Properties.VariableNames));
+        
+        if ~isempty(col_found)
+            spike_column = tbl.(col_found{1});
+            tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
+        end
         S1.(this_task).dat = dat;
         S1.(this_task).tbl = tbl;
     

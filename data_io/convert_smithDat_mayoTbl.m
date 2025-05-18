@@ -138,7 +138,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
     tbl.result = categorical(string(tbl.result));
 
     % Make array of times of start/end time per trial, for aligning with trial codes and indexing eye data
-    times_ms = cellfun(@(q) round(q(1)*1000:q(2)*1000), num2cell(tbl1.time,2), 'uni', 0);
+    times_ms = cellfun(@(q) round(q(1)*1000:(q(2)+1)*1000), num2cell(tbl1.time,2), 'uni', 0);
     trialStarts = cellfun(@(q,r) find(q == round(r(r(:,2)==1,3)*1000)), times_ms, tbl1.trialcodes, 'uni', 0);
     eventCodes = tbl1.trialcodes; eventCodes = vertcat(eventCodes{:});
     eventCodes = num2cell(sort(unique(eventCodes(:,2))))';

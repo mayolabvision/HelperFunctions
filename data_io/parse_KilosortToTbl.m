@@ -73,7 +73,7 @@ for t = 1:height(tbl)
 
     np = NP_ALIGN_PULSES(t);
     rp = tbl.ALIGN_PULSE{t,1};
-    et =  size(tbl.eyePos{t},2);
+    et =  tbl.END_TRIAL(t);
 
     spike_units = kilosort.spike_clusters(spike_times_sec>=(np-(rp./1000)) & spike_times_sec<=(np+((et-rp)./1000)));
     spike_times = ((spike_times_sec((spike_times_sec>=(np-(rp./1000)) & spike_times_sec<=(np+((et-rp)./1000)))) - np)*1000) + rp;
@@ -82,7 +82,8 @@ for t = 1:height(tbl)
 end
 
 spike_counts = cellfun(@(w) cellfun(@(q) numel(q), w, 'uni', 1), spikes_perTrial, 'uni', 0);
-unit_frs = cellfun(@(w,v) w./v, spike_counts, num2cell((tbl.END_TRIAL-tbl.START_TRIAL)./1000), 'uni', 0);
+unit_frs = cellfun(@(w,v) w./v, spike_counts, num2cell((tbl.END_TRIAL - tbl.START_TRIAL)./1000), 'uni', 0);
+unit_frs = unit_frs(cellfun(@sum, unit_frs, 'uni', 1)>0);
 trlAvg_frs = mean(vertcat(unit_frs{:}),1,'omitnan')';
 
 end
