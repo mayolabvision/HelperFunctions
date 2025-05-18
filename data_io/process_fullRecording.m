@@ -206,7 +206,7 @@ function process_fullRecording(session_name,varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if PARSE_KS
 
-            kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs));
+            kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs)); 
             for imec = 1:numel(imec_dirs)
                 kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
                 if isequal(RUN_TYPE,'sweep')
@@ -215,11 +215,16 @@ function process_fullRecording(session_name,varargin)
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
+                    kilosort.imec = imec-1;
+                    fields = fieldnames(kilosort);
+                    fields(strcmp(fields, 'imec')) = [];
+                    kilosort = orderfields(kilosort, ['imec'; fields]);
+
                     trlAvg_frs_all{imec} = trlAvg_frs;
                     kilosort_all = [kilosort_all; kilosort];
 
                     tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
-                end
+                end 
             end
 
             if nevnum==1
@@ -227,9 +232,11 @@ function process_fullRecording(session_name,varargin)
             end
 
             for imec = 1:numel(imec_dirs)
-                S1.kilosort(imec).clusters.([this_task, '_Hz']) = trlAvg_frs_all{imec};
+                if ~isempty(trlAvg_frs_all{imec})
+                    S1.kilosort(imec).clusters.([this_task, '_Hz']) = trlAvg_frs_all{imec};
+                end
             end
-            
+ 
             last_alignID = last_alignID + height(tbl);   
 
             if nevnum==length(nevnames)
@@ -251,6 +258,7 @@ function process_fullRecording(session_name,varargin)
     matchingFields1 = fields(contains(fields, {'dirmem', 'mdir'}, 'IgnoreCase', true));
 
     if ~isempty(matchingFields1)
+        fprintf('\n~~CALCULATING MDIR METRICS~~\n');
         Tmdir = []; 
         for mm = 1:numel(matchingFields1)
             Tmdir = [Tmdir; S.(matchingFields1{mm}).tbl];
@@ -259,25 +267,27 @@ function process_fullRecording(session_name,varargin)
         Tmdir = Tmdir(Tmdir.result=='CORRECT',:);
 
         for imec = 1:size(S.kilosort,1)
-            % VISUAL
-            [vis_sel_dir, vis_pref_dir, ~, ~, frs_perAng_vis] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[50,150],'ALIGN_TO','stim','IMEC',imec-1);
-            S.kilosort(imec).clusters.vis_sel_dir = vis_sel_dir;
-            S.kilosort(imec).clusters.vis_pref_dir = vis_pref_dir;
+            if ~isempty(trlAvg_frs_all{imec})
+                % VISUAL
+                [vis_sel_dir, vis_pref_dir, ~, ~, frs_perAng_vis] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[50,150],'ALIGN_TO','stim','IMEC',imec-1);
+                S.kilosort(imec).clusters.vis_sel_dir = vis_sel_dir;
+                S.kilosort(imec).clusters.vis_pref_dir = vis_pref_dir;
 
-            % MOTOR
-            [sac_sel_dir, sac_pref_dir, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
-            S.kilosort(imec).clusters.sac_sel_dir = sac_sel_dir;
-            S.kilosort(imec).clusters.sac_pref_dir = sac_pref_dir;
+                % MOTOR
+                [sac_sel_dir, sac_pref_dir, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
+                S.kilosort(imec).clusters.sac_sel_dir = sac_sel_dir;
+                S.kilosort(imec).clusters.sac_pref_dir = sac_pref_dir;
 
-            % VMI
-            VMI_per_unit = zeros(size(frs_perAng_sac,2),1);
-            for unit = 1:size(frs_perAng_sac,2)
-                visFR = frs_perAng_vis(:,unit);
-                sacFR = frs_perAng_sac(:,unit);
-            
-                VMI_per_unit(unit) = (mean(vertcat(visFR{:})) - mean(vertcat(sacFR{:})))/(mean(vertcat(visFR{:})) + mean(vertcat(sacFR{:})));
+                % VMI
+                VMI_per_unit = zeros(size(frs_perAng_sac,2),1);
+                for unit = 1:size(frs_perAng_sac,2)
+                    visFR = frs_perAng_vis(:,unit);
+                    sacFR = frs_perAng_sac(:,unit);
+                
+                    VMI_per_unit(unit) = (mean(vertcat(visFR{:})) - mean(vertcat(sacFR{:})))/(mean(vertcat(visFR{:})) + mean(vertcat(sacFR{:})));
+                end
+                S.kilosort(imec).clusters.VMI = VMI_per_unit;
             end
-            S.kilosort(imec).clusters.VMI = VMI_per_unit;
         end
     end
 
@@ -285,6 +295,7 @@ function process_fullRecording(session_name,varargin)
     matchingFields2 = fields(contains(fields, {'pursuit', 'purs'}, 'IgnoreCase', true));
 
     if ~isempty(matchingFields2)
+        fprintf('\n~~CALCULATING PURS METRICS~~\n');
         Tpurs = []; 
         for mm = 1:numel(matchingFields2)
             Tpurs = [Tpurs; S.(matchingFields2{mm}).tbl];
@@ -292,32 +303,35 @@ function process_fullRecording(session_name,varargin)
         Tpurs = Tpurs(Tpurs.result=='CORRECT' & Tpurs.jump==-1 & Tpurs.pursType=='pure' & (isnan(Tpurs.msOffset) | Tpurs.msOffset<0),:);
 
         for imec = 1:size(S.kilosort,1)
-            % MOTOR (PURSUIT)
-            [pur_sel_dir, pur_pref_dir, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
-            S.kilosort(imec).clusters.pur_sel_dir = pur_sel_dir;
-            S.kilosort(imec).clusters.pur_pref_dir = pur_pref_dir;
-
+            if ~isempty(trlAvg_frs_all{imec})
+                % MOTOR (PURSUIT)
+                [pur_sel_dir, pur_pref_dir, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
+                S.kilosort(imec).clusters.pur_sel_dir = pur_sel_dir;
+                S.kilosort(imec).clusters.pur_pref_dir = pur_pref_dir;
+            end
         end
     end
 
     % SPII, if dirmem and pursuit were ran
     if ~isempty(matchingFields1) & ~isempty(matchingFields2)
         for imec = 1:size(S.kilosort,1)
-            % MOTOR (SACCADE)
-            [~, ~, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
+            if ~isempty(trlAvg_frs_all{imec})
+                % MOTOR (SACCADE)
+                [~, ~, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
 
-            % MOTOR (PURSUIT)
-            [~, ~, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
+                % MOTOR (PURSUIT)
+                [~, ~, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
 
-            % VMI
-            SPI_per_unit = zeros(size(frs_perAng_sac,2),1);
-            for unit = 1:size(frs_perAng_sac,2)
-                sacFR = frs_perAng_sac(:,unit);
-                purFR = frs_perAng_pur(:,unit);
-            
-                SPI_per_unit(unit) = (mean(vertcat(sacFR{:})) - mean(vertcat(purFR{:})))/(mean(vertcat(sacFR{:})) + mean(vertcat(purFR{:})));
+                % VMI
+                SPI_per_unit = zeros(size(frs_perAng_sac,2),1);
+                for unit = 1:size(frs_perAng_sac,2)
+                    sacFR = frs_perAng_sac(:,unit);
+                    purFR = frs_perAng_pur(:,unit);
+                
+                    SPI_per_unit(unit) = (mean(vertcat(sacFR{:})) - mean(vertcat(purFR{:})))/(mean(vertcat(sacFR{:})) + mean(vertcat(purFR{:})));
+                end
+                S.kilosort(imec).clusters.SPI = SPI_per_unit;
             end
-            S.kilosort(imec).clusters.SPI = SPI_per_unit;
         end
     end
  

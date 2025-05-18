@@ -460,7 +460,10 @@ def plotSaved(xCoord, yCoord, shankInd, meta, savePath=None):
    
    # after looping over all shanks, show plot 
     if savePath is not None:
-        plt.savefig(savePath, dpi=300)
+        file_stem = Path(savePath).stem
+        title_str = file_stem.replace('_kilosortChanMap','')
+        plt.title(title_str)
+        plt.savefig(savePath, dpi=300, bbox_inches='tight', pad_inches=0.1)
     else:
         plt.show()
 
@@ -635,7 +638,7 @@ def MetaToCoords(metaFullPath, outType, badChan= np.zeros((0), dtype = 'int'), d
         [nShank, shankWidth, shankPitch, shankInd, xCoord, yCoord, connected] = shankMapToGeom(meta);
     
     if showPlot:
-        outPath = metaFullPath.replace('.meta', '.png')
+        outPath = str(metaFullPath).replace('.meta','_kilosortChanMap.png')
         plotSaved(xCoord, yCoord, shankInd, meta, savePath=outPath)
         
     [AP,LF,SY] = ChannelCountsIM(meta)    

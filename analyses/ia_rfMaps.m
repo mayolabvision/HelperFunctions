@@ -74,13 +74,13 @@ function ia_rfMaps(data_path,varargin)
                 tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                 
                 if (IMEC)==0
-                    title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                    title(tl,sprintf('%s --- LEFT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',16,'interpreter','none')
                 else
-                    title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',20,'interpreter','none')
+                    title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',16,'interpreter','none')
                 end
-                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
+                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',12,'interpreter','none')
                 
-                annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                annotation('textbox', [0.8 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                     'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
                     'FontSize', 16, ...
                     'EdgeColor', 'none', ...
@@ -108,13 +108,13 @@ function ia_rfMaps(data_path,varargin)
                     tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                     
                     if (IMEC)==0
-                        title(tl,sprintf('%s_%s --- LEFT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',20,'interpreter','none')
+                        title(tl,sprintf('%s_%s --- LEFT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',16,'interpreter','none')
                     else
-                        title(tl,sprintf('%s_%s --- RIGHT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',20,'interpreter','none')
+                        title(tl,sprintf('%s_%s --- RIGHT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',16,'interpreter','none')
                     end
-                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',16,'interpreter','none')
+                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',12,'interpreter','none')
                     
-                    annotation('textbox', [0.75 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                    annotation('textbox', [0.8 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                         'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
                         'FontSize', 16, ...
                         'EdgeColor', 'none', ...
