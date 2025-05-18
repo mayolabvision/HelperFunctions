@@ -11,6 +11,12 @@ tbl = p.Results.tbl;
 ks_path = p.Results.kilosort4_path;
 NP_ALIGN_PULSES = p.Results.NP_ALIGN_PULSES;
 
+tokens = regexp(ks_path, 'imec(\d+)', 'tokens');
+if isempty(tokens)
+    error('Could not find "imec" followed by a number in ks_path');
+end
+imec_num = str2double(tokens{1}{1});
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load in MATLAB table
 tic
@@ -51,7 +57,10 @@ end
 %clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
 %clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
 cluster_sum = readtable(fullfile(ks_path,'cluster_summary.csv'));
+cluster_sum.imec = repmat(imec_num, height(cluster_sum), 1);
+
 kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters', 'KSLabel_cc'})];
+kilosort.clusters = movevars(kilosort.clusters, 'imec', 'Before', 1);
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);
 spike_times_sec = double(kilosort.spike_times)./30000;

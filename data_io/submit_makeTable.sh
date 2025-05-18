@@ -21,7 +21,7 @@ conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 # Assign variables from positional parameters
 SESSION="$1"
 RUN_TYPE="${2:-unleashed}"
-SWEEP_NAME="${4:-none}"
+SWEEP_NAME="${3:-none}"
 
 echo "SESSION: $SESSION"
 echo "RUN_TYPE: $RUN_TYPE"
