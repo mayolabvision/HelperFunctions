@@ -6,7 +6,7 @@
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59

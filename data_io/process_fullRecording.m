@@ -215,7 +215,7 @@ function process_fullRecording(session_name,varargin)
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
-                    kilosort.imec = imec;
+                    kilosort.imec = imec_nums{imec};
                     fields = fieldnames(kilosort);
                     fields(strcmp(fields, 'imec')) = [];
                     kilosort = orderfields(kilosort, ['imec'; fields]);

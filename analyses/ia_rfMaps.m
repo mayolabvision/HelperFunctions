@@ -23,12 +23,11 @@ function ia_rfMaps(data_path,varargin)
     if isempty(FIG_PATH)
         FIG_PATH = fullfile(parent_path, 'figs', 'rfmp_heatmaps');
     end
-
-    units = S.kilosort(IMEC+1).clusters.cluster_id;
-    chans = S.kilosort(IMEC+1).clusters.channel_id;
-    snrs  = S.kilosort(IMEC+1).clusters.snr;
-    contams = S.kilosort(IMEC+1).clusters.ContamPct;
-    kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
+    units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
+    chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
+    snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
+    depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
+    kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
 
     if ~isnan(JOB_ID)
         all_units = units + 1;
@@ -41,8 +40,8 @@ function ia_rfMaps(data_path,varargin)
 
         units = units(ids);
         chans = chans(ids);
-        snr = snrs(ids);
-        contams = contams(ids);
+        snrs = snrs(ids);
+        depths = depths(ids);
         kslabs = kslabs(ids);
         
     end
@@ -78,7 +77,7 @@ function ia_rfMaps(data_path,varargin)
                 else
                     title(tl,sprintf('%s --- RIGHT --- cluster %d (channel %d)',filename, unit, chans(u)),'fontsize',16,'interpreter','none')
                 end
-                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',12,'interpreter','none')
+                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs(u), snrs(u), depths(u)),'fontsize',12,'interpreter','none')
                 
                 annotation('textbox', [0.8 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                     'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
@@ -112,7 +111,7 @@ function ia_rfMaps(data_path,varargin)
                     else
                         title(tl,sprintf('%s_%s --- RIGHT --- cluster %d (channel %d)',filename, matchingFields{mm}, unit, chans(u)),'fontsize',16,'interpreter','none')
                     end
-                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, contam_pct = %.1f%%', kslabs{u}, snrs(u), contams(u)),'fontsize',12,'interpreter','none')
+                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs(u), snrs(u), depths(u)),'fontsize',12,'interpreter','none')
                     
                     annotation('textbox', [0.8 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                         'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...

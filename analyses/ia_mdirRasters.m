@@ -66,11 +66,11 @@ function ia_mdirRasters(data_path,varargin)
             sem_shade = {[212,235,232]./255; [212,226,235]./255; [221,235,212]./255};
         end
 
-        units = S.kilosort(IMEC+1).clusters.cluster_id;
-        chans = S.kilosort(IMEC+1).clusters.channel_id;
-        snrs  = S.kilosort(IMEC+1).clusters.snr;
-        contams = S.kilosort(IMEC+1).clusters.ContamPct;
-        kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
+        units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
+        chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
+        snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
+        depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
+        kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
 
         if ~isnan(JOB_ID)
             all_units = units + 1;
@@ -84,7 +84,7 @@ function ia_mdirRasters(data_path,varargin)
             units = units(ids);
             chans = chans(ids);
             snrs = snrs(ids);
-            contams = contams(ids);
+            depths = depths(ids);
             kslabs = kslabs(ids);
             
         end
@@ -176,7 +176,7 @@ function ia_mdirRasters(data_path,varargin)
                     polarplot(deg2rad(visdp), max(rho), '^', 'MarkerFaceColor', line_color{dd}, 'MarkerEdgeColor', line_color{dd}, 'MarkerSize', 10);
 
                     tcolor = tick_color{dd};
-                    str_title{dd} = sprintf('%d deg -- VisDir: %0.2f, Sel: %0.2f', distances(dd), visdp, visds);
+                    str_title{dd} = sprintf('%d deg -- Dir: %0.2f, Sel: %0.2f', distances(dd), visdp, visds);
                 end 
 
                 title(str_title);
@@ -205,12 +205,12 @@ function ia_mdirRasters(data_path,varargin)
                 if (IMEC)==0
                     title(han, {
                         sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                 else
                     title(han, {
                         sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                 end
             

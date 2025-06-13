@@ -54,12 +54,11 @@ for ii = 1:length(kilo_files2)
         clusters = cc2;
     end
 end
-%clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
-%clusters.KSLabel_cc = categorical(clusters.KSLabel_cc);
+clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
 cluster_sum = readtable(fullfile(ks_path,'cluster_summary.csv'));
 cluster_sum.imec = repmat(imec_num, height(cluster_sum), 1);
 
-kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters', 'KSLabel_cc'})];
+kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters'})];
 kilosort.clusters = movevars(kilosort.clusters, 'imec', 'Before', 1);
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);

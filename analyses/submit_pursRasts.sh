@@ -6,7 +6,7 @@
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59
@@ -27,7 +27,6 @@ RUN_TYPE="${3:-unleashed}"
 SWEEP_NAME="${4:-none}"
 
 ALIGN="targ"
-PURE_ONLY="1"
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
@@ -47,6 +46,23 @@ echo "FIG_PATH: $FIG_PATH"
 
 ########################
 
+PURE_ONLY="0"
+echo "ALL TRIALS"
+matlab -nodisplay <<EOF
+addpath(genpath('$HELPERS_PATH'));
+fprintf('Running ia_pursRasters for $1\n');
+ia_pursRasters('$DATA_PATH', ...
+    'IMEC', $IMEC, ...
+    'ALIGN', '$ALIGN', ...
+    'PURE_ONLY', logical(str2double('$PURE_ONLY')), ...
+    'FIG_PATH', '$FIG_PATH', ...
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
+exit
+EOF
+
+PURE_ONLY="1"
+echo "PURE ONLY"
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
 fprintf('Running ia_pursRasters for $1\n');

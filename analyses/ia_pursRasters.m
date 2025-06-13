@@ -31,17 +31,17 @@ function ia_pursRasters(data_path,varargin)
     if isequal(ALIGN,'targ')
         FR_WIN = [50,250];
         if PURE_ONLY
-            fig_path = fullfile(FIG_PATH);
+            fig_path = fullfile(FIG_PATH, 'pure_only-targ_aligned');
         else
-            fig_path = fullfile(FIG_PATH, 'targ_aligned', 'all_trls');
+            fig_path = fullfile(FIG_PATH, 'all_trls-targ_aligned');
         end
         xlab = 'time aligned to target motion onset (ms)';
     elseif isequal(ALIGN,'purs')
         FR_WIN = [-50,50];
         if PURE_ONLY
-            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'pure_only');
+            fig_path = fullfile(FIG_PATH, 'pure_only-purs_aligned');
         else
-            fig_path = fullfile(FIG_PATH, 'purs_aligned', 'all_trls');
+            fig_path = fullfile(FIG_PATH, 'all_trls-purs_aligned');
         end
         xlab = 'time aligned to pursuit onset (ms)';
     end
@@ -77,12 +77,11 @@ function ia_pursRasters(data_path,varargin)
             tick_color = {[25,94,85]./255; [25,68,94]./255};
             sem_shade = {[212,235,232]./255; [212,226,235]./255};
         end
-
-        units = S.kilosort(IMEC+1).clusters.cluster_id;
-        chans = S.kilosort(IMEC+1).clusters.channel_id;
-        snrs  = S.kilosort(IMEC+1).clusters.snr;
-        contams = S.kilosort(IMEC+1).clusters.ContamPct;
-        kslabs = S.kilosort(IMEC+1).clusters.KSLabel_cc;
+        units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
+        chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
+        snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
+        depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
+        kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
 
         if ~isnan(JOB_ID)
             all_units = units + 1;
@@ -96,7 +95,7 @@ function ia_pursRasters(data_path,varargin)
             units = units(ids);
             chans = chans(ids);
             snrs = snrs(ids);
-            contams = contams(ids);
+            depths = depths(ids);
             kslabs = kslabs(ids);
             
         end
@@ -187,7 +186,7 @@ function ia_pursRasters(data_path,varargin)
                     polarplot(deg2rad(visdp), max(rho), '^', 'MarkerFaceColor', line_color{dd}, 'MarkerEdgeColor', line_color{dd}, 'MarkerSize', 10);
 
                     tcolor = tick_color{dd};
-                    str_title{dd} = sprintf('%d deg/s -- VisDir: %0.2f, Sel: %0.2f', speeds(dd), visdp, visds);
+                    str_title{dd} = sprintf('%d deg/s -- Dir: %0.2f, Sel: %0.2f', speeds(dd), visdp, visds);
                 end 
 
                 title(str_title);
@@ -218,24 +217,24 @@ function ia_pursRasters(data_path,varargin)
                     if PURE_ONLY
                         title(han, {
                         sprintf('%s (PURE ONLY) --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                     else
                         title(han, {
                         sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                     end
                 else
                     if PURE_ONLY
                         title(han, {
                         sprintf('%s (PURE ONLY) --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none'); 
                     else
                         title(han, {
                         sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, ContamPct = %.1f%%', kslabs{u}, snrs(u), contams(u))
+                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                     end
                 end
