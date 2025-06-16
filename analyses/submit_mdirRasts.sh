@@ -6,10 +6,10 @@
 #SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
-#SBATCH --time=0-00:59:59
+#SBATCH --time=0-01:59:59
 #SBATCH --array=0-99
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
