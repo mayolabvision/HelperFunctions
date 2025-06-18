@@ -89,7 +89,7 @@ function tl = heatMap_rfOverTime(frs, varargin)
         xedges = [xvals - dx/2, xvals(end) + dx/2];
         yedges = [yvals - dy/2, yvals(end) + dy/2];
 
-        % hmap = pcolor(xvals, yvals, frs(:,:,bin));
+        %hmap = pcolor(xvals, yvals, frs(:,:,bin));
         hmap = pcolor(xedges, yedges, frs2);
         
         if interp

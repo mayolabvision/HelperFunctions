@@ -23,11 +23,19 @@ function ia_rfMaps(data_path,varargin)
     if isempty(FIG_PATH)
         FIG_PATH = fullfile(parent_path, 'figs', 'rfmp_heatmaps');
     end
-    units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
-    chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
-    snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
-    depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
-    kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
+    if isfield(S.kilosort, 'imec')
+        units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
+        chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
+        snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
+        depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
+        kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
+    else
+        units = S.kilosort(IMEC+1).clusters.cluster_id; 
+        %chans =  S.kilosort(IMEC+1).clusters.channel_id;
+        %snrs  = S.kilosort(IMEC+1).clusters.snr;
+        %depths = S.kilosort(IMEC+1).clusters.y_pos;
+        kslabs = S.kilosort(IMEC+1).clusters.KSLabel_clusters;
+    end
 
     if ~isnan(JOB_ID)
         all_units = units + 1;
@@ -68,7 +76,7 @@ function ia_rfMaps(data_path,varargin)
             if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
                 [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
             
-                f2a = figure('Visible','off');
+                f2a = figure; %('Visible','off');
                 f2a.Position = [100 100 1800 900];
                 tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                 
