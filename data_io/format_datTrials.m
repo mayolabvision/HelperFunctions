@@ -17,8 +17,11 @@ function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
     %%%% Optional parameters: %%%
     %   NEURAL_CHANNELS  -  Array of channel IDs to extract neural data from. Leave empty if only behavioral data 
     %                        is needed. Default is an empty array (i.e., []), meaning no neural data is extracted.
-    %   EYE_CHAN_LABELS  -  Cell array specifying the eye movement channels. Default is {'10241', '10242', '10243', '10244'}, 
-    %                        representing typical labels for {Eye_HE, Eye_VE, DIODE, PUPIL}
+    %   EYE_CHAN_LABELS  -  Cell array specifying the eye movement channels. Default is {'10241', '10242'}, 
+    %                        representing typical labels for {Eye_HE, Eye_VE}.
+    %   DIODE_CHAN_LABEL -  Char of label for photodiode, if recorded. Default is '10243'.
+    %
+    %   PUPIL_CHAN_LABEL -  Char of label for pupil, if recorded. Default is '10244'.
     %
     %%%% Outputs: %%%
     %   dat      -    Array of structs with the following fields:
@@ -42,14 +45,16 @@ function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    defaultEyeChanLabels = {'10241', '10242', '10243', '10244'};
+    defaultEyeChanLabels = {'10241', '10242'};
 
     % Create an input parser
     p = inputParser;
     addRequired(p, 'nev', @(x) (isnumeric(x)) || isstruct(x));
     addRequired(p, 'out_ns5', @isstruct);
     addParameter(p, 'NEURAL_CHANNELS', [], @isnumeric);
-    addParameter(p, 'EYE_CHAN_LABELS', defaultEyeChanLabels, (@(x) iscell(x) && length(x)==4)); % channel labels
+    addParameter(p, 'EYE_CHAN_LABELS', defaultEyeChanLabels, (@(x) iscell(x))); % eye channel labels
+    addParameter(p, 'DIODE_CHAN_LABEL', '10243', @ischar); % diode channel label
+    addParameter(p, 'PUPIL_CHAN_LABEL', '10244', @ischar); % pupil channel label
 
     % Parse the inputs
     parse(p, nev, out_ns5, varargin{:});
@@ -59,6 +64,8 @@ function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
     out_ns5 = p.Results.out_ns5;
     neural_channels = p.Results.NEURAL_CHANNELS;
     eye_channel_labels = p.Results.EYE_CHAN_LABELS;
+    pupil_channel_label = p.Results.PUPIL_CHAN_LABEL;
+    diode_channel_label = p.Results.DIODE_CHAN_LABEL;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -69,9 +76,9 @@ function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
     endtrial = 255; % Trial end code
     
     % Identify eye movement channels (Eye_HE, Eye_VE, DIODE, PUPIL)
-    if ~isempty(eye_channel_labels)
-        eye_channels = find(ismember(out_ns5.hdr.label, eye_channel_labels));
-    end
+    eye_channels = find(ismember(out_ns5.hdr.label, eye_channel_labels));
+    pupil_channel = find(ismember(out_ns5.hdr.label, pupil_channel_label));
+    diode_channel = find(ismember(out_ns5.hdr.label, diode_channel_label));
     
     % Determine if nev is an array of struct; if so, extract nev data
     if isequal(class(nev), 'struct')
@@ -213,14 +220,22 @@ function [dat, epochEnd] = format_datTrials(nev, out_ns5, varargin)
 
                 % Extract and process eye data
                 if ~isempty(eye_channel_labels)
-                    eyes = out_ns5.data(eye_channels([1, 2, 3, 4]), ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                    eyes = out_ns5.data(eye_channels, ns5_rng(trialstarts_samp(n):trialends_samp(n)));
                     eyes_1khz = downsample(eyes', 30)'; % Downsample to 1 kHz
                     [eyedeg, ~] = eye2deg(eyes_1khz(1:2, :), dat(n).params); % Convert to degrees
-        
-                    % Store eye, pupil, and diode data
                     dat(n).eyedata = eyedeg;
-                    dat(n).pupil = eyes_1khz(4, :);
-                    dat(n).diode = eyes_1khz(3, :);
+
+                    if ~isempty(pupil_channel)
+                        pupil = out_ns5.data(pupil_channel, ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                        pupil_1khz = downsample(pupil', 30)'; % Downsample to 1 kHz
+                        dat(n).pupil = pupil_1khz;
+                    end
+
+                    if ~isempty(diode_channel)
+                        diode = out_ns5.data(diode_channel, ns5_rng(trialstarts_samp(n):trialends_samp(n)));
+                        diode_1khz = downsample(diode', 30)'; % Downsample to 1 kHz
+                        dat(n).diode = diode_1khz;
+                    end
                 end
                 
                 % Process neural spikes, if applicable
