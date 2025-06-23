@@ -75,6 +75,7 @@ function [nev,out_ns5,out_ns2] = extract_nevout(NEVPATH,varargin)
         nev.net_labels = net_labels;
         nev.waveforms = waveforms;
     else
+        %nev = read_nev([NEVPATH '.nev']);
         nev = readNEV([NEVPATH '.nev']);
         if ~ALIGN_PULSE
             nev = nev(nev(:,2)~=0,:);
