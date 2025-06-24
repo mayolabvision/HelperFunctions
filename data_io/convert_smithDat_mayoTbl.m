@@ -163,8 +163,6 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
 
     tbl.params = tbl1.params;
 
-
-
     eyePos = cellfun(@(x,y) filterEyeTraces_EyeLink(x(:,y:end),'SAMPLING_FREQUENCY',1000,'CUTOFF_FREQUENCY',84,'PLOT_TRIAL',false), tbl1.eyedata, trialStarts, 'uni', 0);
     eyeVel = cellfun(@(q) calcDerivative_eyeTraces(q), cellfun(@(x,y) filterEyeTraces_EyeLink(x(:,y:end),'SAMPLING_FREQUENCY',1000,'CUTOFF_FREQUENCY',40,'PLOT_TRIAL',false), tbl1.eyedata, trialStarts, 'uni', 0), 'uni', 0);
     eyeAcc = cellfun(@(q) calcDerivative_eyeTraces(q), eyeVel, 'uni', 0);
@@ -188,7 +186,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
 
 
     %%%%%%%%%%%%%%%% TEMPORARY CODE FOR ANI %%%%%%%%%%%%%%%%%%%%%
-    if ismember('SACCADE_BLOCK', tbl.Properties.VariableNames)
+    if ismember('SACCADE_BLOCK', tbl.Properties.VariableNames) && ismember('PURSUIT_BLOCK', tbl.Properties.VariableNames)
         tbl.blockType = cell(size(tbl, 1), 1);
         tbl.blockType(~isnan(tbl.SACCADE_BLOCK)) = {'mdir'};
         tbl.blockType(~isnan(tbl.PURSUIT_BLOCK)) = {'purs'};
@@ -279,7 +277,11 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
             tbl = movevars(tbl,{'pursuitSpeed'},'Before','fixDuration');
         end
         if ~ismember('jump',tbl.Properties.VariableNames)
-            tbl.jump= repmat(tbl(1,:).params.block.jump,height(tbl),1);
+            if isfield(tbl(1,:).params.block,'jump')
+                tbl.jump = repmat(tbl(1,:).params.block.jump,height(tbl),1);
+            else
+                tbl.jump = zeros(height(tbl),1);
+            end
             tbl = movevars(tbl,{'jump'},'Before','fixDuration');
         end
 
@@ -288,15 +290,16 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         for t = 1:height(tbl)
             if isequal(tbl.result(t),"CORRECT")
                 
-                [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG_ON(t),tbl(t,:).params.block.crossingTime,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
+                if isfield(tbl(1,:).params.block,'crossingTime')
+                    [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG_ON(t),tbl(t,:).params.block.crossingTime,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
+                else
+                    [pursuit_onset,rxnTime,msOffset,csOnset,csVelocity,csPeak,csOffset,csAngle,csType] = detect_pursuitOnset(tbl.eyePos{t},tbl.eyeVel{t},tbl.PURSUIT_TARG_ON(t),110,tbl.pursuitSpeed(t),tbl.angle(t),'PLOT_TRACES',false);
+                end
                 pursuitOnset(t) = pursuit_onset; rxnTimes(t) = rxnTime; msOffsets(t) = msOffset; csOnsets(t) = csOnset; csVelocities(t) = csVelocity; csPeaks(t) = csPeak; csOffsets(t) = csOffset; csAngles(t) = csAngle; csTypes{t} = csType;
             else
                 csTypes{t} = 'NaN';
             end
 
-            if isequal(tbl(t,:).result,'CORRECT')
-                crossingTimes(t) = tbl(t,:).params.block.crossingTime;
-            end
         end
 
         tbl.pursuitOnset = pursuitOnsets; tbl.pursuitLatency = rxnTimes;

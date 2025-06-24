@@ -16,7 +16,7 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar);
-    addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex
+    addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex, fhc
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
     addParameter(p, 'RUN_TYPE', 'unleashed', @ischar);
@@ -44,8 +44,22 @@ function process_fullRecording(session_name,varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if ~exist(fullfile(OUT_PATH, session_name), 'dir'), mkdir(fullfile(OUT_PATH, session_name)); end
 
+    session_path = fullfile(RAW_PATH, session_name);
+    if exist(session_path, 'dir') % check if directory
+        fprintf('Directory exists: %s\n', session_path);
+        filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
+    else
+        file_list = dir(fullfile(RAW_PATH, [session_name '*']));
+        
+        if ~isempty(file_list)
+            fprintf('Found %d files starting with "%s" in %s\n', length(file_list), session_name, RAW_PATH);
+            filePattern = fullfile(RAW_PATH, [session_name '*.ns5']);
+        else
+            fprintf('No directory "%s" and no files starting with "%s" in %s\n', session_name, session_name, RAW_PATH);
+        end
+    end
+
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
-    filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
     raw_files = dir(filePattern);
     raw_filenames = {raw_files.name}.';
     nevnames = cellfun(@(q) q(1:end-4), raw_filenames, 'uni', 0);
@@ -81,8 +95,8 @@ function process_fullRecording(session_name,varargin)
     end
 
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
-
     disp(tasks)
+
     if isequal(PROBE_TYPE,'np')
         imec_dirs = dir(fullfile(OUT_PATH, session_name,[session_name, '*_imec*']));
         imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
@@ -100,19 +114,19 @@ function process_fullRecording(session_name,varargin)
     
     S1 = struct();
 
-    lastFileEnd = 0; last_alignID = 0; goodFlag = true;
-    for nevnum = 1:length(nevnames)
+    goodFlag = true;
+    for nevnum = 1:length(nevnames) % loop through nev files, in chronological
         nevpath = nevpaths{nevnum};
         this_task = tasks{nevnum};
     
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RIPPLE BEHAVIOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         fprintf('\n---- generating nev_out for %s ----\n', this_task);
 
+        %----- NEUROPIXELS -----%
         if isequal(PROBE_TYPE, 'np')
             [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', false, 'READ_LFP', false, 'alignPulseEnabled', true);
             startAcquisition = datetime(out_ns5.hdr.timeOrigin, 'InputFormat', 'dd-MMM-yyyy HH:mm:ss.SSS');
 
-            [dat, nsEnd] = format_datTrials(nev, out_ns5);
+            [dat, ~] = format_datTrials(nev, out_ns5);
 
             firstSyncPulse = startAcquisition + seconds(dat(1).trialcodes(2,3));
             ripple_pulse_timeStamps = cellfun(@(w) (firstSyncPulse + seconds(w)) - seconds(dat(1).trialcodes(2,3)), cellfun(@(q) q(2,3), {dat.trialcodes}.', 'uni', 0), 'uni', 1);     
@@ -162,50 +176,64 @@ function process_fullRecording(session_name,varargin)
 
             tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
 
+        %----- PLEXON -----%
         elseif isequal(PROBE_TYPE, 'plex')
+            addpath(genpath(NET_PATH));
+            
             if exist([nevpath,'.ns2'], 'file') == 2
                 [nev, out_ns5, out_ns2] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', true);
                 lfp = extract_lfpData(nev,out_ns2,mappings.ripChan_num); 
     
-                [dat, nsEnd] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
+                [dat, ~] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
                 tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task, 'LFP', lfp);
             else
                 [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'), 'READ_LFP', false);
-                [dat, nsEnd] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
+                [dat, ~] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', mappings.ripChan_num);
                 tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
             end
 
-        end
+        %----- FHC SINGLE ELECTRODE -----%
+        elseif isequal(PROBE_TYPE, 'fhc')
+            addpath(genpath(NET_PATH));
 
-        % add to ns5_samps
-        % if ~contains(this_task,'fstm')
-        %     tbl.ns5_samps = cellfun(@(q) q+lastFileEnd, num2cell(tbl.ns5_samps,2), 'uni', 0);
-        %     lastFileEnd = lastFileEnd + nsEnd;
-        % else
-        %     tbl.ns5_samps = [];
-        % end
+            [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'));
+            [dat, ~] = format_datTrials(nev, out_ns5, 'NEURAL_CHANNELS', 1);
+            tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
+
+        %----- BEHAVIOR ONLY -----%
+        else 
+            [nev, out_ns5, ~] = extract_nevout(nevpath);
+            if ~isempty(nev)
+                [dat, ~] = format_datTrials(nev, out_ns5);
+                tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
+            else
+                dat = []; tbl = [];
+            end
+        end
     
         % Convert structures to a cell array of string representations
-        all_params = {tbl.params.block}.';
-        structStrings = cellfun(@(x) jsonencode(x), all_params, 'UniformOutput', false);
-        [~, uniqueIdx] = unique(structStrings, 'stable');
-        unique_structs = all_params(uniqueIdx);
-        merged_struct = struct();
-        fieldNames = fieldnames(unique_structs{1});
-        for ii = 1:numel(fieldNames)
-            field = fieldNames{ii};
-            merged_struct.(field) = cellfun(@(s) s.(field), unique_structs, 'UniformOutput', false);
-            if all(cellfun(@isnumeric, merged_struct.(field)))
-                merged_struct.(field) = cell2mat(merged_struct.(field));
+        if ~isempty(tbl)
+            all_params = {tbl.params.block}.';
+            structStrings = cellfun(@(x) jsonencode(x), all_params, 'UniformOutput', false);
+            [~, uniqueIdx] = unique(structStrings, 'stable');
+            unique_structs = all_params(uniqueIdx);
+            merged_struct = struct();
+            fieldNames = fieldnames(unique_structs{1});
+            for ii = 1:numel(fieldNames)
+                field = fieldNames{ii};
+                merged_struct.(field) = cellfun(@(s) s.(field), unique_structs, 'UniformOutput', false);
+                if all(cellfun(@isnumeric, merged_struct.(field)))
+                    merged_struct.(field) = cell2mat(merged_struct.(field));
+                end
             end
+
+            S1.(this_task).params = merged_struct;
         end
 
         S1.(this_task).hdr = out_ns5.hdr;
-        S1.(this_task).params = merged_struct;
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% KILOSORT/NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if PARSE_KS
-
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs)); 
             for imec = 1:numel(imec_dirs)
                 kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
@@ -237,7 +265,7 @@ function process_fullRecording(session_name,varargin)
                 end
             end
  
-            last_alignID = last_alignID + height(tbl);   
+            %last_alignID = last_alignID + height(tbl);   
 
             if nevnum==length(nevnames)
                 ff = fieldnames(S1);
@@ -245,14 +273,17 @@ function process_fullRecording(session_name,varargin)
             end
         end
 
-        % Remove bad trials
-        colnames = {'spiketimes_imec0', 'spiketimes_imec1'};
-        col_found = colnames(ismember(colnames, tbl.Properties.VariableNames));
-        
-        if ~isempty(col_found)
-            spike_column = tbl.(col_found{1});
-            tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
+        % Remove trials with absolutely no spikes in them
+        if isequal(PROBE_TYPE,'np')
+            colnames = {'spiketimes_imec0', 'spiketimes_imec1'};
+            col_found = colnames(ismember(colnames, tbl.Properties.VariableNames));
+            
+            if ~isempty(col_found)
+                spike_column = tbl.(col_found{1});
+                tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
+            end
         end
+
         S1.(this_task).dat = dat;
         S1.(this_task).tbl = tbl;
     
@@ -261,98 +292,13 @@ function process_fullRecording(session_name,varargin)
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
 
-    % VMI, if dirmem was ran
-    fields = fieldnames(S);
-    matchingFields1 = fields(contains(fields, {'dirmem', 'mdir'}, 'IgnoreCase', true));
-
-    if ~isempty(matchingFields1)
-        fprintf('\n~~CALCULATING MDIR METRICS~~\n');
-        Tmdir = []; 
-        for mm = 1:numel(matchingFields1)
-            tbl1 = S.(matchingFields1{mm}).tbl;
-    
-            % Convert FIX_OFF to cell if needed
-            if ~iscell(tbl1.FIX_OFF)
-                tbl1.FIX_OFF = num2cell(tbl1.FIX_OFF);
-            end
-            Tmdir = [Tmdir; tbl1];
-
-            %Tmdir = [Tmdir; S.(matchingFields1{mm}).tbl];
-        end
-        
-        Tmdir = Tmdir(Tmdir.result=='CORRECT',:);
-
-        for imec = 1:size(S.kilosort,1)
-            if ~isempty(trlAvg_frs_all{imec})
-                % VISUAL
-                [vis_sel_dir, vis_pref_dir, ~, ~, frs_perAng_vis] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[50,150],'ALIGN_TO','stim','IMEC',imec-1);
-                S.kilosort(imec).clusters.vis_sel_dir = vis_sel_dir;
-                S.kilosort(imec).clusters.vis_pref_dir = vis_pref_dir;
-
-                % MOTOR
-                [sac_sel_dir, sac_pref_dir, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
-                S.kilosort(imec).clusters.sac_sel_dir = sac_sel_dir;
-                S.kilosort(imec).clusters.sac_pref_dir = sac_pref_dir;
-
-                % VMI
-                VMI_per_unit = zeros(size(frs_perAng_sac,2),1);
-                for unit = 1:size(frs_perAng_sac,2)
-                    visFR = frs_perAng_vis(:,unit);
-                    sacFR = frs_perAng_sac(:,unit);
-                
-                    VMI_per_unit(unit) = (mean(vertcat(visFR{:})) - mean(vertcat(sacFR{:})))/(mean(vertcat(visFR{:})) + mean(vertcat(sacFR{:})));
-                end
-                S.kilosort(imec).clusters.VMI = VMI_per_unit;
-            end
-        end
+    if isequal(PROBE_TYPE,'np')
+        S = calculate_metrics_neuropixels(S,trlAvg_frs_all);
     end
 
-    % PURSUIT
-    matchingFields2 = fields(contains(fields, {'pursuit', 'purs'}, 'IgnoreCase', true));
-
-    if ~isempty(matchingFields2)
-        fprintf('\n~~CALCULATING PURS METRICS~~\n');
-        Tpurs = []; 
-        for mm = 1:numel(matchingFields2)
-            Tpurs = [Tpurs; S.(matchingFields2{mm}).tbl];
-        end
-        Tpurs = Tpurs(Tpurs.result=='CORRECT' & Tpurs.jump==-1 & Tpurs.pursType=='pure' & (isnan(Tpurs.msOffset) | Tpurs.msOffset<0),:);
-
-        for imec = 1:size(S.kilosort,1)
-            if ~isempty(trlAvg_frs_all{imec})
-                % MOTOR (PURSUIT)
-                [pur_sel_dir, pur_pref_dir, ~, ~, ~] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
-                S.kilosort(imec).clusters.pur_sel_dir = pur_sel_dir;
-                S.kilosort(imec).clusters.pur_pref_dir = pur_pref_dir;
-            end
-        end
-    end
-
-    % SPII, if dirmem and pursuit were ran
-    if ~isempty(matchingFields1) & ~isempty(matchingFields2)
-        for imec = 1:size(S.kilosort,1)
-            if ~isempty(trlAvg_frs_all{imec})
-                % MOTOR (SACCADE)
-                [~, ~, ~, ~, frs_perAng_sac] = calculate_direction_tuning_from_tbl(Tmdir,'FR_WIN',[-50,50],'ALIGN_TO','sacc','IMEC',imec-1);
-
-                % MOTOR (PURSUIT)
-                [~, ~, ~, ~, frs_perAng_pur] = calculate_direction_tuning_from_tbl(Tpurs,'FR_WIN',[-50,50],'ALIGN_TO','purs','IMEC',imec-1);
-
-                % VMI
-                SPI_per_unit = zeros(size(frs_perAng_sac,2),1);
-                for unit = 1:size(frs_perAng_sac,2)
-                    sacFR = frs_perAng_sac(:,unit);
-                    purFR = frs_perAng_pur(:,unit);
-                
-                    SPI_per_unit(unit) = (mean(vertcat(sacFR{:})) - mean(vertcat(purFR{:})))/(mean(vertcat(sacFR{:})) + mean(vertcat(purFR{:})));
-                end
-                S.kilosort(imec).clusters.SPI = SPI_per_unit;
-            end
-        end
-    end
- 
     if ~exist(fullfile(OUT_PATH, session_name, 'tables'), 'dir'), mkdir(fullfile(OUT_PATH, session_name, 'tables')); end 
-    if isequal(RUN_TYPE,'sweep')
+
+    if isequal(RUN_TYPE, 'sweep')
         save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');
     else
         save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
