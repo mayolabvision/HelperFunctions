@@ -269,7 +269,15 @@ function process_fullRecording(session_name,varargin)
         fprintf('\n~~CALCULATING MDIR METRICS~~\n');
         Tmdir = []; 
         for mm = 1:numel(matchingFields1)
-            Tmdir = [Tmdir; S.(matchingFields1{mm}).tbl];
+            tbl1 = S.(matchingFields1{mm}).tbl;
+    
+            % Convert FIX_OFF to cell if needed
+            if ~iscell(tbl1.FIX_OFF)
+                tbl1.FIX_OFF = num2cell(tbl1.FIX_OFF);
+            end
+            Tmdir = [Tmdir; tbl1];
+
+            %Tmdir = [Tmdir; S.(matchingFields1{mm}).tbl];
         end
         
         Tmdir = Tmdir(Tmdir.result=='CORRECT',:);
