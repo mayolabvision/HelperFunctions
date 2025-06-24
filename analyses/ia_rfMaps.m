@@ -103,11 +103,11 @@ function ia_rfMaps(data_path,varargin)
             end
         end
     else
-        for mm = 1:numel(size(unique_conditions,1))
+        for mm = 1:size(unique_conditions,1)
             these_rows = find(row_conds==mm);
             T = []; 
             for r = 1:numel(these_rows)
-                T = [T; S.(matchingFields{r}).tbl];
+                T = [T; S.(matchingFields{these_rows(r)}).tbl];
             end
 
             stim_duration_ms = T.params(1,1).block.frameCount*(1000/120);
@@ -119,7 +119,7 @@ function ia_rfMaps(data_path,varargin)
                 if ~exist(fullfile(FIG_PATH, strjoin(matchingFields(these_rows), '_'), sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
                     [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
                 
-                    f2a = figure; %('Visible','off');
+                    f2a = figure('Visible','off');
                     f2a.Position = [100 100 1800 900];
                     tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                     
