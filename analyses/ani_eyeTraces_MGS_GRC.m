@@ -3,7 +3,7 @@
 % S struct contains data table w/ task codes and behavior
 
 %% 1. Load in processed table for example session 
-table_path = '/Users/kendranoneman/Data/NP_DATA/kendra_scrappy_0124a_g0_unleashed2.mat';
+table_path = '/Volumes/SHARED_STUFF/tables_behavior/kendra_scrappy_0124a_g0_behavOnly';
 load(table_path,'S');
 
 %% 2. Plot eye position for each correct trial in polar coordinates
@@ -28,7 +28,7 @@ for t = 1:height(T)
     % Adding a check here to not include trials where his first saccade was in the wrong direction or way beyond the bounds of the screen
     if max(rho(this_saccTime-PREINT:this_saccTime+POSTINT)) < 40 &&  abs(wrapTo180(mean(rad2deg(theta(this_saccTime-PREINT:this_saccTime+POSTINT)))-this_angle)) < 45
         polarplot(theta(this_saccTime-PREINT:this_saccTime+POSTINT),rho(this_saccTime-PREINT:this_saccTime+POSTINT), ...
-            'color',radial_colormap(this_angle),'linewidth',1)
+            'color',radial_colormap(this_angle, 'SHIFT_DEG', 90),'linewidth',1)
         hold on;
     end
     prettyFig;

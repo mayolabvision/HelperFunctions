@@ -1,4 +1,25 @@
-function rgb_color = radial_colormap(dir)
+function rgb_color = radial_colormap(dir, varargin)
+    % radial_colormap returns RGB color(s) for a given direction(s) in degrees
+    %
+    % Usage:
+    %   rgb = radial_colormap(dir)                   % default shift: 0
+    %   rgb = radial_colormap(dir, 'SHIFT_DEG', 90)
+    %
+    % Inputs:
+    %   dir - direction(s) in degrees (scalar or vector)
+    %   'SHIFT_DEG' - optional name-value pair (default: 0)
+    %
+    % Output:
+    %   rgb_color - Nx3 matrix of RGB values in [0, 1] for each input direction
+
+    p = inputParser;
+    addRequired(p, 'dir', @isnumeric);
+    addParameter(p, 'SHIFT_DEG', 0, @isnumeric);
+
+    parse(p, dir, varargin{:});
+    dir = p.Results.dir;
+    shift_degrees = p.Results.SHIFT_DEG;
+
     % Define the key colors as RGB values (normalized to the range [0, 1])
     key_colors = [
         251, 176, 58;
@@ -17,6 +38,13 @@ function rgb_color = radial_colormap(dir)
 
     % Corresponding positions (in degrees) of the key colors
     key_positions = [1, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+
+    % Rotate positions
+    key_positions = mod(key_positions - shift_degrees, 360);
+
+    % Sort positions and corresponding colors
+    %[key_positions, sort_idx] = sort(key_positions);
+    %key_colors = key_colors(sort_idx, :);
 
     % Preallocate the colors cell array with 359 cells
     colors = cell(1, 359);
