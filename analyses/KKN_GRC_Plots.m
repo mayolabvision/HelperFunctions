@@ -7,6 +7,224 @@ sess = 'kendra_scrappy_0142a_g0';
 
 load(fullfile(data_path,[sess '_unleashed.mat']), 'S')
 
+%% checking that pursuit onset and saccade onset are aligned correctly
+
+Tmdir = S.mdir1.tbl(S.mdir1.tbl.result=='CORRECT',:);
+Tpurs = S.purs1.tbl(S.purs1.tbl.result=='CORRECT' & S.purs1.tbl.pursType=='pure',:);
+Tpurs = Tpurs(isnan(Tpurs.msOffset) | Tpurs.msOffset<-100,:);
+
+f1a = figure;
+f1a.Position = [100 100 1500 800];
+tl = tiledlayout(2,2);
+tl.TileSpacing = 'compact';
+tl.Padding = 'tight';
+
+% mdir, aligned to stim onset
+nexttile
+x = -300:1:500;
+FR_WIN = [50 150];
+fill([FR_WIN fliplr(FR_WIN)], [[1000 1000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+
+for t=1:height(Tmdir)
+    [~,rh] = cart2pol(Tmdir.eyeVel{t}(1,:),Tmdir.eyeVel{t}(2,:));
+    plot(x,rh(Tmdir.TARG_ON{t}(1)-300:Tmdir.TARG_ON{t}(1)+500),'k-')
+end
+xlabel('time aligned to stimulus onset (ms)')
+ylabel('radial eye velocity (deg/s)')
+ylim([0 1000])
+title('visual epoch (MGS)')
+prettyFig;
+
+% purs, aligned to targ motion onset
+nexttile
+x = -300:1:500;
+FR_WIN = [50 250];
+%fill([FR_WIN fliplr(FR_WIN)], [[100 100] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tpurs)
+    [~,rh] = cart2pol(Tpurs.eyeVel{t}(1,:),Tpurs.eyeVel{t}(2,:));
+    [pursuit_onset, rxnTime, msOffset, csOnset, csVelocity, csPeak, csOffset, csAngle, csType] = detect_pursuitOnset(Tpurs.eyePos{t}, Tpurs.eyeVel{t}, Tpurs.PURSUIT_TARG_ON(t), S.purs1.params.crossingTime, Tpurs.pursuitSpeed(t), Tpurs.angle(t), 'CS_PREINT', 50, 'CS_POSTINT', 100, 'PLOT_TRACES', false);
+    if isequal(csType,'pure')
+        plot(x,rh(Tpurs.PURSUIT_TARG_ON(t)-300:Tpurs.PURSUIT_TARG_ON(t)+500),'k-')
+    end
+end
+xlabel('time aligned to target motion onset (ms)')
+ylabel('radial eye velocity (deg/s)')
+ylim([0 50])
+prettyFig;
+
+% mdir, aligned to saccade onset
+nexttile
+x = -300:1:500;
+FR_WIN = [-50 50];
+fill([FR_WIN fliplr(FR_WIN)], [[1000 1000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tmdir)
+    [~,rh] = cart2pol(Tmdir.eyeVel{t}(1,:),Tmdir.eyeVel{t}(2,:));
+    plot(x,rh(Tmdir.SACCADE(t)-300:Tmdir.SACCADE(t)+500),'k-')
+end
+xlabel('time aligned to saccade onset (ms)')
+ylabel('radial eye velocity (deg/s)')
+ylim([0 1000])
+title('motor epoch (MGS)')
+prettyFig;
+
+% purs, aligned to pursuit onset
+nexttile
+x = -300:1:500;
+FR_WIN = [-50 50];
+fill([FR_WIN fliplr(FR_WIN)], [[100 100] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tpurs)
+    [~,rh] = cart2pol(Tpurs.eyeVel{t}(1,:),Tpurs.eyeVel{t}(2,:));
+    [pursuit_onset, rxnTime, msOffset, csOnset, csVelocity, csPeak, csOffset, csAngle, csType] = detect_pursuitOnset(Tpurs.eyePos{t}, Tpurs.eyeVel{t}, Tpurs.PURSUIT_TARG_ON(t), S.purs1.params.crossingTime, Tpurs.pursuitSpeed(t), Tpurs.angle(t), 'CS_PREINT', 50, 'CS_POSTINT', 100);
+    if isequal(csType,'pure')
+        plot(x,rh(Tpurs.pursuitOnset(t)-300:Tpurs.pursuitOnset(t)+500),'k-')
+    end
+    Tpurs.pursuitOnset(t) = pursuit_onset;
+    Tpurs.pursuitLatency(t) = rxnTime;
+    Tpurs.pursType(t) = categorical(string(csType));
+
+end
+xlabel('time aligned to pursuit onset (ms)')
+ylabel('radial eye velocity (deg/s)')
+ylim([0 50])
+title('motor epoch (pursuit)')
+prettyFig;
+
+%%
+f1a = figure;
+f1a.Position = [100 100 1300 1000];
+tl = tiledlayout(3,1);
+tl.TileSpacing = 'compact';
+tl.Padding = 'tight';
+
+% % pos, stim onset
+% nexttile
+% x = -300:1:500;
+% FR_WIN = [50 150];
+% fill([FR_WIN fliplr(FR_WIN)], [[25 25] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+% hold on;
+% xline(0,'k--')
+% 
+% for t=1:height(Tmdir)
+%     [~,rh] = cart2pol(Tmdir.eyePos{t}(1,:),Tmdir.eyePos{t}(2,:));
+%     plot(x,rh(Tmdir.TARG_ON{t}(1)-300:Tmdir.TARG_ON{t}(1)+500),'k-')
+% end
+% ylabel('radial eye position (deg)')
+% xlim([-100 200])
+% ylim([0 25])
+% title('visual epoch (MGS)')
+% prettyFig;
+
+% pos, sacc onset
+nexttile
+x = -300:1:500;
+FR_WIN = [-50 50];
+fill([FR_WIN fliplr(FR_WIN)], [[25 25] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tmdir)
+    [~,rh] = cart2pol(Tmdir.eyePos{t}(1,:),Tmdir.eyePos{t}(2,:));
+    plot(x,rh(Tmdir.SACCADE(t)-300:Tmdir.SACCADE(t)+500),'k-')
+end
+xlim([-300 500])
+ylim([0 25])
+ylabel('radial eye position (deg)')
+title('motor epoch (MGS)')
+prettyFig;
+
+% vel, stim onset
+% nexttile
+% x = -300:1:500;
+% FR_WIN = [50 150];
+% fill([FR_WIN fliplr(FR_WIN)], [[1000 1000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+% hold on;
+% xline(0,'k--')
+% 
+% for t=1:height(Tmdir)
+%     [~,rh] = cart2pol(Tmdir.eyeVel{t}(1,:),Tmdir.eyeVel{t}(2,:));
+%     plot(x,rh(Tmdir.TARG_ON{t}(1)-300:Tmdir.TARG_ON{t}(1)+500),'k-')
+% end
+% ylabel('radial eye velocity (deg/sec)')
+% xlim([-100 200])
+% ylim([0 1000])
+% prettyFig;
+
+% vel, sacc onset
+nexttile
+x = -300:1:500;
+FR_WIN = [-50 50];
+fill([FR_WIN fliplr(FR_WIN)], [[1000 1000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tmdir)
+    [~,rh] = cart2pol(Tmdir.eyeVel{t}(1,:),Tmdir.eyeVel{t}(2,:));
+    plot(x,rh(Tmdir.SACCADE(t)-300:Tmdir.SACCADE(t)+500),'k-')
+end
+xlim([-300 500])
+ylim([0 1000])
+ylabel('radial eye velocity (deg/s)')
+prettyFig;
+
+% acc, stim onset
+% nexttile
+% x = -300:1:500;
+% FR_WIN = [50 150];
+% fill([FR_WIN fliplr(FR_WIN)], [[80000 80000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+% hold on;
+% xline(0,'k--')
+% 
+% for t=1:height(Tmdir)
+%     [~,rh] = cart2pol(Tmdir.eyeAcc{t}(1,:),Tmdir.eyeAcc{t}(2,:));
+%     plot(x,rh(Tmdir.TARG_ON{t}(1)-300:Tmdir.TARG_ON{t}(1)+500),'k-')
+% end
+% xlabel('time aligned to stimulus onset (ms)')
+% ylabel('radial eye acceleration (deg/sec2)')
+% xlim([-100 200])
+% ylim([0 80000])
+% prettyFig;
+
+% acc, sacc onset
+nexttile
+x = -300:1:500;
+FR_WIN = [-50 50];
+fill([FR_WIN fliplr(FR_WIN)], [[80000 80000] fliplr([0 0])], [130,130,130]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+hold on;
+xline(0,'k--')
+for t=1:height(Tmdir)
+    [~,rh] = cart2pol(Tmdir.eyeAcc{t}(1,:),Tmdir.eyeAcc{t}(2,:));
+    plot(x,rh(Tmdir.SACCADE(t)-300:Tmdir.SACCADE(t)+500),'k-')
+end
+xlabel('time aligned to saccade onset (ms)')
+ylabel('radial eye acceleration (deg/s^2)')
+xlim([-300 500])
+ylim([0 80000])
+prettyFig;
+
+
+
+%% plotting individual units rasters
+S2 = S;
+S2.purs1.tbl = Tpurs;
+
+CLUSTER = 1;
+
+%ia_mdirRasters(S2, 'ALIGN', 'stim', 'CLUSTER', CLUSTER)
+%ia_mdirRasters(S2, 'ALIGN', 'sacc', 'CLUSTER', CLUSTER)
+ia_mdirRasters(S2, 'ALIGN', 'fix_off', 'CLUSTER', CLUSTER)
+
+%ia_pursRasters(S2, 'ALIGN', 'targ', 'PURE_ONLY', true, 'CLUSTER', CLUSTER)
+ia_pursRasters(S2, 'ALIGN', 'purs', 'PURE_ONLY', true, 'CLUSTER', CLUSTER)
+
+
+
+
 %% histograms
 
 imec0 = S.kilosort(1).clusters;

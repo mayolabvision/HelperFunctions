@@ -60,7 +60,7 @@ csPost = crossingTime + CS_POSTINT;  % Post-catch-up saccade window
 msAcc_thresh = 1000; % Microsaccade acceleration threshold (deg/s^2)
 msVel_thresh = 10;   % Microsaccade velocity threshold (deg/s)
 
-csAcc_thresh = 1000;  % Catch-up saccade acceleration threshold (deg/s^2)
+csAcc_thresh = 750;  % Catch-up saccade acceleration threshold (deg/s^2)
 csVel_thresh = targSpeed * 2;  % Catch-up saccade velocity threshold (deg/s)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,7 +121,7 @@ end
 
 %%%%%%%%%%%%%% 3. DETECT CATCH-UP SACCADE %%%%%%%%%%%%%%
 % Check for catch-up saccades within the defined window
-if (sum(abs(eyeAcc(stimOnset + csPre:stimOnset + csPost)) > csAcc_thresh) + sum(abs(radVel(stimOnset + csPre:stimOnset + csPost)) > csVel_thresh)) > 0 || rxnTime > (csPost + crossingTime / 2)
+if (sum(abs(eyeAcc(stimOnset + csPre:stimOnset + csPost)) > csAcc_thresh) + sum(abs(radVel(stimOnset + csPre:stimOnset + csPost)) > csVel_thresh) + sum(abs(radVel(stimOnset:stimOnset + crossingTime + 5)) > 15)) > 0 || rxnTime > (csPost + crossingTime / 2)
     % Define binary signal (1 if above threshold, 0 if below)
     binarySignal = ((abs(eyeAcc(stimOnset + csPre : stimOnset + csPost + 500)) > csAcc_thresh) + ...
                     (abs(radVel(stimOnset + csPre : stimOnset + csPost + 500)) > csVel_thresh)) > 0;
@@ -171,6 +171,7 @@ if (sum(abs(eyeAcc(stimOnset + csPre:stimOnset + csPost)) > csAcc_thresh) + sum(
         else
             csType = 'backward';
         end
+        csFlag = 1;
     else
         % If no catch-up saccade detected, set to default 'pure' type
         csFlag = 0;
@@ -257,6 +258,8 @@ if PLOT_TRACES
     ylabel('acceleration')
     xlim([-25,500])
     prettyFig;
+
+    blah = 1;
 end
 
 end

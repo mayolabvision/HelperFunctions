@@ -1,39 +1,50 @@
-function ia_mdirRasters(data_path,varargin)
+function ia_mdirRasters(S,varargin)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     p = inputParser;
-    addRequired(p, 'data_path', @ischar);
+    addRequired(p, 'S',  @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'stim', @ischar);
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
+    addParameter(p, 'CLUSTER', [], @isnumeric);
     
-    parse(p, data_path, varargin{:});
-    data_path = p.Results.data_path;
+    parse(p, S, varargin{:});
+    S = p.Results.S;
     IMEC = p.Results.IMEC;
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
     X_LIMITS = p.Results.X_LIMITS;
     JOB_ID = p.Results.JOB_ID;
     N_CHUNKS = p.Results.N_CHUNKS;
+    CLUSTER = p.Results.CLUSTER;
 
-    load(data_path,'S');
-    [parent_path, filename, ~] = fileparts(data_path);
-
-    if isempty(FIG_PATH)
-        FIG_PATH = fullfile(parent_path, 'figs', 'mdir', 'unit_rasters');
+    if ischar(S)
+        load(S,'S');
+        [~, filename, ~] = fileparts(data);
+    else
+        filename = S.sessionName;
     end
 
     if isequal(ALIGN,'stim')
         FR_WIN = [50,150];
-        fig_path = fullfile(FIG_PATH, 'stim_aligned');
+        if ~isempty(FIG_PATH)
+            FIG_PATH = fullfile(FIG_PATH, 'stim_aligned');
+        end
         xlab = 'time aligned to target onset (ms)';
     elseif isequal(ALIGN,'sacc')
         FR_WIN = [-50,50];
-        fig_path = fullfile(FIG_PATH, 'sacc_aligned');
+        if ~isempty(FIG_PATH)
+            FIG_PATH = fullfile(FIG_PATH, 'sacc_aligned');
+        end
         xlab = 'time aligned to saccade onset (ms)';
+    elseif isequal(ALIGN,'fix_off')
+        FR_WIN = [0,100];
+        if ~isempty(FIG_PATH)
+            FIG_PATH = fullfile(FIG_PATH, 'fixoff_aligned');
+        end
     end
 
     % Find mdir or dirmem fields
@@ -41,11 +52,13 @@ function ia_mdirRasters(data_path,varargin)
     matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
     
     if ~isempty(matchingFields)
-        if ~exist(fig_path, 'dir'), mkdir(fig_path); end    
+        if ~isempty(FIG_PATH)
+            if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end  
+        end
         T = []; 
         for mm = 1:numel(matchingFields)
             tt = S.(matchingFields{mm}).tbl;
-            vars = {'angle', 'distance', 'result', 'TARG_ON', 'SACCADE', 'trialName'};
+            vars = {'angle', 'distance', 'result', 'TARG_ON', 'SACCADE', 'FIX_OFF', 'trialName'};
             vars = [vars, intersect({'spiketimes_imec0','spiketimes_imec1'}, tt.Properties.VariableNames)];
             T = [T; tt(:, vars)];
         end
@@ -67,34 +80,48 @@ function ia_mdirRasters(data_path,varargin)
         end
 
         units = S.kilosort([S.kilosort.imec] == IMEC).clusters.cluster_id; 
-        chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
-        snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
-        depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
-        kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
-
-        if ~isnan(JOB_ID)
-            all_units = units + 1;
-            % Split into 50 chunks as a cell array
-            chunks = arrayfun(@(i) all_units(...
-                floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
-                floor(i*numel(all_units)/N_CHUNKS)), ...
-                1:N_CHUNKS, 'UniformOutput', false);
-            ids = (chunks{(JOB_ID+1)});
-
-            units = units(ids);
-            chans = chans(ids);
-            snrs = snrs(ids);
-            depths = depths(ids);
-            kslabs = kslabs(ids);
-            
+        if ismember('channel_id',S.kilosort([S.kilosort.imec] == IMEC).clusters.Properties.VariableNames)
+            chans =  S.kilosort([S.kilosort.imec] == IMEC).clusters.channel_id;
+        else
+            chans = nan(numel(units),1);
         end
-        
+
+        if isempty(CLUSTER)
+            % snrs  = S.kilosort([S.kilosort.imec] == IMEC).clusters.snr;
+            % depths = S.kilosort([S.kilosort.imec] == IMEC).clusters.y_pos;
+            % kslabs = S.kilosort([S.kilosort.imec] == IMEC).clusters.KSLabel_clusters;
+
+            if ~isnan(JOB_ID)
+                all_units = units + 1;
+                % Split into 50 chunks as a cell array
+                chunks = arrayfun(@(i) all_units(...
+                    floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
+                    floor(i*numel(all_units)/N_CHUNKS)), ...
+                    1:N_CHUNKS, 'UniformOutput', false);
+                ids = (chunks{(JOB_ID+1)});
+    
+                units = units(ids);
+                chans = chans(ids);
+             
+                % snrs = snrs(ids);
+                % depths = depths(ids);
+                % kslabs = kslabs(ids);
+                
+            end
+        else
+            units = CLUSTER;
+            chans = chans(units==CLUSTER);
+        end
         
         imec_name = ['spiketimes_imec' num2str(IMEC)];
         for u=1:length(units)
             unit = units(u);
-            if ~exist(fullfile(fig_path, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')
-                f3a = figure('Visible','off');
+            if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file') | isempty(FIG_PATH)
+                if ~isempty(FIG_PATH)
+                    f3a = figure('Visible','off');
+                else
+                    f3a = figure('Visible','on');
+                end
                 f3a.Position = [100 100 1800 900];
             
                 y_lims = []; % Store y-axis limits
@@ -109,6 +136,8 @@ function ia_mdirRasters(data_path,varargin)
                         sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
                     elseif isequal(ALIGN,'sacc')
                         sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
+                    elseif isequal(ALIGN,'fix_off')
+                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(imec_name), 'uni', 0), these_trls.FIX_OFF, 'uni', 0);
                     end
 
                     subplot(3,3,angle_order(ang))
@@ -205,17 +234,20 @@ function ia_mdirRasters(data_path,varargin)
                 if (IMEC)==0
                     title(han, {
                         sprintf('%s --- LEFT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
+                        %sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                 else
                     title(han, {
                         sprintf('%s --- RIGHT --- cluster %d (channel %d)', filename, unit, chans(u));
-                        sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
+                        %sprintf('KS_label = %s, snr = %.4f, y_pos = %.2f um', string(kslabs(u)), snrs(u), depths(u))
                     }, 'fontsize', 16, 'interpreter', 'none');
                 end
             
-                print(f3a, fullfile(fig_path, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
+                if ~isempty(FIG_PATH)
+                    print(f3a, fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), '-dpng', '-r200');
+                end
                 fprintf(sprintf('\n----IMEC %d, Unit %.4d COMPLETE----',IMEC, unit))
+
             else
                 fprintf(sprintf('\n----IMEC %d, Unit %.4d exists----',IMEC, unit))
             end

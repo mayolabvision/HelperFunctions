@@ -113,6 +113,7 @@ function process_fullRecording(session_name,varargin)
     tic
     
     S1 = struct();
+    S1.session_name = session_name;
 
     goodFlag = true;
     for nevnum = 1:length(nevnames) % loop through nev files, in chronological
@@ -248,6 +249,10 @@ function process_fullRecording(session_name,varargin)
                     fields(strcmp(fields, 'imec')) = [];
                     kilosort = orderfields(kilosort, ['imec'; fields]);
 
+                    kilosort.clusters.sessionName = repmat({session_name}, height(kilosort.clusters), 1);
+                    kilosort.clusters = movevars(kilosort.clusters,{'sessionName'},'Before','imec');
+                    kilosort.clusters.sessionName = categorical(kilosort.clusters.sessionName);
+
                     trlAvg_frs_all{imec} = trlAvg_frs;
                     kilosort_all = [kilosort_all; kilosort];
 
@@ -283,6 +288,10 @@ function process_fullRecording(session_name,varargin)
                 tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
             end
         end
+
+        tbl.sessionName = repmat({session_name}, height(tbl), 1);
+        tbl = movevars(tbl,{'sessionName'},'Before','trialName');
+        tbl.sessionName = categorical(tbl.sessionName);
 
         S1.(this_task).dat = dat;
         S1.(this_task).tbl = tbl;
