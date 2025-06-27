@@ -7,6 +7,59 @@ sess = 'kendra_scrappy_0142a_g0';
 
 load(fullfile(data_path,[sess '_unleashed.mat']), 'S')
 
+%% adding some additional thresholds
+FR_thresh     =  1;    % Hz
+seldir_range =  [0 0.99]; 
+msOff_thresh  =  -50; % ms
+sacLat_range =  [100 300];  % ms
+
+%---- Behavior criteria ----%
+% mdir criteria 
+Tmdir = S.mdir1.tbl(S.mdir1.tbl.result=='CORRECT',:);
+Tmdir.saccadeLatency = Tmdir.SACCADE-cellfun(@(q) q(1), Tmdir.FIX_OFF);
+Tmdir = Tmdir(Tmdir.saccadeLatency >= sacLat_range(1) & Tmdir.saccadeLatency < sacLat_range(2),:);
+
+[th,rh] = cellfun(@(q) cart2pol(q(1,:),q(2,:)), Tmdir.eyePos, 'uni', 0);
+Tmdir = Tmdir(cellfun(@(r,t,s,a) (max(r(s-10:s+75)) < 30) && (abs(wrapTo180(mean(rad2deg(t(s-10:s+75))) - a)) < 45), rh, th, num2cell(Tmdir.SACCADE), num2cell(Tmdir.angle), 'uni', 1),:);
+
+% purs criteria
+Tpurs = S.purs1.tbl(S.purs1.tbl.result=='CORRECT' & S.purs1.tbl.pursType=='pure',:);
+Tpurs = Tpurs(isnan(Tpurs.msOffset) | Tpurs.msOffset<msOff_thresh,:);
+
+%---- Cluster criteria ----%
+Cleft = S.kilosort(1).clusters; Crght = S.kilosort(2).clusters;
+
+% firing rate
+Cleft = Cleft(Cleft.mdir1_Hz > FR_thresh & Cleft.purs1_Hz > FR_thresh,:);
+Crght = Crght(Crght.mdir1_Hz > FR_thresh & Crght.purs1_Hz > FR_thresh,:);
+
+% selectivity
+Cleft = Cleft((Cleft.vis_sel_dir>seldir_range(1) & Cleft.vis_sel_dir<seldir_range(2)) & (Cleft.sac_sel_dir>seldir_range(1) & Cleft.sac_sel_dir<seldir_range(2)) & (Cleft.pur_sel_dir>seldir_range(1) & Cleft.pur_sel_dir<seldir_range(2)),:);
+Crght = Crght((Crght.vis_sel_dir>seldir_range(1) & Crght.vis_sel_dir<seldir_range(2)) & (Crght.sac_sel_dir>seldir_range(1) & Crght.sac_sel_dir<seldir_range(2)) & (Crght.pur_sel_dir>seldir_range(1) & Crght.pur_sel_dir<seldir_range(2)),:);
+
+%% behavior distributions
+
+%f = figure;
+%histStyle_KKN(Tmdir.saccadeLatency)
+
+% f = figure;
+% G = groupsummary(Tmdir, 'delay', {'mean', 'std'}, 'saccadeLatency');
+% errorbar(G.delay, G.mean_saccadeLatency, G.std_saccadeLatency, 'o-', 'LineWidth', 1.5);
+% xlabel('Delay');
+% ylabel('Mean Saccade Latency');
+% prettyFig;
+
+f = figure;
+%histStyle_KKN(Tmdir.saccadeLatency)
+
+%% cluster distributions
+
+f = figure;
+histStyle_KKN(Cleft.SPI)
+
+
+
+
 %% checking that pursuit onset and saccade onset are aligned correctly
 
 Tmdir = S.mdir1.tbl(S.mdir1.tbl.result=='CORRECT',:);
