@@ -7,6 +7,8 @@ function ia_mdirRasters(S,varargin)
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'stim', @ischar);
     addParameter(p, 'X_LIMITS', [-300 500], @isnumeric)
+    addParameter(p, 'Y_LIMITS', [], @isnumeric)
+    addParameter(p, 'TICK_LENGTH', [], @isnumeric)
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     addParameter(p, 'CLUSTER', [], @isnumeric);
@@ -17,6 +19,8 @@ function ia_mdirRasters(S,varargin)
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
     X_LIMITS = p.Results.X_LIMITS;
+    Y_LIMITS = p.Results.Y_LIMITS;
+    TICK_LENGTH = p.Results.TICK_LENGTH;
     JOB_ID = p.Results.JOB_ID;
     N_CHUNKS = p.Results.N_CHUNKS;
     CLUSTER = p.Results.CLUSTER;
@@ -143,7 +147,11 @@ function ia_mdirRasters(S,varargin)
                     subplot(3,3,angle_order(ang))
 
                     if numel(distances)==1
-                        raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN)
+                        if ~isempty(TICK_LENGTH)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
+                        else
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN)
+                        end
                         frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
                     else
                         [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
@@ -155,7 +163,11 @@ function ia_mdirRasters(S,varargin)
                             frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.distance==distances(dd)), 'uni', 1);
                         end
 
-                        raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
+                        if ~isempty(TICK_LENGTH)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
+                        else
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
+                        end
                     end
             
                     yyaxis left;
@@ -215,7 +227,11 @@ function ia_mdirRasters(S,varargin)
                 prettyFig;
 
                 % Find the global y-axis limits
-                global_y_lim = [min(y_lims(:,1)), max(y_lims(:,2))];
+                if isempty(Y_LIMITS)
+                    global_y_lim = [min(y_lims(:,1)), max(y_lims(:,2))];
+                else
+                    global_y_lim = Y_LIMITS;
+                end
                 
                 % Apply the limits to all subplots
                 for ang = 1:max(angle_order)

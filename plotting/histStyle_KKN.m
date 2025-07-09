@@ -60,28 +60,28 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     h = histogram(values, 'binwidth', BIN_WIDTH, 'linewidth', 2, 'facecolor', FACE_COLOR);
     hold on;
 
+    % Plot star at MEAN, 0.5 above max of ylim
+    plot (mean(values,'omitnan'), max(h.Values)+max(h.Values)/15, '*', 'markersize', 17, 'color', 'k')
+    line([mean(values,'omitnan'), mean(values,'omitnan') ], [0 max(h.Values)+max(h.Values)./15], 'color', LINE_COLOR, 'linewidth', 3)
+
     if ~isempty(X_LIMITS)
         xlim(X_LIMITS)
     end
     if ~isempty(Y_LIMITS)
-        xlim(Y_LIMITS)
+        ylim(Y_LIMITS)
     else
         Y_LIMITS = [0 max(h.Values)];
     end
 
     axis square
     
-    % Plot star at MEAN, 0.5 above max of ylim
-    plot (mean(values,'omitnan'), max(h.Values)+max(h.Values)/20, '*', 'markersize', 15, 'color', 'k')
-
-      
     % draw thin vertical dotted line at 0 for reference
     if h.BinLimits(1)<0 && h.BinLimits(2)>0
         line([0,0], Y_LIMITS + Y_LIMITS./10, 'color', 'k', 'linewidth', 2, 'linestyle', ':')
     end
     
     % draw thick vertical solid line at mean (redundant with star above)
-    line([mean(values,'omitnan'), mean(values,'omitnan') ], Y_LIMITS + Y_LIMITS./20, 'color', LINE_COLOR, 'linewidth', 3)
+    
 
     if ~isempty(FIG_NAME)
         title(FIG_NAME,'Interpreter','tex') 
@@ -105,7 +105,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     [pvalue, hypothesis] = signrank(values);
 
     if isempty(TEXT_X_POS)
-        TEXT_X_POS = h.BinLimits(2) - (h.BinLimits(2)-h.BinLimits(1))/10;
+        TEXT_X_POS = h.BinLimits(2) - (h.BinLimits(2)-h.BinLimits(1))/5;
     end
     
     % Plot values on figure
