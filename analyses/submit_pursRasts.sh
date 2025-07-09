@@ -10,7 +10,7 @@
 #SBATCH --mail-type=fail
 #SBATCH --mail-user=knoneman@pitt.edu
 #SBATCH --time=0-00:59:59
-#SBATCH --array=0-99
+#SBATCH --array=0-199
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID."
 echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
@@ -26,7 +26,6 @@ IMEC="${2:-0}"
 RUN_TYPE="${3:-unleashed}"
 SWEEP_NAME="${4:-none}"
 
-ALIGN="targ"
 HELPERS_PATH='/ihome/pmayo/knoneman/Packages/HelperFunctions'
 
 echo "SESSION: $SESSION"
@@ -47,6 +46,7 @@ echo "FIG_PATH: $FIG_PATH"
 ########################
 
 PURE_ONLY="0"
+ALIGN="targ"
 echo "ALL TRIALS"
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
@@ -62,6 +62,7 @@ exit
 EOF
 
 PURE_ONLY="1"
+ALIGN="targ"
 echo "PURE ONLY"
 matlab -nodisplay <<EOF
 addpath(genpath('$HELPERS_PATH'));
@@ -75,5 +76,39 @@ ia_pursRasters('$DATA_PATH', ...
     'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
 exit
 EOF
+
+PURE_ONLY="0"
+ALIGN="purs"
+echo "ALL TRIALS"
+matlab -nodisplay <<EOF
+addpath(genpath('$HELPERS_PATH'));
+fprintf('Running ia_pursRasters for $1\n');
+ia_pursRasters('$DATA_PATH', ...
+    'IMEC', $IMEC, ...
+    'ALIGN', '$ALIGN', ...
+    'PURE_ONLY', logical(str2double('$PURE_ONLY')), ...
+    'FIG_PATH', '$FIG_PATH', ...
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
+exit
+EOF
+
+PURE_ONLY="1"
+ALIGN="purs"
+echo "PURE ONLY"
+matlab -nodisplay <<EOF
+addpath(genpath('$HELPERS_PATH'));
+fprintf('Running ia_pursRasters for $1\n');
+ia_pursRasters('$DATA_PATH', ...
+    'IMEC', $IMEC, ...
+    'ALIGN', '$ALIGN', ...
+    'PURE_ONLY', logical(str2double('$PURE_ONLY')), ...
+    'FIG_PATH', '$FIG_PATH', ...
+    'JOB_ID', str2double(getenv('SLURM_ARRAY_TASK_ID')), ...
+    'N_CHUNKS', str2double(getenv('SLURM_ARRAY_TASK_COUNT')));
+exit
+EOF
+
+
 
 echo "DONE"

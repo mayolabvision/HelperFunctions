@@ -1,8 +1,8 @@
-function ia_mdirRasters(S,varargin)
+function ia_mdirRasters(data,varargin)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     p = inputParser;
-    addRequired(p, 'S',  @(x) (ischar(x)) || isstruct(x));
+    addRequired(p, 'data',  @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'stim', @ischar);
@@ -11,8 +11,8 @@ function ia_mdirRasters(S,varargin)
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     addParameter(p, 'CLUSTER', [], @isnumeric);
     
-    parse(p, S, varargin{:});
-    S = p.Results.S;
+    parse(p, data, varargin{:});
+    data = p.Results.data;
     IMEC = p.Results.IMEC;
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
@@ -21,29 +21,33 @@ function ia_mdirRasters(S,varargin)
     N_CHUNKS = p.Results.N_CHUNKS;
     CLUSTER = p.Results.CLUSTER;
 
-    if ischar(S)
-        load(S,'S');
+    if ischar(data)
         [~, filename, ~] = fileparts(data);
+        load(data,'S');
     else
-        filename = S.sessionName;
+        filename = data.sessionName;
+        S = data;
     end
 
     if isequal(ALIGN,'stim')
         FR_WIN = [50,150];
         if ~isempty(FIG_PATH)
             FIG_PATH = fullfile(FIG_PATH, 'stim_aligned');
+            if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end  
         end
         xlab = 'time aligned to target onset (ms)';
     elseif isequal(ALIGN,'sacc')
         FR_WIN = [-50,50];
         if ~isempty(FIG_PATH)
             FIG_PATH = fullfile(FIG_PATH, 'sacc_aligned');
+            if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end  
         end
         xlab = 'time aligned to saccade onset (ms)';
     elseif isequal(ALIGN,'fix_off')
         FR_WIN = [0,100];
         if ~isempty(FIG_PATH)
             FIG_PATH = fullfile(FIG_PATH, 'fixoff_aligned');
+            if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end  
         end
     end
 
@@ -52,9 +56,6 @@ function ia_mdirRasters(S,varargin)
     matchingFields = fields(contains(fields, {'mdir', 'dirmem'}, 'IgnoreCase', true));
     
     if ~isempty(matchingFields)
-        if ~isempty(FIG_PATH)
-            if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end  
-        end
         T = []; 
         for mm = 1:numel(matchingFields)
             tt = S.(matchingFields{mm}).tbl;

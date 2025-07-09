@@ -20,7 +20,6 @@ imec_num = str2double(tokens{1}{1});
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load in MATLAB table
 tic
-
 kilo_files1 = dir(fullfile(ks_path, '*.mat'));
 for i = 1:length(kilo_files1)
     kpath = fullfile(kilosort4_path, kilo_files1(i).name);
