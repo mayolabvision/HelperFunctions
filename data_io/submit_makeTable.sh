@@ -16,7 +16,8 @@ echo "Job started at $(date)"
 
 module purge
 module load matlab/R2023a
-conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
+module load python/ondemand-jupyter-python3.10
+source activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 
 # Assign variables from positional parameters
 SESSION="$1"
@@ -32,9 +33,11 @@ KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_${RUN_
 if [[ "$RUN_TYPE" == "sweep" ]]; then
     KILO4_PATH0="${KILO4_PATH0}/${SWEEP_NAME}"
     KILO4_PATH1="${KILO4_PATH1}/${SWEEP_NAME}"
+elif [[ "$RUN_TYPE" == "test1" ]]; then
+    KILO4_PATH0="${KILO4_PATH0}/sorter_output"
+    KILO4_PATH1="${KILO4_PATH1}/sorter_output"
 fi
 echo "KILO4_PATH0: $KILO4_PATH0"
-
 
 # Define the varargin parameters
 RAW_PATH='/ix1/pmayo/lab_NHPdata'

@@ -261,7 +261,12 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
             tbl = movevars(tbl,{'targetOnsetDelay','delay','fixDuration'},'Before','result');
         end
 
-        tbl.saccLatency = tbl.SACCADE-cellfun(@(q) q(1), tbl.FIX_OFF); 
+        if ~iscell(tbl.FIX_OFF) 
+            tbl.FIX_OFF = num2cell(tbl.FIX_OFF);
+        end
+
+        tbl.saccLatency = tbl.SACCADE-cellfun(@(q) q(1), tbl.FIX_OFF);
+             
 
     elseif any(contains(TASK_NAME, {'purs','pursuit'}))
         % Define the columns to replace and their new names

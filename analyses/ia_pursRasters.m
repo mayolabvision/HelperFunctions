@@ -1,8 +1,8 @@
-function ia_pursRasters(S,varargin)
+function ia_pursRasters(data,varargin)
     %UNTITLED2 Summary of this function goes here
     %   Detailed explanation goes here
     p = inputParser;
-    addRequired(p, 'S', @(x) (ischar(x)) || isstruct(x));
+    addRequired(p, 'data', @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'IMEC', 0, @isnumeric);
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'ALIGN', 'targ', @ischar);
@@ -14,8 +14,8 @@ function ia_pursRasters(S,varargin)
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     addParameter(p, 'CLUSTER', [], @isnumeric);
     
-    parse(p, S, varargin{:});
-    S = p.Results.S;
+    parse(p, data, varargin{:});
+    data = p.Results.data;
     IMEC = p.Results.IMEC;
     FIG_PATH = p.Results.FIG_PATH;
     ALIGN = p.Results.ALIGN;
@@ -27,11 +27,12 @@ function ia_pursRasters(S,varargin)
     N_CHUNKS = p.Results.N_CHUNKS;
     CLUSTER = p.Results.CLUSTER;
 
-    if ischar(S)
-        load(S, 'S');
+    if ischar(data)
         [~, filename, ~] = fileparts(data);
+        load(data, 'S');
     else
-        filename = S.sessionName;
+        filename = data.sessionName;
+        S = data;
     end
 
     if isequal(ALIGN,'targ')

@@ -113,7 +113,7 @@ function process_fullRecording(session_name,varargin)
     tic
     
     S1 = struct();
-    S1.session_name = session_name;
+    S1.sessionName = session_name;
 
     goodFlag = true;
     for nevnum = 1:length(nevnames) % loop through nev files, in chronological
@@ -240,6 +240,8 @@ function process_fullRecording(session_name,varargin)
                 kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
                 if isequal(RUN_TYPE,'sweep')
                     kilosort4_path = fullfile(kilosort4_path, SWEEP_NAME);
+                elseif isequal(RUN_TYPE,'test1')
+                    kilosort4_path = fullfile(kilosort4_path, 'sorter_output');
                 end
 
                 if isfolder(kilosort4_path)
