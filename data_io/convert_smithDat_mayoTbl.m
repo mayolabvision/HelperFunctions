@@ -182,7 +182,7 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl.lfp = LFP;
     end
 
-    tbl.ns5_samps = tbl1.ns5_samps;
+    %tbl.ns5_samps = tbl1.ns5_samps;
 
 
     %%%%%%%%%%%%%%%% TEMPORARY CODE FOR ANI %%%%%%%%%%%%%%%%%%%%%
@@ -318,10 +318,10 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl = movevars(tbl,{'pursuitOnset','pursuitLatency','msOffset','pursType','csTimes','csVelocity','csAngle'},'Before','result');
         tbl = movevars(tbl,{'CROSSING_TIME'},'After','PURSUIT_TARG_ON');
 
-    elseif any(contains(TASK_NAME, {'rfmp','rfMapping'})) && ismember('STIM_ON', tbl.Properties.VariableNames)
-        tbl.STIM_ON(tbl.result~='CORRECT') = cellfun(@(q) q(1:end-1), tbl.STIM_ON(tbl.result~='CORRECT'), 'uni', 0);
-        tbl.conditions(tbl.result~="CORRECT") = cellfun(@(q) q(1:end-1), tbl.conditions(tbl.result~='CORRECT'), 'uni', 0);
-    end
+    % elseif any(contains(TASK_NAME, {'rfmp','rfMapping'})) && ismember('STIM_ON', tbl.Properties.VariableNames)
+    %     tbl.STIM_ON(tbl.result~='CORRECT') = cellfun(@(q) q(1:end-1), tbl.STIM_ON(tbl.result~='CORRECT'), 'uni', 0);
+    %     tbl.conditions(tbl.result~="CORRECT") = cellfun(@(q) q(1:end-1), tbl.conditions(tbl.result~='CORRECT'), 'uni', 0);
+    % end
 
     if ismember('emptyCnd', tbl.Properties.VariableNames)
         tbl.emptyCnd = [];
@@ -331,12 +331,16 @@ function tbl = convert_smithDat_mayoTbl(dat,varargin)
         tbl.STIM8_ON = [];
     end
 
+    if ismember('ALIGN_PULSE', tbl.Properties.VariableNames)
+        tbl = movevars(tbl,{'ALIGN_PULSE'},'After','START_TRIAL');
+    end
+
     if ismember('IGNORED', tbl.Properties.VariableNames) && ismember('CORRECT', tbl.Properties.VariableNames)
         tbl = movevars(tbl,{'IGNORED'},'After','CORRECT');
     end
 
-    if any(contains(TASK_NAME, {'rfmp', 'rfMapping'}))
-        tbl = tbl(~cellfun(@(q) any(isnan(q)), tbl.STIM_OFF, 'uni', 1),:);
-    end
+    % if any(contains(TASK_NAME, {'rfmp', 'rfMapping'}))
+    %     tbl = tbl(~cellfun(@(q) any(isnan(q)), tbl.STIM_OFF, 'uni', 1),:);
+    % end
 
 end

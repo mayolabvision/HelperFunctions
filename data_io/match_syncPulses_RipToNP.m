@@ -9,7 +9,7 @@ function [np_mask, ripple_mask] = match_syncPulses_RipToNP(np_pulse_timeStamps, 
 %   np_mask                 - Nx1 logical array, true where a match to Ripple is found
 %   ripple_mask             - Mx1 logical array, true where a match to NP is found
 
-    tol_ms = 50;
+    tol_ms = 20;
     tol = milliseconds(tol_ms);
 
     np_mask = false(size(np_pulse_timeStamps));

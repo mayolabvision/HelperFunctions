@@ -68,7 +68,7 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
 
     all_FRs = cell(length(UNITS),1);
     for unit = 1:length(UNITS)
-        FRs = cell(length(yvals),length(xvals),length(bin_edges));
+        FRs = cell(length(xvals),length(yvals),length(bin_edges));
         for bin = 1:length(bin_edges)
             for trial = 1:height(tbl)
                 stim_ons = tbl.STIM_ON{trial};
@@ -79,10 +79,10 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
                     %spk_hz = sum(aligned_spks>bin_edges{bin}(1) & aligned_spks<=bin_edges{bin}(2) & nets>GAMMA)*(1000/range(bin_edges{bin}));
                     spk_hz = sum(aligned_spks>bin_edges{bin}(1) & aligned_spks<=bin_edges{bin}(2))*(1000/range(bin_edges{bin}));
                     
-                    if isempty(FRs{tbl.conditions{trial}{stim}(2)==yvals,tbl.conditions{trial}{stim}(1)==xvals,bin})
-                        FRs{tbl.conditions{trial}{stim}(2)==yvals,tbl.conditions{trial}{stim}(1)==xvals,bin} = spk_hz;
+                    if isempty(FRs{tbl.conditions{trial}{stim}(1)==xvals,tbl.conditions{trial}{stim}(2)==yvals,bin})
+                        FRs{tbl.conditions{trial}{stim}(1)==xvals,tbl.conditions{trial}{stim}(2)==yvals,bin} = spk_hz;
                     else
-                        FRs{tbl.conditions{trial}{stim}(2)==yvals,tbl.conditions{trial}{stim}(1)==xvals,bin} = [FRs{tbl.conditions{trial}{stim}(2)==yvals,tbl.conditions{trial}{stim}(1)==xvals,bin}, spk_hz];
+                        FRs{tbl.conditions{trial}{stim}(1)==xvals,tbl.conditions{trial}{stim}(2)==yvals,bin} = [FRs{tbl.conditions{trial}{stim}(1)==xvals,tbl.conditions{trial}{stim}(2)==yvals,bin}, spk_hz];
                     end
                 end
             end

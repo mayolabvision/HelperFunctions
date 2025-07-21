@@ -3,7 +3,7 @@ data_path = '/Users/kendranoneman/Data/dualhemi_unleashed';
 
 %% individual session
 
-sess = 'kendra_scrappy_0142a_g0';
+sess = 'kendra_scrappy_0136a_g0'; %142
 load(fullfile(data_path,[sess '_unleashed.mat']), 'S')
 
 EXAMPLE_CLUSTERS = {[0,366],[0,1],[0,295],[0,325]}; % [imec, cluster_id] 
@@ -49,17 +49,18 @@ Cleft = Cleft((Cleft.vis_sel_dir>seldir_range(1) & Cleft.vis_sel_dir<seldir_rang
 Crght = Crght((Crght.vis_sel_dir>seldir_range(1) & Crght.vis_sel_dir<seldir_range(2)) & (Crght.sac_sel_dir>seldir_range(1) & Crght.sac_sel_dir<seldir_range(2)) & (Crght.pur_sel_dir>seldir_range(1) & Crght.pur_sel_dir<seldir_range(2)),:);
 
 %% FIGURE 2: Plotting waveform templates 
+prb = 1;
 
 f2 = figure;
 f2.Position = [100 100 300 1200];
 
 for c = 1:height(Cleft)
-    cinds = S.kilosort(1).spike_clusters == Cleft.cluster_id(c);
-    temps = unique(S.kilosort(1).spike_templates(cinds));
+    cinds = S.kilosort(prb).spike_clusters == Cleft.cluster_id(c);
+    temps = unique(S.kilosort(prb).spike_templates(cinds));
 
-    mean_wf = mean(S.kilosort(1).templates(temps+1,:,:),3);
+    mean_wf = mean(S.kilosort(prb).templates(temps+1,:,:),3);
     mean_wf = mean_wf(1:end-10);
-    spike_pos = mean(S.kilosort(1).spike_positions(cinds,:),1);
+    spike_pos = mean(S.kilosort(prb).spike_positions(cinds,:),1);
 
     x_center = (spike_pos(1) - 11 - (103/2))./3;
 
@@ -76,10 +77,10 @@ for c = 1:height(Cleft)
     blah = 1;
 
 end
-ylim([-0.3420 (max(S.kilosort(1).spike_positions(:,2))./1000)+0.2]);
+ylim([-0.3420 (max(S.kilosort(prb).spike_positions(:,2))./1000)+0.2]);
 prettyFig;
 
-savebigPDF(1, '/Users/kendranoneman/Posters/GRC-2025/waveforms_probe.pdf')
+savebigPDF(1, '/Users/kendranoneman/Posters/GRC-2025/waveforms_probe_ex1.pdf')
 
 %% FIGURE 3: Plot polar eye traces for tasks
 PREINT = 10; POSTINT = 75;

@@ -19,8 +19,8 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex, fhc
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
     addParameter(p, 'PARSE_KILOSORT', false, @islogical);
-    addParameter(p, 'RUN_TYPE', 'unleashed', @ischar);
-    addParameter(p, 'SWEEP_NAME', 'none', @ischar);
+    addParameter(p, 'RUN_TYPE', [], @ischar);
+    addParameter(p, 'SWEEP_NAME', [], @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
@@ -57,6 +57,14 @@ function process_fullRecording(session_name,varargin)
         else
             fprintf('No directory "%s" and no files starting with "%s" in %s\n', session_name, session_name, RAW_PATH);
         end
+    end
+
+    S1 = struct();
+    S1.sess_name = session_name;
+
+    if isfile(fullfile(session_path,'metadata.json'))
+        metadata = loadMetadataJSON(fullfile(session_path,'metadata.json'));
+        Tmeta = metadataStructToTable(metadata);
     end
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
@@ -98,22 +106,34 @@ function process_fullRecording(session_name,varargin)
     disp(tasks)
 
     if isequal(PROBE_TYPE,'np')
-        imec_dirs = dir(fullfile(OUT_PATH, session_name,[session_name, '*_imec*']));
+        imec_dirs = dir(fullfile(RAW_PATH, session_name,[session_name, '*_imec*']));
         imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
         imec_nums = cellfun(@(q) str2num(q(end)), imec_dirs, 'uni', 0);
 
         alignCodes = readmatrix(fullfile(RAW_PATH, session_name, ['catgt_',session_name],[session_name,'_tcat.nidq.bfv_8_0_9.txt']));
         alignTimes = readmatrix(fullfile(RAW_PATH, session_name, ['catgt_',session_name],[session_name,'_tcat.nidq.bft_8_0_9.txt']));
         alignTimes = alignTimes(alignCodes>0);
+
+        imec_meta = cell(numel(imec_dirs),3);
+        for imec = 1:numel(imec_dirs)
+            lfp_ap_path = fullfile(imec_dirs{imec}, [session_name, sprintf('_t0.imec%d',imec_nums{imec})]);
+
+            % read in meta data for lfp
+            lfp_meta = readMetaFile([lfp_ap_path,'.lf.meta']);
+            ap_meta = readMetaFile([lfp_ap_path,'.ap.meta']);
+
+            imec_meta(imec,:) = {(imec-1), ap_meta, lfp_meta};
+        end
+
+        imec_meta = cell2table(imec_meta,'VariableNames', {'imec','ap_meta','lfp_meta'});
+        S1.metadata = [Tmeta imec_meta];
+       
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %% Extracting raw data from nev/out datafiles 
     tic
-    
-    S1 = struct();
-    S1.sessionName = session_name;
 
     goodFlag = true;
     for nevnum = 1:length(nevnames) % loop through nev files, in chronological
@@ -141,32 +161,7 @@ function process_fullRecording(session_name,varargin)
             fprintf('np_mask = %d/%d, ripple_mask = %d/%d \n', sum(np_mask), length(np_mask), sum(ripple_mask), length(ripple_mask))  
    
             if isequal(session_name,'kendra_scrappy_0136a_g0') 
-                if goodFlag % only used for kendra_scrappy_0136a_g0
-                    if sum(np_mask) >= numel(ripple_mask)
-                        these_alignTimes = alignTimes(np_mask);
-                        goodFlag = true;
-
-                        if numel(ripple_mask) ~= sum(ripple_mask)
-                            dat = dat(ripple_mask);
-                            fprintf('\n dat has %d rows', numel(dat))
-                        end
-                    elseif sum(np_mask) < numel(ripple_mask) % only used for kendra_scrappy_0136a_g0
-                        first_block_start = find(np_mask, 1, 'first');
-                        first_block_end = first_block_start + find(~np_mask(first_block_start:end), 1, 'first') - 2;
-                        first_zero_index = first_block_end + 1;
-         
-                        good_alignTimes1 = alignTimes(first_block_start:first_block_end);
-                        remaining_alignTimes = alignTimes(first_zero_index:end);
-                        good_alignTimes2 = remaining_alignTimes(1:696);
-            
-                        these_alignTimes = [good_alignTimes1; good_alignTimes2];
-                        dat(772:869) = [];
-            
-                        goodFlag = false;
-                    end
-                else
-                    these_alignTimes = alignTimes(end-313:end);
-                end
+                [dat,these_alignTimes,goodFlag] = fix_specificSessions(session_name,np_mask,ripple_mask,alignTimes,dat,goodFlag);
             else
                 these_alignTimes = alignTimes(np_mask);
                 if sum(np_mask) < length(ripple_mask)
@@ -176,6 +171,18 @@ function process_fullRecording(session_name,varargin)
             end 
 
             tbl = convert_smithDat_mayoTbl(dat, 'TASK_NAME', this_task);
+
+            % Adding LFP sample to table
+            lfp_fs = S1.metadata.lfp_meta(1).imSampRate;
+            trial_starts_sec = cellfun(@(q,v) q-(v./1000), num2cell(these_alignTimes), tbl.ALIGN_PULSE(:,1), 'uni', 1);
+            trial_ends_sec = trial_starts_sec + (tbl.END_TRIAL./1000);
+
+            trial_starts_lfp_samp = floor(trial_starts_sec * lfp_fs);
+            trial_ends_lfp_samp = ceil(trial_ends_sec * lfp_fs);
+
+            tbl.imec_sec = [trial_starts_sec trial_ends_sec];
+            tbl.imecLFP_samp = [trial_starts_lfp_samp trial_ends_lfp_samp];
+
 
         %----- PLEXON -----%
         elseif isequal(PROBE_TYPE, 'plex')
@@ -240,7 +247,7 @@ function process_fullRecording(session_name,varargin)
                 kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
                 if isequal(RUN_TYPE,'sweep')
                     kilosort4_path = fullfile(kilosort4_path, SWEEP_NAME);
-                elseif isequal(RUN_TYPE,'test1')
+                elseif contains(RUN_TYPE,'si')
                     kilosort4_path = fullfile(kilosort4_path, 'sorter_output');
                 end
 
@@ -251,9 +258,9 @@ function process_fullRecording(session_name,varargin)
                     fields(strcmp(fields, 'imec')) = [];
                     kilosort = orderfields(kilosort, ['imec'; fields]);
 
-                    kilosort.clusters.sessionName = repmat({session_name}, height(kilosort.clusters), 1);
-                    kilosort.clusters = movevars(kilosort.clusters,{'sessionName'},'Before','imec');
-                    kilosort.clusters.sessionName = categorical(kilosort.clusters.sessionName);
+                    kilosort.clusters.sess_name = repmat({session_name}, height(kilosort.clusters), 1);
+                    kilosort.clusters = movevars(kilosort.clusters,{'sess_name'},'Before','imec');
+                    kilosort.clusters.sess_name = categorical(kilosort.clusters.sess_name);
 
                     trlAvg_frs_all{imec} = trlAvg_frs;
                     kilosort_all = [kilosort_all; kilosort];
@@ -291,9 +298,9 @@ function process_fullRecording(session_name,varargin)
             end
         end
 
-        tbl.sessionName = repmat({session_name}, height(tbl), 1);
-        tbl = movevars(tbl,{'sessionName'},'Before','trialName');
-        tbl.sessionName = categorical(tbl.sessionName);
+        tbl.sess_name = repmat({session_name}, height(tbl), 1);
+        tbl = movevars(tbl,{'sess_name'},'Before','trialName');
+        tbl.sess_name = categorical(tbl.sess_name);
 
         S1.(this_task).dat = dat;
         S1.(this_task).tbl = tbl;
@@ -303,17 +310,21 @@ function process_fullRecording(session_name,varargin)
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
 
-    if isequal(PROBE_TYPE,'np')
+    if isequal(PROBE_TYPE,'np') && PARSE_KS
         S = calculate_metrics_neuropixels(S,trlAvg_frs_all);
     end
 
     if ~exist(fullfile(OUT_PATH, session_name, 'tables'), 'dir'), mkdir(fullfile(OUT_PATH, session_name, 'tables')); end 
 
-    if isequal(RUN_TYPE, 'sweep')
-        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');
+    if isempty(RUN_TYPE)
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name)), 'S', '-v7.3');
     else
-        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
-    end 
+        if isequal(RUN_TYPE, 'sweep')
+            save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');
+        else
+            save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
+        end 
+    end
     
     tc = toc;
     fprintf('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
