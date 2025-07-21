@@ -316,8 +316,8 @@ function process_fullRecording(session_name,varargin)
 
     if ~exist(fullfile(OUT_PATH, session_name, 'tables'), 'dir'), mkdir(fullfile(OUT_PATH, session_name, 'tables')); end 
 
-    if isempty(RUN_TYPE)
-        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name)), 'S', '-v7.3');
+    if isempty(RUN_TYPE) || isequal(RUN_TYPE,'none')
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s.mat',session_name)), 'S', '-v7.3');
     else
         if isequal(RUN_TYPE, 'sweep')
             save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');

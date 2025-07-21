@@ -33,7 +33,7 @@ KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_${RUN_
 if [[ "$RUN_TYPE" == "sweep" ]]; then
     KILO4_PATH0="${KILO4_PATH0}/${SWEEP_NAME}"
     KILO4_PATH1="${KILO4_PATH1}/${SWEEP_NAME}"
-elif [[ "$RUN_TYPE" == "test1" ]]; then
+elif [[ "$RUN_TYPE" == *si* ]]; then
     KILO4_PATH0="${KILO4_PATH0}/sorter_output"
     KILO4_PATH1="${KILO4_PATH1}/sorter_output"
 fi

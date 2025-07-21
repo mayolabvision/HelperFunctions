@@ -20,7 +20,7 @@ conda activate /ihome/pmayo/knoneman/.conda/envs/npy2mat
 
 # Assign variables from positional parameters
 SESSION="$1"
-RUN_TYPE="${2:-behavOnly}"
+PROBE_TYPE="np"
 
 echo "SESSION: $SESSION"
 echo "RUN_TYPE: $RUN_TYPE"
@@ -42,7 +42,7 @@ try
         'RAW_DATA_PATH', '$RAW_PATH', ...
         'OUT_DATA_PATH', '$OUT_PATH', ...
         'NEVUTIL_PATH', '$NEV_PATH', ...
-        'RUN_TYPE', '$RUN_TYPE');
+        'PROBE_TYPE', '$PROBE_TYPE');
 catch err
     disp('ERROR in process_fullRecording:');
     disp(getReport(err));

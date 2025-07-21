@@ -87,7 +87,7 @@ function ia_rfMaps(data,varargin)
             if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')  | isempty(FIG_PATH)
                 [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
             
-                f2a = figure; %('Visible','off');
+                f2a = figure('Visible','off');
                 f2a.Position = [100 100 1800 900];
                 tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                 
@@ -131,7 +131,7 @@ function ia_rfMaps(data,varargin)
                 if ~exist(fullfile(FIG_PATH, strjoin(matchingFields(these_rows), '_'), sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file') | ~isempty(FIG_PATH)
                     [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
                 
-                    f2a = figure; %('Visible','off');
+                    f2a = figure('Visible','off');
                     f2a.Position = [100 100 1800 900];
                     tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
                     
