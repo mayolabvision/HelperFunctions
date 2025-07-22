@@ -81,6 +81,14 @@ function tl = heatMap_rfOverTime(frs, varargin)
     for bin = 1:length(bin_edges)
         ax(bin) = nexttile(tl);
         
+        % heatmap(xvals,yvals,frs(:,:,bin), ...
+        %     'Colormap', parula, ...
+        %     'ColorbarVisible', 'on', ...
+        %     'XLabel', 'X Position', ...
+        %     'YLabel', 'Y Position', ...
+        %     'Title', 'Mean Firing Rate');
+        
+
         frs2 = [frs(:,:,bin); frs(end,:,bin)];
         frs2 = [frs2 frs2(:,end)];
 
@@ -91,7 +99,7 @@ function tl = heatMap_rfOverTime(frs, varargin)
 
         %hmap = pcolor(xvals, yvals, frs(:,:,bin));
         hmap = pcolor(xedges, yedges, frs2);
-        
+
         if interp
             hmap.FaceColor = 'interp';
         end
