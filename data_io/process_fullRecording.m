@@ -244,7 +244,8 @@ function process_fullRecording(session_name,varargin)
         if PARSE_KS
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs)); 
             for imec = 1:numel(imec_dirs)
-                kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
+                %kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
+                kilosort4_path = fullfile(imec_dirs{imec}, 'kilosort4_', RUN_TYPE);
                 if isequal(RUN_TYPE,'sweep')
                     kilosort4_path = fullfile(kilosort4_path, SWEEP_NAME);
                 elseif contains(RUN_TYPE,'si')

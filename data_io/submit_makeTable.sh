@@ -27,8 +27,8 @@ SWEEP_NAME="${3:-none}"
 echo "SESSION: $SESSION"
 echo "RUN_TYPE: $RUN_TYPE"
 
-KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4_${RUN_TYPE}"
-KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4_${RUN_TYPE}"
+KILO4_PATH0="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec0/kilosort4/${RUN_TYPE}"
+KILO4_PATH1="/ix1/pmayo/lab_NHPdata/${SESSION}/${SESSION}_imec1/kilosort4/${RUN_TYPE}"
 
 if [[ "$RUN_TYPE" == "sweep" ]]; then
     KILO4_PATH0="${KILO4_PATH0}/${SWEEP_NAME}"
