@@ -2,8 +2,8 @@
 #SBATCH --cluster=smp
 #SBATCH --partition=high-mem
 #SBATCH --job-name=purs
-#SBATCH --error=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
-#SBATCH --output=/ix1/pmayo/matlab/outfiles/out_%A_%a.out
+#SBATCH --error=/ix1/pmayo/outfiles/matlab/out_%A_%a.out
+#SBATCH --output=/ix1/pmayo/outfiles/matlab/out_%A_%a.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16

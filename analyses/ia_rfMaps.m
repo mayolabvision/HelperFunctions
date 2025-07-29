@@ -82,6 +82,10 @@ function ia_rfMaps(data,varargin)
             T = [T; S.(matchingFields{mm}).tbl];
         end
 
+        T.STIM_ON(T.result~='CORRECT') = cellfun(@(q) q(1:end-1), T.STIM_ON(T.result~='CORRECT'), 'uni', 0);
+        T.conditions(T.result~="CORRECT") = cellfun(@(q) q(1:end-1), T.conditions(T.result~='CORRECT'), 'uni', 0);
+        T = T(~cellfun(@(q) any(isnan(q)), T.STIM_OFF, 'uni', 1),:);
+
         for u=1:length(units)
             unit = units(u); 
             if ~exist(fullfile(FIG_PATH, sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file')  | isempty(FIG_PATH)
@@ -119,6 +123,10 @@ function ia_rfMaps(data,varargin)
             for r = 1:numel(these_rows)
                 T = [T; S.(matchingFields{these_rows(r)}).tbl];
             end
+            
+            T.STIM_ON(T.result~='CORRECT') = cellfun(@(q) q(1:end-1), T.STIM_ON(T.result~='CORRECT'), 'uni', 0);
+            T.conditions(T.result~="CORRECT") = cellfun(@(q) q(1:end-1), T.conditions(T.result~='CORRECT'), 'uni', 0);
+            T = T(~cellfun(@(q) any(isnan(q)), T.STIM_OFF, 'uni', 1),:);
 
             stim_duration_ms = T.params(1,1).block.frameCount*(1000/120);
             
