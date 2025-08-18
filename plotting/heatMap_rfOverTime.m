@@ -52,6 +52,7 @@ function tl = heatMap_rfOverTime(frs, varargin)
     addParameter(p, 'X_VALS', defaultXVals, @(x) (isnumeric(x) && numel(x) == size(frs,1)));
     addParameter(p, 'Y_VALS', defaultYVals, @(x) (isnumeric(x) && numel(x) == size(frs,2)));
     addParameter(p, 'INTERP', defaultInterp, @(x) (islogical(x)));
+    addParameter(p, 'PROBE_DUR', [], @isnumeric);
 
     % Parse the inputs
     parse(p, frs, varargin{:});
@@ -62,6 +63,7 @@ function tl = heatMap_rfOverTime(frs, varargin)
     xvals= p.Results.X_VALS;
     yvals = p.Results.Y_VALS;
     interp = p.Results.INTERP;
+    probe_dur = p.Results.PROBE_DUR;
 
     if iscell(frs)
         frs = cellfun(@(q) mean(q), frs);
@@ -105,7 +107,11 @@ function tl = heatMap_rfOverTime(frs, varargin)
         end
         
         if ~isempty(bin_edges)
-            title(sprintf('[%d , %d) ms',bin_edges{bin}(1),bin_edges{bin}(2)))
+            if ~isempty(probe_dur) & bin_edges{bin}(1)<probe_dur
+                title(sprintf('[%d , %d) ms',bin_edges{bin}(1),bin_edges{bin}(2)), 'FontWeight', 'bold')
+            else
+                title(sprintf('[%d , %d) ms',bin_edges{bin}(1),bin_edges{bin}(2)), 'FontWeight', 'normal')
+            end
         end
     
         axis square;

@@ -13,6 +13,7 @@ PREINT = 10; POSTINT = 75;
 
 % Use only correct trials for plotting
 T = S.mdir1.tbl(S.mdir1.tbl.result=='CORRECT',:);
+%T = S.dirmem_withhelp_varDelays_0001.tbl(S.dirmem_withhelp_varDelays_0001.tbl.result=='CORRECT',:);
 
 f1 = figure;
 

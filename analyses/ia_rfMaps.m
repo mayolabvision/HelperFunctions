@@ -138,10 +138,17 @@ function ia_rfMaps(data,varargin)
                 unit = units(u); 
                 if ~exist(fullfile(FIG_PATH, strjoin(matchingFields(these_rows), '_'), sprintf('imec%d_unit%04d_chan%03d.png', IMEC, unit, chans(u))), 'file') | ~isempty(FIG_PATH)
                     [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'IMEC', IMEC, 'UNITS', (unit+1));
+
+                    if u==1
+                        index_array = cellfun(@(q) randsample(numel(q), floor(numel(q)/2)), frs{1}, 'uni', 0);
+                    end
+
+                    frs_array = cellfun(@(frs, idx) frs(idx), frs{1}, index_array, 'uni', 0);
                 
                     f2a = figure('Visible','off');
                     f2a.Position = [100 100 1800 900];
-                    tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
+                    %tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals);
+                    tl = heatMap_rfOverTime(frs_array,'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals,'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
                     
                     if (IMEC)==0
                         title(tl,sprintf('%s_%s --- LEFT --- cluster %d (channel %d)',filename, strjoin(matchingFields(these_rows), '_'), unit, chans(u)),'fontsize',16,'interpreter','none')
@@ -151,16 +158,16 @@ function ia_rfMaps(data,varargin)
                     %subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs(u), snrs(u), depths(u)),'fontsize',12,'interpreter','none')
                     
                     annotation('textbox', [0.77 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
-                        'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs{1}))))), ...
+                        'String', sprintf('N = %d repeats', min(min(min(cellfun(@length, frs_array))))), ...
                         'FontSize', 16, ...
                         'EdgeColor', 'none', ...
                         'HorizontalAlignment', 'right');
 
-                    annotation('textbox', [0.01 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
-                        'String', sprintf('probe duration = %.1f ms', stim_duration_ms), ...
-                        'FontSize', 16, ...
-                        'EdgeColor', 'none', ...
-                        'HorizontalAlignment', 'left');
+                    % annotation('textbox', [0.01 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                    %     'String', sprintf('probe duration = %.1f ms', stim_duration_ms), ...
+                    %     'FontSize', 16, ...
+                    %     'EdgeColor', 'none', ...
+                    %     'HorizontalAlignment', 'left');
                     
 
                     if ~isempty(FIG_PATH)
