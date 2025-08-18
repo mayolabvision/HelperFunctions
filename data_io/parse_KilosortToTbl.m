@@ -55,8 +55,8 @@ for ii = 1:length(kilo_files2)
 end
 clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
 
-clusters.imec = repmat(imec_num, height(clusters), 1);
-kilosort.clusters = movevars(clusters, 'imec', 'Before', 1);
+clusters.probe_index = repmat(imec_num+1, height(clusters), 1);
+kilosort.clusters = movevars(clusters, 'probe_index', 'Before', 1);
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);
 spike_times_sec = double(kilosort.spike_times)./30000;

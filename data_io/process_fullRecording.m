@@ -41,14 +41,13 @@ function process_fullRecording(session_name,varargin)
     session_path = fullfile(RAW_PATH, session_name);
     filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
 
-    S1 = struct();
-    S1.sess_name = session_name;
-
     if isfile(fullfile(session_path,'metadata.json'))
         metadata = loadMetadataJSON(fullfile(session_path,'metadata.json'));
-        Tmeta = StructToTable(metadata);
-        
+        Tmeta = struct2table(rmfield(metadata, {'sess_name', 'HEeye_VEeye_diode_pupil'}));
     end
+
+    S1 = struct();
+    S1.sess_name = metadata.sess_name;
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
     raw_files = dir(filePattern);
@@ -88,7 +87,7 @@ function process_fullRecording(session_name,varargin)
     taskTypes = unique(cellfun(@(q) regexp(q, '[a-zA-Z]+', 'match', 'once'), tasks, 'uni', 0));
     disp(tasks)
 
-    if isequal(PROBE_TYPE,'np')
+    if ismember('neuropixel',metadata.probe_type)
         imec_dirs = dir(fullfile(RAW_PATH, session_name,[session_name, '*_imec*']));
         imec_dirs = arrayfun(@(q) fullfile(q.folder, q.name), imec_dirs, 'uni', 0);
         imec_nums = cellfun(@(q) str2num(q(end)), imec_dirs, 'uni', 0);
@@ -105,12 +104,11 @@ function process_fullRecording(session_name,varargin)
             lfp_meta = readMetaFile([lfp_ap_path,'.lf.meta']);
             ap_meta = readMetaFile([lfp_ap_path,'.ap.meta']);
 
-            imec_meta(imec,:) = {(imec-1), ap_meta, lfp_meta};
+            imec_meta(imec,:) = {(imec), ap_meta, lfp_meta};
         end
 
-        imec_meta = cell2table(imec_meta,'VariableNames', {'imec','ap_meta','lfp_meta'});
-        S1.metadata = [Tmeta imec_meta];
-       
+        imec_meta = cell2table(imec_meta,'VariableNames', {'probe_index','ap_meta','lfp_meta'});
+        S1.metadata = [Tmeta imec_meta];    
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +124,7 @@ function process_fullRecording(session_name,varargin)
         fprintf('\n---- generating nev_out for %s ----\n', this_task);
 
         %----- NEUROPIXELS -----%
-        if isequal(PROBE_TYPE, 'np')
+        if ismember('neuropixel',metadata.probe_type)
             [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', false, 'READ_LFP', false, 'alignPulseEnabled', true);
             startAcquisition = datetime(out_ns5.hdr.timeOrigin, 'InputFormat', 'dd-MMM-yyyy HH:mm:ss.SSS');
 
@@ -168,7 +166,7 @@ function process_fullRecording(session_name,varargin)
 
 
         %----- PLEXON -----%
-        elseif isequal(PROBE_TYPE, 'plex')
+        elseif ismember('plexon',metadata.probe_type)
             addpath(genpath(NET_PATH));
             
             if exist([nevpath,'.ns2'], 'file') == 2
@@ -184,7 +182,7 @@ function process_fullRecording(session_name,varargin)
             end
 
         %----- FHC SINGLE ELECTRODE -----%
-        elseif isequal(PROBE_TYPE, 'fhc')
+        elseif ismember('fhc',metadata.probe_type)
             addpath(genpath(NET_PATH));
 
             [nev, out_ns5, ~] = extract_nevout(nevpath, 'SPIKE_SORT', true, 'netFolder', fullfile(NET_PATH,'networks'));
@@ -224,27 +222,30 @@ function process_fullRecording(session_name,varargin)
         S1.(this_task).hdr = out_ns5.hdr;
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% KILOSORT/NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if SORTER_HASH
+        if SORTER_PATH
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs)); 
             for imec = 1:numel(imec_dirs)
                 %kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
-                kilosort4_path = fullfile(imec_dirs{imec}, 'sorting', SORTER_HASH);
+                kilosort4_path = fullfile(imec_dirs{imec}, 'sorting', SORTER_PATH);
 
                 if isfolder(kilosort4_path)
                     [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,fullfile(kilosort4_path,'sorter_output'),'NP_ALIGN_PULSES',these_alignTimes);
-                    kilosort.imec = imec_nums{imec};
+                    kilosort.probe_index = imec;
                     fields = fieldnames(kilosort);
-                    fields(strcmp(fields, 'imec')) = [];
-                    kilosort = orderfields(kilosort, ['imec'; fields]);
+                    fields(strcmp(fields, 'probe_index')) = [];
+                    kilosort = orderfields(kilosort, ['probe_index'; fields]);
 
-                    kilosort.clusters.sess_name = repmat({session_name}, height(kilosort.clusters), 1);
+                    metrics = readtable(fullfile(kilosort4_path,'quality_metrics','cluster_metrics.csv'));
+                    kilosort.clusters = [metrics, kilosort.clusters];
+                    
+                    % kilosort.clusters.sess_name = repmat({metadata.sess_name}, height(kilosort.clusters), 1);
                     kilosort.clusters = movevars(kilosort.clusters,{'sess_name'},'Before','imec');
                     kilosort.clusters.sess_name = categorical(kilosort.clusters.sess_name);
 
                     trlAvg_frs_all{imec} = trlAvg_frs;
                     kilosort_all = [kilosort_all; kilosort];
 
-                    tbl.(sprintf('spiketimes_imec%d',imec_nums{imec})) = spikes_perTrial;
+                    tbl.(sprintf('spiketimes_%d',imec)) = spikes_perTrial;
                 end 
             end
 
@@ -267,14 +268,12 @@ function process_fullRecording(session_name,varargin)
         end
 
         % Remove trials with absolutely no spikes in them
-        if isequal(PROBE_TYPE,'np')
-            colnames = {'spiketimes_imec0', 'spiketimes_imec1'};
-            col_found = colnames(ismember(colnames, tbl.Properties.VariableNames));
-            
-            if ~isempty(col_found)
-                spike_column = tbl.(col_found{1});
-                tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
-            end
+        colnames = {'spiketimes_1', 'spiketimes_2'};
+        col_found = colnames(ismember(colnames, tbl.Properties.VariableNames));
+        
+        if ~isempty(col_found)
+            spike_column = tbl.(col_found{1});
+            tbl(cellfun(@(q) sum(cellfun(@(w) numel(w), q, 'uni', 1)), tbl.(col_found{1}), 'uni', 1) == 0, :) = [];
         end
 
         tbl.sess_name = repmat({session_name}, height(tbl), 1);
@@ -289,20 +288,16 @@ function process_fullRecording(session_name,varargin)
     % Save the structure S to the specified file
     S = unify_taskTables(S1,taskTypes);
 
-    if isequal(PROBE_TYPE,'np') && PARSE_KS
-        S = calculate_metrics_neuropixels(S,trlAvg_frs_all);
-    end
+    % if isequal(PROBE_TYPE,'np') && PARSE_KS
+    %     S = calculate_metrics_neuropixels(S,trlAvg_frs_all);
+    % end
 
     if ~exist(fullfile(OUT_PATH, session_name, 'tables'), 'dir'), mkdir(fullfile(OUT_PATH, session_name, 'tables')); end 
 
-    if isempty(RUN_TYPE) || isequal(RUN_TYPE,'none')
-        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s.mat',session_name)), 'S', '-v7.3');
+    if SORTER_PATH
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s-%s.mat',session_name,SORTER_PATH)), 'S', '-v7.3');
     else
-        if isequal(RUN_TYPE, 'sweep')
-            save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s_%s.mat',session_name,RUN_TYPE,SWEEP_NAME)), 'S', '-v7.3');
-        else
-            save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s_%s.mat',session_name,RUN_TYPE)), 'S', '-v7.3');
-        end 
+        save(fullfile(OUT_PATH,session_name,'tables',sprintf('%s.mat',session_name)), 'S', '-v7.3');
     end
     
     tc = toc;
