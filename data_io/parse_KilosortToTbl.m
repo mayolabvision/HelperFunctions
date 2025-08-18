@@ -54,11 +54,9 @@ for ii = 1:length(kilo_files2)
     end
 end
 clusters.KSLabel_clusters = categorical(clusters.KSLabel_clusters);
-cluster_sum = readtable(fullfile(ks_path,'cluster_summary.csv'));
-cluster_sum.imec = repmat(imec_num, height(cluster_sum), 1);
 
-kilosort.clusters = [cluster_sum, clusters(:, {'ContamPct', 'KSLabel_clusters'})];
-kilosort.clusters = movevars(kilosort.clusters, 'imec', 'Before', 1);
+clusters.imec = repmat(imec_num, height(clusters), 1);
+kilosort.clusters = movevars(clusters, 'imec', 'Before', 1);
 
 unique_clusters = double(unique(kilosort.spike_clusters)+1);
 spike_times_sec = double(kilosort.spike_times)./30000;

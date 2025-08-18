@@ -16,22 +16,16 @@ function process_fullRecording(session_name,varargin)
     addParameter(p, 'RAW_DATA_PATH', defaultRAW_PATH, @ischar); 
     addParameter(p, 'OUT_DATA_PATH', defaultOUT_PATH, @ischar); 
     addParameter(p, 'NEVUTIL_PATH', defaultNEV_PATH, @ischar);
-    addParameter(p, 'PROBE_TYPE', [], @ischar); % np, plex, fhc
     addParameter(p, 'NASNET_PATH', defaultNET_PATH, @ischar); % only used for plex
-    addParameter(p, 'PARSE_KILOSORT', false, @islogical);
-    addParameter(p, 'RUN_TYPE', [], @ischar);
-    addParameter(p, 'SWEEP_NAME', [], @ischar);
+    addParameter(p, 'SORTER_PATH', [], @ischar);
     
     % Parse inputs
     parse(p, session_name, varargin{:});
-    RAW_PATH   = p.Results.RAW_DATA_PATH;
-    OUT_PATH   = p.Results.OUT_DATA_PATH;
-    NEV_PATH   = p.Results.NEVUTIL_PATH;
-    PROBE_TYPE = p.Results.PROBE_TYPE;
-    NET_PATH   = p.Results.NASNET_PATH;
-    PARSE_KS   = p.Results.PARSE_KILOSORT;
-    RUN_TYPE   = p.Results.RUN_TYPE;
-    SWEEP_NAME = p.Results.SWEEP_NAME;
+    RAW_PATH    = p.Results.RAW_DATA_PATH;
+    OUT_PATH    = p.Results.OUT_DATA_PATH;
+    NEV_PATH    = p.Results.NEVUTIL_PATH;
+    NET_PATH    = p.Results.NASNET_PATH;
+    SORTER_PATH = p.Results.SORTER_PATH;
 
     addpath(genpath(NEV_PATH));
 
@@ -45,26 +39,15 @@ function process_fullRecording(session_name,varargin)
     if ~exist(fullfile(OUT_PATH, session_name), 'dir'), mkdir(fullfile(OUT_PATH, session_name)); end
 
     session_path = fullfile(RAW_PATH, session_name);
-    if exist(session_path, 'dir') % check if directory
-        fprintf('Directory exists: %s\n', session_path);
-        filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
-    else
-        file_list = dir(fullfile(RAW_PATH, [session_name '*']));
-        
-        if ~isempty(file_list)
-            fprintf('Found %d files starting with "%s" in %s\n', length(file_list), session_name, RAW_PATH);
-            filePattern = fullfile(RAW_PATH, [session_name '*.ns5']);
-        else
-            fprintf('No directory "%s" and no files starting with "%s" in %s\n', session_name, session_name, RAW_PATH);
-        end
-    end
+    filePattern = fullfile(RAW_PATH, session_name, '*.ns5');
 
     S1 = struct();
     S1.sess_name = session_name;
 
     if isfile(fullfile(session_path,'metadata.json'))
         metadata = loadMetadataJSON(fullfile(session_path,'metadata.json'));
-        Tmeta = metadataStructToTable(metadata);
+        Tmeta = StructToTable(metadata);
+        
     end
 
     % Create the search pattern to find files that start with 'filename' and end with '.ns5'
@@ -241,19 +224,14 @@ function process_fullRecording(session_name,varargin)
         S1.(this_task).hdr = out_ns5.hdr;
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% KILOSORT/NEUROPIXELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if PARSE_KS
+        if SORTER_HASH
             kilosort_all = []; trlAvg_frs_all = cell(1,numel(imec_dirs)); 
             for imec = 1:numel(imec_dirs)
                 %kilosort4_path = fullfile(imec_dirs{imec}, ['kilosort4_', RUN_TYPE]);
-                kilosort4_path = fullfile(imec_dirs{imec}, 'kilosort4', RUN_TYPE);
-                if isequal(RUN_TYPE,'sweep')
-                    kilosort4_path = fullfile(kilosort4_path, SWEEP_NAME);
-                elseif contains(RUN_TYPE,'si')
-                    kilosort4_path = fullfile(kilosort4_path, 'sorter_output');
-                end
+                kilosort4_path = fullfile(imec_dirs{imec}, 'sorting', SORTER_HASH);
 
                 if isfolder(kilosort4_path)
-                    [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,kilosort4_path,'NP_ALIGN_PULSES',these_alignTimes);
+                    [spikes_perTrial,kilosort,trlAvg_frs] = parse_KilosortToTbl(tbl,fullfile(kilosort4_path,'sorter_output'),'NP_ALIGN_PULSES',these_alignTimes);
                     kilosort.imec = imec_nums{imec};
                     fields = fieldnames(kilosort);
                     fields(strcmp(fields, 'imec')) = [];
