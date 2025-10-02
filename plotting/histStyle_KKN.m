@@ -82,7 +82,6 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     
     % draw thick vertical solid line at mean (redundant with star above)
     
-
     if ~isempty(FIG_NAME)
         title(FIG_NAME,'Interpreter','tex') 
     end
@@ -121,3 +120,4 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
         text (TEXT_X_POS, max(Y_LIMITS)*0.79, ['p = ', sprintf('%0.3f', pvalue)], 'fontsize', 15, 'color', 'k' ) % pvalue
     end
 end
+

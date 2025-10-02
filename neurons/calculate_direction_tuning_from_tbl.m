@@ -12,18 +12,18 @@ function [sel_dir,pref_dir,rhoLst,rhoUst,frs_per_ang] = calculate_direction_tuni
 
     theta = sort(unique(tbl.angle))';
 
-    spikes = tbl.(sprintf('spiketimes_imec%d',IMEC));
+    spikes = tbl.(sprintf('spiketimes_%d',IMEC));
     frs_per_ang = cell(length(theta),length(spikes{1}));
     for a = 1:length(theta)
         this_ang = tbl(tbl.angle==theta(a),:);
         if isequal(ALIGN_TO,'stim')
-            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v(1)+FR_WIN(1)) & q<(v(1)+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_imec%d',IMEC)), this_ang.TARG_ON, 'uni', 0);
+            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v(1)+FR_WIN(1)) & q<(v(1)+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_%d',IMEC)), this_ang.TARG_ON, 'uni', 0);
         elseif isequal(ALIGN_TO,'sacc')
-            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_imec%d',IMEC)), num2cell(this_ang.SACCADE), 'uni', 0);
+            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_%d',IMEC)), num2cell(this_ang.SACCADE), 'uni', 0);
         elseif isequal(ALIGN_TO,'targ')
-            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_imec%d',IMEC)), num2cell(this_ang.PURSUIT_TARG_ON), 'uni', 0);
+            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_%d',IMEC)), num2cell(this_ang.PURSUIT_TARG_ON), 'uni', 0);
         elseif isequal(ALIGN_TO,'purs')
-            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_imec%d',IMEC)), num2cell(this_ang.pursuitOnset), 'uni', 0);
+            FR = cellfun(@(w,v) cellfun(@(q) sum(q>=(v+FR_WIN(1)) & q<(v+FR_WIN(2)))/((FR_WIN(2)-FR_WIN(1))/1000), w, 'uni', 0), this_ang.(sprintf('spiketimes_%d',IMEC)), num2cell(this_ang.pursuitOnset), 'uni', 0);
         end
         frs_per_ang(a,:) = num2cell(cell2mat(vertcat(FR{:})),1);
     end
