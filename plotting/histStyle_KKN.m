@@ -29,6 +29,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     addParameter(p, 'Y_LIMITS', [],  @(x) (isnumeric(x)) && numel(x)==2);
     addParameter(p, 'LINE_COLOR', [],  @(x) (isnumeric(x)) && numel(x)==3);
     addParameter(p, 'FACE_COLOR', [],  @(x) (isnumeric(x)) && numel(x)==3);
+    addParameter(p, 'FACE_ALPHA', 1, @isnumeric);
     addParameter(p, 'TEXT_X_POS', [], @isnumeric);
     
     parse(p, values, varargin{:});
@@ -41,6 +42,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     Y_LIMITS = p.Results.Y_LIMITS;
     LINE_COLOR = p.Results.LINE_COLOR;
     FACE_COLOR = p.Results.FACE_COLOR;
+    FACE_ALPHA = p.Results.FACE_ALPHA;
     TEXT_X_POS = p.Results.TEXT_X_POS;
 
     if isempty(LINE_COLOR)
@@ -57,7 +59,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     end
 
     % Plot histogram with white bars, range -1 to 
-    h = histogram(values, 'binwidth', BIN_WIDTH, 'linewidth', 2, 'facecolor', FACE_COLOR);
+    h = histogram(values, 'binwidth', BIN_WIDTH, 'linewidth', 2, 'facecolor', FACE_COLOR, 'FaceAlpha', FACE_ALPHA);
     hold on;
 
     % Plot star at MEAN, 0.5 above max of ylim

@@ -1,4 +1,4 @@
-function [eye_prime] = calcDerivative_eyeTraces(EYE,samplingRate)
+function [eye_vel, eye_acc] = calcDerivative_eyeTraces(EYE, Fs)
 % OBJECTIVE:
 % Use gradient function to approximate derivative (e.g. eye acceleration)
 % Recommended that the eye velocity is smoothed with the sglolay fxn
@@ -14,24 +14,36 @@ function [eye_prime] = calcDerivative_eyeTraces(EYE,samplingRate)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     if nargin < 2
-        samplingRate = 1000;
+        Fs = 1000;
     end
     
     % Determine the dimensions of the input data
-    [numRows, numCols] = size(EYE);
+    if size(EYE,2)>size(EYE,1)
+        eye = EYE;
+    else
+        eye = EYE';
+    end
     
-    eye_prime = zeros(size(EYE));
-    % Calculate HE and VE acceleration using gradient function
-    if numRows > numCols % rows
-        x = (0:(size(EYE,1) - 1)) / samplingRate;
-        for v=1:size(EYE,2)
-            eye_prime(:,v) = gradient(EYE(:,v)', x)';
-        end
-    else % cols
-        x = (0:(size(EYE,2) - 1)) / samplingRate;
-        for v=1:size(EYE,1)
-            eye_prime(v,:) = gradient(EYE(v,:), x);
-        end
+    % VELOCITY
+    eye_vel = nan(size(eye));
+    x = (0:(size(eye,2) - 1)) / Fs;
+    for r = 1:size(eye,1)
+        eye_vel(r, :) = gradient(eye(r, :), x);
+    end
+
+    % ACCELERATION
+    dt = 1 / Fs;                     % time per sample (s)
+    offset = round(0.010 * Fs);      % number of samples in 10 ms
+    
+    eye_acc = nan(size(eye_vel));
+    for r = 1:size(eye_vel,1)
+        % Use central difference: (v[t+10ms] - v[t-10ms]) / 20ms
+        eye_acc(r, :) = (circshift(eye_vel(r, :), -offset) - circshift(eye_vel(r, :), offset)) / (2 * offset * dt);
+    end
+
+    if size(EYE,2)<size(EYE,1)
+        eye_vel = eye_vel';
+        eye_acc = eye_acc';
     end
 
 end

@@ -205,10 +205,10 @@ end
 %ylabel('radial eye velocity (deg/s)')
 ylim([0 1000])
 prettyFig;
-savebigPDF(1, '/Users/kendranoneman/Posters/GRC-2025/sacc_eyes_stim.pdf')
+%savebigPDF(1, '/Users/kendranoneman/Posters/GRC-2025/sacc_eyes_stim.pdf')
 
 ia_mdirRasters(S, 'IMEC', 0, 'ALIGN', 'stim', 'CLUSTER', 325, 'TICK_LENGTH', 2, 'Y_LIMITS', [0 200])
-savebigPDF(2, '/Users/kendranoneman/Posters/GRC-2025/sacc_spks_stim.pdf')
+%savebigPDF(2, '/Users/kendranoneman/Posters/GRC-2025/sacc_spks_stim.pdf')
 
 
 f4b = figure;

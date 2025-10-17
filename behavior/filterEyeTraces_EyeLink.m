@@ -20,49 +20,58 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
 % OUTPUTS:
 % eye_new = smoothed eye traces
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    defaultFs        =  1000; % 
-    defaultFc        =  84;
-    defaultPlotTrial =  false;
-    
+       
     % Create an input parser
     p = inputParser;
     addRequired(p, 'EYE', @isnumeric); % PATH must be a string
-    addParameter(p, 'SAMPLING_FREQUENCY', defaultFs, @(x) isnumeric(x));
-    addParameter(p, 'CUTOFF_FREQUENCY', defaultFc, @(x) isnumeric(x));
-    addParameter(p, 'PLOT_TRIAL', defaultPlotTrial, @islogical); % CORRECT_ONLY must be logical
+    addParameter(p, 'FILT_TYPE', 'butter', @ischar);
+    addParameter(p, 'SAMPLING_FREQUENCY', 1000, @isnumeric);
+    addParameter(p, 'CUTOFF_FREQUENCY', 30, @isnumeric);
+    addParameter(p, 'ORDER', 4, @isnumeric);
+    addParameter(p, 'FRAME_LENGTH', 19, @isnumeric);
+    addParameter(p, 'N_TAPS', 80, @isnumeric);
+    addParameter(p, 'PLOT_TRIAL', false, @islogical); 
 
     % Parse the inputs
     parse(p, EYE, varargin{:});
 
     % Assign parsed values to variables
     EYE = p.Results.EYE;
+    filt_type = p.Results.FILT_TYPE;
     Fs = p.Results.SAMPLING_FREQUENCY;
     Fc = p.Results.CUTOFF_FREQUENCY;
+    order = p.Results.ORDER;
+    frame_length = p.Results.FRAME_LENGTH;
+    Ntaps = p.Results.N_TAPS;
     plot_trial = p.Results.PLOT_TRIAL;
-    Ntaps = 80;        % Number of taps (filter order)
-    
-    % Normalize the cutoff frequency (since fir1 expects normalized frequencies)
-    Wn = Fc / (Fs / 2);  % Normalized frequency
-    
-    % Design FIR filter using Hamming window
-    fir_coefficients = fir1(Ntaps - 1, Wn, hamming(Ntaps));  % Use Hamming window for better performance
-    
-    eye_new = nan(size(EYE));
-    if max(size(EYE))>237
-        if size(EYE,1) < size(EYE,2)  % EYE is [2, time_points], filter along the time dimension (columns)
-            % if size()
-            for v=1:size(EYE,1)
-                eye_new(v,:) = filtfilt(fir_coefficients, 1, EYE(v,:)); 
-            end
-    
-        else  % EYE is [time_points, 2], filter along the time dimension (rows)
-            for v=1:size(EYE,2)
-                eye_new(:,v) = filtfilt(fir_coefficients, 1, EYE(:,v));  
-            end
-        end
+
+    if size(EYE,2)>size(EYE,1)
+        eye = EYE;
+    else
+        eye = EYE';
     end
 
+    eye_new = nan(size(eye));
+    if isequal(filt_type, 'butter') % butterworth
+        [b, a] = butter(order, Fc / (Fs / 2), 'low');
+
+        for r = 1:size(eye_new,1)
+            eye_new(r, :) = filtfilt(b, a, eye(r, :));
+        end
+
+    elseif isequal(filt_type, 'sg') % savitsky-golay
+        for r = 1:size(eye_new,1)
+            eye_new(r, :) = sgolayfilt(eye(r, :), order, frame_length); 
+        end
+
+    elseif isequal(filt_type, 'fir')
+        Wn = Fc / (Fs / 2);  % Normalized frequency
+        fir_coefficients = fir1(Ntaps - 1, Wn, hamming(Ntaps));
+
+        for r = 1:size(eye_new,1)
+            eye_new(r, :) = filtfilt(fir_coefficients, 1, eye(f, :)); 
+        end
+    end
     
     if plot_trial
         figure('Position', [200, 100, 1400, 600]);
@@ -75,6 +84,10 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
         ylabel('eye position (deg)');
         legend('location','best');
         prettyFig;
+    end
+
+    if size(EYE,2)<size(EYE,1)
+        eye_new = eye_new';
     end
     
 end
