@@ -1,10 +1,10 @@
-function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
+function [eye_new] = filterEyeTraces_EyeLink(eyedata,varargin)
 % OBJECTIVE:
 % The Savitzky-Golay (SG) filter, used as digital filter for smoothing noisy data
 % Used here for smoothing eye traces
 %
 % INPUTS:
-% EYE = eye traces (1D or 2D) in either a double array or cells of double arrays
+% eyedata = eye traces in a double array
 % order = polynomial order, choice should balance noise reduction with preservation of important signal features
 %         higher order - can fit more intricate shapes, can overfit noise
 %         lower order  - simpler fit, can be more robust to noise but less responsive to rapid changes in data
@@ -23,7 +23,7 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
        
     % Create an input parser
     p = inputParser;
-    addRequired(p, 'EYE', @isnumeric); % PATH must be a string
+    addRequired(p, 'eyedata', @isnumeric); % PATH must be a string
     addParameter(p, 'FILT_TYPE', 'butter', @ischar);
     addParameter(p, 'SAMPLING_FREQUENCY', 1000, @isnumeric);
     addParameter(p, 'CUTOFF_FREQUENCY', 30, @isnumeric);
@@ -33,10 +33,10 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
     addParameter(p, 'PLOT_TRIAL', false, @islogical); 
 
     % Parse the inputs
-    parse(p, EYE, varargin{:});
+    parse(p, eyedata, varargin{:});
 
     % Assign parsed values to variables
-    EYE = p.Results.EYE;
+    eyedata = p.Results.eyedata;
     filt_type = p.Results.FILT_TYPE;
     Fs = p.Results.SAMPLING_FREQUENCY;
     Fc = p.Results.CUTOFF_FREQUENCY;
@@ -45,10 +45,10 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
     Ntaps = p.Results.N_TAPS;
     plot_trial = p.Results.PLOT_TRIAL;
 
-    if size(EYE,2)>size(EYE,1)
-        eye = EYE;
+    if size(eyedata,2)>size(eyedata,1)
+        eye = eyedata;
     else
-        eye = EYE';
+        eye = eyedata';
     end
 
     eye_new = nan(size(eye));
@@ -77,7 +77,7 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
         figure('Position', [200, 100, 1400, 600]);
         x = (1:length(eye_new));
         
-        plot(x, EYE, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
+        plot(x, eyedata, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
         hold on;
         plot(x, eye_new, 'b-',  'LineWidth', 1, 'DisplayName', 'SG filtered');
         xlabel('time aligned to trial onset (ms)');
@@ -86,7 +86,7 @@ function [eye_new] = filterEyeTraces_EyeLink(EYE,varargin)
         prettyFig;
     end
 
-    if size(EYE,2)<size(EYE,1)
+    if size(eyedata,2)<size(eyedata,1)
         eye_new = eye_new';
     end
     

@@ -3,7 +3,7 @@ clear; clc;
 addpath(genpath('/Users/kendranoneman/Projects/mayo/helperfunctions'))
 addpath(genpath('/Users/kendranoneman/Packages/pairwise_population_metrics'))
 
-%load('/Users/kendranoneman/Data/sapu_dualhemi/concat_tables.mat', 'C', 'Tmdir', 'Tpurs', 'Trfmp');
+load('/Users/kendranoneman/Data/sapu_dualhemi/concat_tables.mat', 'C', 'Tmdir', 'Tpurs', 'Trfmp');
 load('/Users/kendranoneman/Data/sapu_dualhemi/pairs_table.mat');
 
 red_pursuity = [245,29,37];
