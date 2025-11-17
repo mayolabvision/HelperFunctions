@@ -47,6 +47,12 @@ PLOT_TRACES = p.Results.PLOT_TRACES;
 
 fixWin = [-50,50]; % aligned to target motion onset
 
+if isnan(stimOnset)
+    pursuit_onset = NaN;
+    pursuit_latency = NaN;
+    return
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Convert eye velocity to polar coordinates
 [~, radVel] = cart2pol(eyeVel(1,:), eyeVel(2,:));
