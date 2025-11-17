@@ -58,11 +58,10 @@ for iTrial = 1:length(spike_times)
     xspikes = repmat(spks, 3, 1);
     yspikes = nan(size(xspikes));
     
-    %if ~isempty(yspikes)
-    yspikes(1, :) = iTrial - TICK_LENGTH;
-    yspikes(2, :) = iTrial;
-    
-    %end
+    if ~isempty(yspikes)
+        yspikes(1, :) = iTrial - TICK_LENGTH;
+        yspikes(2, :) = iTrial;
+    end
     
     if ~iscell(TICK_COLOR)
         plot(xspikes, yspikes, '-', 'Color', TICK_COLOR, 'LineWidth', TICK_WIDTH);

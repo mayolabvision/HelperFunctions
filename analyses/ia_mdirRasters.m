@@ -1,6 +1,6 @@
 function ia_mdirRasters(data,varargin)
     %UNTITLED2 Summary of this function goes here
-    %   Detailed explanation goes here
+    %  8 directions only
     p = inputParser;
     addRequired(p, 'data',  @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'FIG_PATH', [], @ischar);
@@ -33,7 +33,6 @@ function ia_mdirRasters(data,varargin)
         load(data,'S');
         fprintf(sprintf('\n----Data loaded for %s----\n',filename))
     else
-        filename = data.sess_name;
         S = data;
     end
 
@@ -45,10 +44,6 @@ function ia_mdirRasters(data,varargin)
     end
 
     if isempty(CLUSTER)
-        snrs  = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.snr;
-        depths = cellfun(@(q) q(2), S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.unit_locations, 'uni', 1)./1000;
-        kslabs = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.KSLabel_clusters;
-
         if ~isnan(JOB_ID)
             all_units = units + 1;
             % Split into 50 chunks as a cell array
@@ -60,11 +55,6 @@ function ia_mdirRasters(data,varargin)
 
             units = units(ids);
             chans = chans(ids);
-
-            snrs = snrs(ids);
-            depths = depths(ids);
-            kslabs = kslabs(ids);
-
         end
     else
         units = CLUSTER;
@@ -77,6 +67,8 @@ function ia_mdirRasters(data,varargin)
     if ~isempty(FIG_PATH)
         FIG_PATH2 = fullfile(FIG_PATH, sprintf('%s_%s',hardware_config, probe_label), 'mdir_rasters', sprintf('%s_aligned',ALIGN));
         if ~exist(FIG_PATH2, 'dir'), mkdir(FIG_PATH2); end
+    else
+        FIG_PATH2 = [];
     end
 
     if isequal(ALIGN,'stim')
@@ -250,7 +242,7 @@ function ia_mdirRasters(data,varargin)
 
             title(han, {
                 sprintf('%s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, unit, chans(u));
-                sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)) 
+                '' 
             }, 'fontsize',16,'interpreter','none')
         
             if ~isempty(FIG_PATH)

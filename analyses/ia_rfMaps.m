@@ -25,22 +25,17 @@ function ia_rfMaps(data,varargin)
         load(data,'S');
         fprintf(sprintf('\n----Data loaded for %s----\n',filename))
     else
-        filename = data.sess_name;
         S = data;
     end
 
-    units = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.cluster_id; 
-    if ismember('best_channel',S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.Properties.VariableNames)
-        chans =  S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.best_channel;
+    units = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.cluster_id; 
+    if ismember('best_channel',S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.Properties.VariableNames)
+        chans =  S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.best_channel;
     else
         chans = nan(numel(units),1);
     end
 
     if isempty(CLUSTER)
-        snrs  = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.snr;
-        depths = cellfun(@(q) q(2), S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.unit_locations, 'uni', 1)./1000;
-        kslabs = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.KSLabel_clusters;
-
         if ~isnan(JOB_ID)
             all_units = units + 1;
             % Split into 50 chunks as a cell array
@@ -52,19 +47,14 @@ function ia_rfMaps(data,varargin)
 
             units = units(ids);
             chans = chans(ids);
-         
-            snrs = snrs(ids);
-            depths = depths(ids);
-            kslabs = kslabs(ids);
-            
         end
     else
         units = CLUSTER;
         chans = chans(units==CLUSTER);
     end
 
-    probe_label = string(S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.probe_label(1));
-    hardware_config = string(S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
+    probe_label = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.probe_label(1));
+    hardware_config = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
     
     % Find rfmp or rfMapping fields
     fields = fieldnames(S);
@@ -92,7 +82,9 @@ function ia_rfMaps(data,varargin)
     if numel(unique(row_conds))==1
         if ~isempty(FIG_PATH)
             FIG_PATH2 = fullfile(FIG_PATH, sprintf('%s_%s',hardware_config, probe_label), 'rfmp_heatmaps'); 
-            if ~exist(FIG_PATH2, 'dir'), mkdir(FIG_PATH2); end    
+            if ~exist(FIG_PATH2, 'dir'), mkdir(FIG_PATH2); end  
+        else
+            FIG_PATH2 = [];
         end
         T = []; 
         for mm = 1:numel(matchingFields)
@@ -119,7 +111,11 @@ function ia_rfMaps(data,varargin)
             if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file')  | isempty(FIG_PATH)
                 [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
             
-                f2a = figure('Visible','off');
+                 if ~isempty(FIG_PATH)
+                    f2a = figure('Visible','off');
+                else
+                    f2a = figure('Visible','on');
+                end
                 f2a.Position = [100 100 1800 900];
                 tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
                 
@@ -166,21 +162,25 @@ function ia_rfMaps(data,varargin)
 
             if ~isempty(FIG_PATH)
                 FIG_PATH2 = fullfile(FIG_PATH, sprintf('%s_%s',hardware_config, probe_label), 'rfmp_heatmaps', strjoin(matchingFields(these_rows), '_')); 
-                if ~exist(FIG_PATH2, 'dir'), mkdir(FIG_PATH2); end    
+                if ~exist(FIG_PATH2, 'dir'), mkdir(FIG_PATH2); end  
+            else
+                FIG_PATH2 = [];
             end
 
             for u=1:length(units)
                 unit = units(u); 
-                if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file') | ~isempty(FIG_PATH)
+                if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file') | isempty(FIG_PATH)
                     [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
 
-                    f2a = figure('Visible','off');
+                    if ~isempty(FIG_PATH)
+                        f2a = figure('Visible','off');
+                    else
+                        f2a = figure('Visible','on');
+                    end
                     f2a.Position = [100 100 1800 900];
                     tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
                     
-                    title(tl,sprintf('%s --- %s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, strjoin(matchingFields(these_rows), '_'), unit, chans(u)),'fontsize',16,'interpreter','none')
-                    subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)),'fontsize',12,'interpreter','none')
-                  
+                    title(tl,{sprintf('%s --- %s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, strjoin(matchingFields(these_rows), '_'), unit, chans(u)); ''},'fontsize',16,'interpreter','none')
                     
                     annotation('textbox', [0.77 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                                'String', sprintf('N = %d repeats\n%s', min(min(min(cellfun(@length, frs{1})))), bg_text), ...

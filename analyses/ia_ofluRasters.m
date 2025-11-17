@@ -6,6 +6,7 @@ function ia_ofluRasters(data,varargin)
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'PROBE_INDEX', 1, @isnumeric);
     addParameter(p, 'ALIGN', 'stim', @ischar);
+    addParameter(p, 'NET_THRESH', [], @isnumeric);
     addParameter(p, 'X_LIMITS', [-100 700], @isnumeric)
     addParameter(p, 'Y_LIMITS', [], @isnumeric)
     addParameter(p, 'TICK_LENGTH', [], @isnumeric)
@@ -19,6 +20,7 @@ function ia_ofluRasters(data,varargin)
     FIG_PATH = p.Results.FIG_PATH;
     PROBE_INDEX = p.Results.PROBE_INDEX;
     ALIGN = p.Results.ALIGN;
+    NET_THRESH = p.Results.NET_THRESH;
     X_LIMITS = p.Results.X_LIMITS;
     Y_LIMITS = p.Results.Y_LIMITS;
     TICK_LENGTH = p.Results.TICK_LENGTH;
@@ -65,7 +67,7 @@ function ia_ofluRasters(data,varargin)
     probe_label = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.probe_label(1));
     hardware_config = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
 
-    prb_name = sprintf('spiketimes_%d',PROBE_INDEX);
+    prb_name = sprintf('spiketimes_%d', PROBE_INDEX);
 
     if ~isempty(FIG_PATH)
         FIG_PATH2 = fullfile(FIG_PATH, sprintf('%s_%s',hardware_config, probe_label), 'oflu_rasters', sprintf('%s_aligned', ALIGN));
@@ -86,7 +88,11 @@ function ia_ofluRasters(data,varargin)
     T = []; 
     for mm = 1:numel(matchingFields)
         tt = S.(matchingFields{mm}).tbl;
-        vars = {'recColor', 'result', 'STIM_ON', 'STIM_OFF', 'trialName', prb_name};
+        if isempty(NET_THRESH)
+            vars = {'recColor', 'result', 'STIM_ON', 'STIM_OFF', 'trialName', prb_name};
+        else
+            vars = {'recColor', 'result', 'STIM_ON', 'STIM_OFF', 'trialName', prb_name, sprintf('netlabels_%d', PROBE_INDEX)};
+        end
         T = [T; tt(:, vars)];
     end
 
@@ -108,9 +114,9 @@ function ia_ofluRasters(data,varargin)
         unit = units(u);
         if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file') | isempty(FIG_PATH)
             if ~isempty(FIG_PATH)
-                f3a = figure; %('Visible','off');
+                f3a = figure('Visible','off');
             else
-                f3a = figure; %('Visible','on');
+                f3a = figure('Visible','on');
             end
             f3a.Position = [100 100 1100 900];
             
@@ -123,15 +129,13 @@ function ia_ofluRasters(data,varargin)
                 these_trls = sortrows(these_trls, {'recColor', 'trialName'});
 
                 if isequal(ALIGN,'stim')
-                    if size(S.sorting,1) == 1
-                        sptimes = cellfun(@(w,v) w-v(1), these_trls.(prb_name), num2cell(these_trls.STIM_ON), 'uni', 0);
-                    else
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.STIM_ON), 'uni', 0);
-                    end
+                    sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.STIM_ON), 'uni', 0);
                 end
 
-                netlabs = cellfun(@(q) q{(unit+1)}, these_trls.net_labels, 'uni', 0);
-                sptimes = cellfun(@(q,v) q(v>0.02), sptimes, netlabs, 'uni', 0);
+                if ~isempty(NET_THRESH)
+                    netlabs = cellfun(@(q) q{(unit+1)}, these_trls.(sprintf('netlabels_%d', PROBE_INDEX)), 'uni', 0);
+                    sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                end
 
                 if ~isempty(TICK_LENGTH)
                     raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
