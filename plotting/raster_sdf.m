@@ -46,7 +46,7 @@ ax = gca;
 ax.YColor = 'k';
 
 yl_back = [0 0]; yu_back = [numel(spike_times) numel(spike_times)];
-fill([FR_WINDOW fliplr(FR_WINDOW)], [yu_back fliplr(yl_back)], [230,230,230]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
+fill([FR_WINDOW fliplr(FR_WINDOW)], [yu_back fliplr(yl_back)], [155,155,155]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
 
 hold on;
 
@@ -133,7 +133,7 @@ else
     end
 end
 
-ylabel('firing rate (Hz)');
+ylabel('FR [Hz]');
 prettyFig;
 
 end
