@@ -161,13 +161,15 @@ function ia_ofluRasters(data,varargin)
                     these_trls = sortrows(these_trls, {'recColor', 'trialName'});
     
                     if IS_FHC
-                        cc = scode;
+                        spks = these_trls.(prb_name);
+                        spks = spks(:,scode+1);
+                        if isequal(ALIGN,'stim')
+                            sptimes = cellfun(@(w,v) w-v(1), spks, num2cell(these_trls.STIM_ON), 'uni', 0);
+                        end
                     else
-                        cc = clust+1;
-                    end
-
-                    if isequal(ALIGN,'stim')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{cc}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.STIM_ON), 'uni', 0);
+                        if isequal(ALIGN,'stim')
+                            sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{clust+1}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.STIM_ON), 'uni', 0);
+                        end
                     end
     
                     if ~isempty(NET_THRESH)
