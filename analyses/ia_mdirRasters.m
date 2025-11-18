@@ -179,24 +179,37 @@ function ia_mdirRasters(data,varargin)
     
                     these_trls.trialName = categorical(regexprep( cellstr(these_trls.trialName), 'mdir1\.(\d+)', 'mdir1.${sprintf(''%04d'', str2double($1))}'));
                     these_trls = sortrows(these_trls, {'distance', 'trialName'});
-    
+
                     if IS_FHC
-                        cc = scode;
+                        spks = these_trls.(prb_name);
+                        spks = spks(:,scode+1);
+                        if isequal(ALIGN,'stim')
+                            sptimes = cellfun(@(w,v) w-v(1), spks, these_trls.TARG_ON, 'uni', 0);
+                        elseif isequal(ALIGN,'sacc')
+                            sptimes = cellfun(@(w,v) w-v(1), spks, num2cell(these_trls.SACCADE), 'uni', 0);
+                        elseif isequal(ALIGN,'fix_off')
+                            sptimes = cellfun(@(w,v) w-v(1), spks, these_trls.FIX_OFF, 'uni', 0);
+                        end
+
+                        if ~isempty(NET_THRESH)
+                            nets = these_trls.(sprintf('netlabels_%d', PROBE_INDEX));
+                            netlabs = nets(:,scode+1);
+                            sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                        end
+
                     else
-                        cc = clust+1;
-                    end
-    
-                    if isequal(ALIGN,'stim')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(cc)}, these_trls.(prb_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
-                    elseif isequal(ALIGN,'sacc')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(cc)}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
-                    elseif isequal(ALIGN,'fix_off')
-                        sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(cc)}, these_trls.(prb_name), 'uni', 0), these_trls.FIX_OFF, 'uni', 0);
-                    end
-    
-                    if ~isempty(NET_THRESH)
-                        netlabs = cellfun(@(q) q{(cc)}, these_trls.(sprintf('netlabels_%d', PROBE_INDEX)), 'uni', 0);
-                        sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                        if isequal(ALIGN,'stim')
+                            sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(clust+1)}, these_trls.(prb_name), 'uni', 0), these_trls.TARG_ON, 'uni', 0);
+                        elseif isequal(ALIGN,'sacc')
+                            sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(clust+1)}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.SACCADE), 'uni', 0);
+                        elseif isequal(ALIGN,'fix_off')
+                            sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(clust+1)}, these_trls.(prb_name), 'uni', 0), these_trls.FIX_OFF, 'uni', 0);
+                        end
+
+                        if ~isempty(NET_THRESH)
+                            netlabs = cellfun(@(q) q{(clust+1)}, these_trls.(sprintf('netlabels_%d', PROBE_INDEX)), 'uni', 0);
+                            sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                        end
                     end
     
                     if isequal(plotType,'8dir')

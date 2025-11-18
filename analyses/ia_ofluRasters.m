@@ -77,7 +77,7 @@ function ia_ofluRasters(data,varargin)
         scodes = scodes(clusts_all==CLUSTER);
     end
 
-     if isempty(chans)
+    if isempty(chans)
         fprintf('Error: The value given for CLUSTER is higher than the number of clusters recorded.\n');
         fprintf('\n------------------------------\n')
         return;
@@ -166,16 +166,25 @@ function ia_ofluRasters(data,varargin)
                         if isequal(ALIGN,'stim')
                             sptimes = cellfun(@(w,v) w-v(1), spks, num2cell(these_trls.STIM_ON), 'uni', 0);
                         end
+
+                        if ~isempty(NET_THRESH)
+                            nets = these_trls.(sprintf('netlabels_%d', PROBE_INDEX));
+                            netlabs = nets(:,scode+1);
+                            sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                        end
+
                     else
                         if isequal(ALIGN,'stim')
                             sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{clust+1}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.STIM_ON), 'uni', 0);
                         end
+
+                        if ~isempty(NET_THRESH)
+                            netlabs = cellfun(@(q) q{(clust+1)}, these_trls.(sprintf('netlabels_%d', PROBE_INDEX)), 'uni', 0);
+                            sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
+                        end
                     end
     
-                    if ~isempty(NET_THRESH)
-                        netlabs = cellfun(@(q) q{(clust+1)}, these_trls.(sprintf('netlabels_%d', PROBE_INDEX)), 'uni', 0);
-                        sptimes = cellfun(@(q,v) q(v>NET_THRESH), sptimes, netlabs, 'uni', 0);
-                    end
+                    
     
                     if ~isempty(TICK_LENGTH)
                         raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
