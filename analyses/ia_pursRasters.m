@@ -40,17 +40,17 @@ function ia_pursRasters(data,varargin)
         S = data;
     end
 
-    units = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.cluster_id;
-    if ismember('best_channel',S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.Properties.VariableNames)
-        chans =  S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.best_channel;
+    units = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.cluster_id;
+    if ismember('best_channel',S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.Properties.VariableNames)
+        chans =  S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.best_channel;
     else
         chans = nan(numel(units),1);
     end
 
     if isempty(CLUSTER)
-        snrs  = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.snr;
-        depths = cellfun(@(q) q(2), S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.unit_locations, 'uni', 1)./1000;
-        kslabs = S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.KSLabel_clusters;
+        snrs  = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.snr;
+        depths = cellfun(@(q) q(2), S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.unit_locations, 'uni', 1)./1000;
+        kslabs = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.KSLabel_clusters;
 
         if ~isnan(JOB_ID)
             all_units = units + 1;
@@ -74,8 +74,8 @@ function ia_pursRasters(data,varargin)
         chans = chans(units==CLUSTER);
     end
 
-    probe_label = string(S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.probe_label(1));
-    hardware_config = string(S.kilosort([S.kilosort.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
+    probe_label = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.probe_label(1));
+    hardware_config = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
 
     if ~isempty(FIG_PATH)
         if PURE_ONLY
@@ -124,7 +124,7 @@ function ia_pursRasters(data,varargin)
     end
 
     if ~ismember('pursuitOnset', T.Properties.VariableNames)
-        [pursuitOnset, pursuitLatency] = cellfun(@(u,v,w) detect_pursuitOnset(u, v, w, 'PLOT_TRACES', false), T.eyeVel, num2cell(T.PURSUIT_TARG_ON), num2cell(T.pursuitSpeed), 'uni', 1); 
+        [pursuitOnset, pursuitLatency] = cellfun(@(u,v,w) detect_pursuitOnset(u, v, w, 'PLOT_TRACES', false), T.eyeVel, num2cell(T.PURSUIT_TARG_ON), num2cell(T.speed), 'uni', 1); 
         T.pursuitOnset = pursuitOnset;
         T.pursuitLatency = pursuitLatency;
     end
@@ -143,7 +143,7 @@ function ia_pursRasters(data,varargin)
     
     angles = sort(unique(T.angle))';
     angle_order = [6,3,2,1,4,7,8,9];
-    speeds = sort(unique(T.pursuitSpeed));
+    speeds = sort(unique(T.speed));
 
     if PROBE_INDEX==1 % purples/pinks
         line_color = {[123,44,191]./255; [230,34,172]./255};
@@ -172,7 +172,7 @@ function ia_pursRasters(data,varargin)
                 these_trls = T(T.angle==angles(ang),:);
 
                 these_trls.trialName = categorical(regexprep( cellstr(these_trls.trialName), 'purs1\.(\d+)', 'purs1.${sprintf(''%04d'', str2double($1))}'));
-                these_trls = sortrows(these_trls, {'pursuitSpeed', 'trialName'});
+                these_trls = sortrows(these_trls, {'speed', 'trialName'});
 
                 if isequal(ALIGN,'targ')
                     sptimes = cellfun(@(w,v) w-v(1), cellfun(@(q) q{(unit+1)}, these_trls.(prb_name), 'uni', 0), num2cell(these_trls.PURSUIT_TARG_ON), 'uni', 0);
@@ -192,11 +192,11 @@ function ia_pursRasters(data,varargin)
                 else
                     [line_colors, tick_colors, sem_shades] = deal(cell(height(these_trls),1)); 
                     for dd = 1:numel(speeds)
-                        line_colors(these_trls.pursuitSpeed==speeds(dd)) = line_color(dd);
-                        tick_colors(these_trls.pursuitSpeed==speeds(dd)) = tick_color(dd);
-                        sem_shades(these_trls.pursuitSpeed==speeds(dd)) = sem_shade(dd);
+                        line_colors(these_trls.speed==speeds(dd)) = line_color(dd);
+                        tick_colors(these_trls.speed==speeds(dd)) = tick_color(dd);
+                        sem_shades(these_trls.speed==speeds(dd)) = sem_shade(dd);
 
-                        frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.pursuitSpeed==speeds(dd)), 'uni', 1);
+                        frs_perAng{ang,dd} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes(these_trls.speed==speeds(dd)), 'uni', 1);
                     end
 
                     if size(sptimes,1) > 1
@@ -288,7 +288,7 @@ function ia_pursRasters(data,varargin)
 
             title(han, {
                 sprintf('%s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, unit, chans(u));
-                sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)) 
+                ''
             }, 'fontsize',16,'interpreter','none')
 
             if ~isempty(FIG_PATH)
