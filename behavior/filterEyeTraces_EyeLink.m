@@ -141,7 +141,7 @@ if plot_trial
     figure('Position', [200, 100, 1400, 600]);
     x = (1:length(eye_new));
     
-    plot(x, eyedata, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
+    plot(x, eye, 'k', 'LineWidth', 1, 'DisplayName', 'raw');
     hold on;
     plot(x, eye_new, 'b-',  'LineWidth', 1, 'DisplayName', 'SG filtered');
     xlabel('time aligned to trial onset (ms)');

@@ -107,12 +107,37 @@ pursuit_onset = NaN;  % Initialize pursuit onset index
 pursuit_latency = NaN;
 
 % Loop through the data to find pursuit onset
-for i = stimOnset + 50:length(radVel) - 10
-    if radVel(i) > velocity_threshold && all(radVel(i:i + 9) > threshold_velocity)
-        pursuit_onset = i;
-        pursuit_latency = pursuit_onset - stimOnset;
-        break;
+for i = stimOnset + 50 : length(radVel) - 110   % leave room for 100 future points
+
+    % --- Immediate rise requirement (threshold_velocity for 10 consecutive samples)
+    immediate_ok = radVel(i) > velocity_threshold && ...
+                   all(radVel(i : i+9) > threshold_velocity);
+
+    if ~immediate_ok
+        continue
     end
+
+    % --- Sustained requirement (must remain above 2 for 100 points)
+    sustain_window = radVel(i : i + 99);
+    sustained_ok = all(sustain_window > 1);
+
+    if ~sustained_ok
+        % fails the "long window" condition → keep searching
+        continue
+    end
+
+    % If both conditions pass → true pursuit onset found
+    pursuit_onset = i;
+    break
+end
+
+if ~isnan(pursuit_onset) 
+    pursuit_onset2 = pursuit_onset - (50-find(diff(radVel(pursuit_onset-50:pursuit_onset))<0,1,'last')-1);
+    if ~isempty(pursuit_onset2)
+        pursuit_onset = pursuit_onset2;
+    end
+
+    pursuit_latency = pursuit_onset - stimOnset;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
