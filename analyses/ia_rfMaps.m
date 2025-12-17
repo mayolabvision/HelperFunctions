@@ -121,7 +121,7 @@ function ia_rfMaps(data,varargin)
                 
 
                 title(tl,sprintf('%s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, unit, chans(u)),'fontsize',16,'interpreter','none')
-                subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)),'fontsize',12,'interpreter','none')
+                %subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)),'fontsize',12,'interpreter','none')
                 
                 annotation('textbox', [0.77 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
                            'String', sprintf('N = %d repeats\n%s', min(min(min(cellfun(@length, frs{1})))), bg_text), ...

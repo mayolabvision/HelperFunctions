@@ -1,33 +1,65 @@
-function [pursuit_onset, pursuit_latency] = detect_pursuitOnset(eyeVel, stimOnset, targSpeed, varargin)
-% detect_pursuitOnset
+function [pursuit_onset, pursuit_latency] = detect_pursuitOnset(eyeVelocity, stimOnset, targSpeed, varargin)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OBJECTIVE:
+%   Detect smooth pursuit onset and compute pursuit latency relative to target
+%   motion onset in a smooth-pursuit eye movement experiment.
+%
+%   This function implements a physiologically-motivated pursuit detection 
+%   algorithm that:
+%       1. Converts 2D (horizontal/vertical) velocity into radial velocity.
+%       2. Establishes a noise baseline using pre-motion fixation velocity.
+%       3. Computes a velocity threshold based on fixation variability.
+%       4. Searches for the earliest time point when eye velocity:
+%             • Exceeds baseline noise by 2×STD of fixation velocity, AND
+%             • Sustains >30% of the target velocity for at least 10 ms.
 % 
-% This function detects the onset of pursuit, reaction time, microsaccades,
-% and catch-up saccades during a target motion experiment. It also computes 
-% the corresponding angular and velocity-related measures.
+%    Ref: Goettker, A., Brenner, E., Gegenfurtner, K.R. et al. 
+%         Corrective saccades influence velocity judgments and interception. 
+%         Sci Rep 9, 5395 (2019). https://doi.org/10.1038/s41598-019-41857-z
+%
+% =========================================================================
 %
 % INPUTS:
-%   eyePos       -  2xN matrix of eye position (in Cartesian coordinates)
-%   eyeVel       -  2xN matrix of eye velocity (in Cartesian coordinates)
-%   stimOnset    -  Time (in ms) when the stimulus (target) onset occurs
-%   crossingTime -  Time (in ms) when the target crosses a predefined position
-%   targSpeed    -  Speed (in deg/s) of the target motion
-%   targAngle    -  Angle (in degrees) of the target motion (relative to some reference)
+%   eyeVelocity  
+%       Raw 2D eye velocity traces (deg/s).  
+%       Expected shape:  
+%           - [2 × T] or [T × 2] for horizontal (X) and vertical (Y) velocity  
+%           - T = number of samples  
+%       Data should already be differentiated/filtered to produce velocity.
 %
-%%%% Optional parameters: %%%
-%   'CS_PREINT'   - Pre-catch-up saccade interval (default: 50 ms)
-%   'CS_POSTINT'  - Post-catch-up saccade interval (default: 100 ms)
-%   'PLOT_TRACES' - Logical flag to plot traces (default: false)
+%   stimOnset  
+%       Time index (in samples, not ms) corresponding to the onset of target  
+%       motion. If the sampling rate is 1000 Hz, stimOnset=500 corresponds  
+%       to 500 ms.  
+%       If stimOnset is NaN, the function returns NaN for both outputs.
 %
+%   targSpeed  
+%       The target motion speed (deg/s).  
+%       Used when determining sustained pursuit engagement (>30% of target).
+%
+% -------------------------------------------------------------------------
+%
+% OPTIONAL PARAMETERS (Name–Value pairs):
+%   PLOT_TRACES (default = false)
+%       Logical flag controlling whether pursuit detection diagnostics  
+%       are plotted:
+%         false → no plotting (default)  
+%         true  → plot radial velocity, target velocity, and detected onset  
+%
+% =========================================================================
 % OUTPUTS:
-%   pursuit_onset   - Time (in ms) when pursuit onset is detected
-%   rxnTime         - Reaction time (in ms) = pursuit_onset - stimOnset
-%   msOffset        - Time (in ms) of the last microsaccade before pursuit onset
-%   csOnset         - Time (in ms) of the catch-up saccade onset
-%   csVelocity      - Peak velocity (in deg/s) of the catch-up saccade
-%   csPeak          - Time (in ms) of the peak velocity of the catch-up saccade
-%   csOffset        - Time (in ms) of the catch-up saccade offset
-%   csAngle         - Angle (in degrees) of the catch-up saccade relative to the target
-%   csType          - Type of catch-up saccade ('forward', 'backward', or 'pure')
+%   pursuit_onset  
+%       Sample index of detected pursuit onset (relative to recording start).  
+%       If no valid onset is found, returns NaN.
+%
+%   pursuit_latency  
+%       Time difference (in samples) between pursuit onset and stimOnset:  
+%           pursuit_latency = pursuit_onset – stimOnset  
+%
+%       If sampling rate = 1000 Hz, this equals latency in milliseconds.  
+%       If onset is not detected, returns NaN.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set up input parser
 p = inputParser;
@@ -37,10 +69,10 @@ addRequired(p, 'targSpeed', @isnumeric);
 addParameter(p, 'PLOT_TRACES', false, @islogical); % Flag to plot traces
 
 % Parse the inputs
-parse(p, eyeVel, stimOnset, targSpeed, varargin{:});
+parse(p, eyeVelocity, stimOnset, targSpeed, varargin{:});
 
 % Assign parsed values to variables
-eyeVel = p.Results.eyeVel;
+eyeVelocity = p.Results.eyeVel;
 stimOnset = p.Results.stimOnset;
 targSpeed = p.Results.targSpeed;
 PLOT_TRACES = p.Results.PLOT_TRACES;
@@ -53,11 +85,14 @@ if isnan(stimOnset)
     return
 end
 
+if size(eyeVelocity,2)<size(eyeVelocity,1)
+    eyeVelocity = eyeVelocity';
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Convert eye velocity to polar coordinates
-[~, radVel] = cart2pol(eyeVel(1,:), eyeVel(2,:));
+[~, radVel] = cart2pol(eyeVelocity(1,:), eyeVelocity(2,:));
 
-%%%%%%%%%%%%%% 1. DETECT PURSUIT ONSET %%%%%%%%%%%%%%
 % Calculate the standard deviation of the velocity during the fixation period
 fixation_velocity = radVel(stimOnset + fixWin(1) : stimOnset + fixWin(2));
 fixation_velocity = fixation_velocity(fixation_velocity<3);
@@ -72,85 +107,38 @@ pursuit_onset = NaN;  % Initialize pursuit onset index
 pursuit_latency = NaN;
 
 % Loop through the data to find pursuit onset
-for i = stimOnset + 50:length(radVel) - 10
-    if radVel(i) > velocity_threshold && all(radVel(i:i + 9) > threshold_velocity)
-        pursuit_onset = i;
-        pursuit_latency = pursuit_onset - stimOnset;
-        break;
+for i = stimOnset + 50 : length(radVel) - 110   % leave room for 100 future points
+
+    % --- Immediate rise requirement (threshold_velocity for 10 consecutive samples)
+    immediate_ok = radVel(i) > velocity_threshold && ...
+                   all(radVel(i : i+9) > threshold_velocity);
+
+    if ~immediate_ok
+        continue
     end
+
+    % --- Sustained requirement (must remain above 2 for 100 points)
+    sustain_window = radVel(i : i + 99);
+    sustained_ok = all(sustain_window > 1);
+
+    if ~sustained_ok
+        % fails the "long window" condition → keep searching
+        continue
+    end
+
+    % If both conditions pass → true pursuit onset found
+    pursuit_onset = i;
+    break
 end
 
-% %%%%%%%%%%%%%% 2. DETECT MICROSACCADE  %%%%%%%%%%%%%%
-% % Check for microsaccades within the pre-stimulus period
-% if (sum(abs(eyeAcc(stimOnset-100:stimOnset+csPre)) > msAcc_thresh) + sum(abs(radVel(stimOnset-100:stimOnset+csPre)) > msVel_thresh)) > 0
-%     msOffset = find(abs(eyeAcc(stimOnset-100:stimOnset+csPre)) > msAcc_thresh | abs(radVel(stimOnset-100:stimOnset+csPre)) > msVel_thresh == 1, 1, 'last') - 100;
-% else
-%     msOffset = NaN;
-% end
-% 
-% %%%%%%%%%%%%%% 3. DETECT CATCH-UP SACCADE %%%%%%%%%%%%%%
-% % Check for catch-up saccades within the defined window
-% if (sum(abs(eyeAcc(stimOnset + csPre:stimOnset + csPost)) > csAcc_thresh) + sum(abs(radVel(stimOnset + csPre:stimOnset + csPost)) > csVel_thresh) + sum(abs(radVel(stimOnset:stimOnset + crossingTime + 5)) > 15)) > 0 || pursuit_latency > (csPost + crossingTime / 2)
-%     % Define binary signal (1 if above threshold, 0 if below)
-%     binarySignal = ((abs(eyeAcc(stimOnset + csPre : stimOnset + csPost + 500)) > csAcc_thresh) + ...
-%                     (abs(radVel(stimOnset + csPre : stimOnset + csPost + 500)) > csVel_thresh)) > 0;
-% 
-%     % Find where binarySignal is 1
-%     oneIdx = find(binarySignal == 1);
-% 
-%     % Check for the first occurrence of at least 5 consecutive ones
-%     csOnset = NaN;  % Default in case no valid onset is found
-%     for i = 1:length(oneIdx) - 4
-%         if all(binarySignal(oneIdx(i):oneIdx(i) + 4) == 1)  % Check next 5 frames
-%             csOnset = oneIdx(i) + csPre + stimOnset;  % Adjust to original indexing
-%             break;
-%         end
-%     end
-% 
-%     % Compute catch-up saccade details if onset is found
-%     if ~isnan(csOnset)
-%         [csVelocity, csPeak] = max(radVel(csOnset:csOnset + 200));
-%         csPeak = csPeak + csOnset;
-% 
-%         % Define binary condition (1 if above threshold, 0 if below)
-%         binarySignal = ((abs(eyeAcc(csPeak:csPeak + 200)) > csAcc_thresh) + ...
-%                         (abs(radVel(csPeak:csPeak + 200)) > csVel_thresh)) > 0;
-% 
-%         % Find where binarySignal is 0
-%         zeroIdx = find(binarySignal == 0);
-% 
-%         % Check for the first occurrence of at least 5 consecutive zeros
-%         csOffset = NaN;  % Default in case no valid offset is found
-%         for i = 1:length(zeroIdx) - 4
-%             if all(binarySignal(zeroIdx(i):zeroIdx(i) + 4) == 0)  % Check next 5 frames
-%                 csOffset = zeroIdx(i) + csPeak;  % Adjust to original indexing
-%                 break;
-%             end
-%         end
-% 
-%         % Calculate the catch-up saccade angle
-%         dx = eyePos(1, csPeak) - eyePos(1, csOnset);
-%         dy = eyePos(2, csPeak) - eyePos(2, csOnset);
-%         csAngle = mod(atan2d(dy, dx), 360);
-% 
-%         % Determine if the catch-up saccade is forward or backward
-%         angle_diff = min(mod(csAngle - targAngle, 360), mod(targAngle - csAngle, 360));
-%         if angle_diff < 90
-%             csType = 'forward';
-%         else
-%             csType = 'backward';
-%         end
-%         csFlag = 1;
-%     else
-%         % If no catch-up saccade detected, set to default 'pure' type
-%         csFlag = 0;
-%         csOnset = NaN; csVelocity = NaN; csPeak = NaN; csOffset = NaN; csAngle = NaN; angle_diff = NaN; csType = 'pure';
-%     end
-% else
-%     % If no catch-up saccade detected, set to default 'pure' type
-%     csFlag = 0;
-%     csOnset = NaN; csVelocity = NaN; csPeak = NaN; csOffset = NaN; csAngle = NaN; angle_diff = NaN; csType = 'pure';
-% end
+if ~isnan(pursuit_onset) 
+    pursuit_onset2 = pursuit_onset - (50-find(diff(radVel(pursuit_onset-50:pursuit_onset))<0,1,'last')-1);
+    if ~isempty(pursuit_onset2)
+        pursuit_onset = pursuit_onset2;
+    end
+
+    pursuit_latency = pursuit_onset - stimOnset;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if PLOT_TRACES
