@@ -31,6 +31,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     addParameter(p, 'FACE_COLOR', [],  @(x) (isnumeric(x)) && numel(x)==3);
     addParameter(p, 'FACE_ALPHA', 1, @isnumeric);
     addParameter(p, 'TEXT_X_POS', [], @isnumeric);
+    addParameter(p, 'TEXT_COLOR', [],  @(x) (isnumeric(x)) && numel(x)==3);
     
     parse(p, values, varargin{:});
     values = p.Results.values;
@@ -44,9 +45,14 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     FACE_COLOR = p.Results.FACE_COLOR;
     FACE_ALPHA = p.Results.FACE_ALPHA;
     TEXT_X_POS = p.Results.TEXT_X_POS;
+    TEXT_COLOR = p.Results.TEXT_COLOR;
 
     if isempty(LINE_COLOR)
         LINE_COLOR = [0,0,0];
+    end
+
+    if isempty(TEXT_COLOR)
+        TEXT_COLOR = [0,0,0];
     end
 
     if isempty(FACE_COLOR)
@@ -92,7 +98,7 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
         xlabel(X_LABEL) 
     end
     if ~isempty(Y_LABEL)
-        xlabel(Y_LABEL) 
+        ylabel(Y_LABEL) 
     end              
     
     prettyFig;
@@ -111,15 +117,15 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     
     % Plot values on figure
     if hypothesis == 1 % if null hypothesis is rejected/ statistically signif, use green font for pvalue
-        text (TEXT_X_POS, max(Y_LIMITS)*0.97, ['n = ', num2str(length(values))], 'fontsize', 15, 'color', 'k' ) % sample size
-        text (TEXT_X_POS, max(Y_LIMITS)*0.91, ['mean = ', sprintf('%0.3f', datamean)], 'fontsize', 15, 'color', 'k' ) % mean
-        text (TEXT_X_POS, max(Y_LIMITS)*0.85, ['std = ', sprintf('%0.3f', datastd)], 'fontsize', 15, 'color', 'k' ) % std
-        text (TEXT_X_POS, max(Y_LIMITS)*0.79, ['p = ', sprintf('%0.3f', pvalue)], 'fontsize', 15, 'color', 'k', 'fontweight', 'bold' ) % pvalue
+        text (TEXT_X_POS, max(Y_LIMITS)*0.97, ['n = ', num2str(length(values))], 'fontsize', 15, 'color', TEXT_COLOR ) % sample size
+        text (TEXT_X_POS, max(Y_LIMITS)*0.91, ['mean = ', sprintf('%0.3f', datamean)],'fontsize', 15, 'color', TEXT_COLOR ) % mean
+        text (TEXT_X_POS, max(Y_LIMITS)*0.85, ['std = ', sprintf('%0.3f', datastd)], 'fontsize', 15, 'color', TEXT_COLOR ) % std
+        text (TEXT_X_POS, max(Y_LIMITS)*0.79, ['p = ', sprintf('%0.3f', pvalue)], 'fontweight', 'bold', 'fontsize', 15, 'color', TEXT_COLOR, 'fontweight', 'bold' ) % pvalue
     else % If not significant, pvalue in black
-        text (TEXT_X_POS, max(Y_LIMITS)*0.97, ['n = ', num2str(length(values))], 'fontsize', 15, 'color', 'k' ) % sample size
-        text (TEXT_X_POS, max(Y_LIMITS)*0.91, ['mean = ', sprintf('%0.3f', datamean)], 'fontsize', 15, 'color', 'k' ) % mean
-        text (TEXT_X_POS, max(Y_LIMITS)*0.85, ['std = ', sprintf('%0.3f', datastd)], 'fontsize', 15, 'color', 'k' ) % std
-        text (TEXT_X_POS, max(Y_LIMITS)*0.79, ['p = ', sprintf('%0.3f', pvalue)], 'fontsize', 15, 'color', 'k' ) % pvalue
+        text (TEXT_X_POS, max(Y_LIMITS)*0.97, ['n = ', num2str(length(values))], 'fontsize', 15, 'color', TEXT_COLOR ) % sample size
+        text (TEXT_X_POS, max(Y_LIMITS)*0.91, ['mean = ', sprintf('%0.3f', datamean)], 'fontsize', 15, 'color', TEXT_COLOR ) % mean
+        text (TEXT_X_POS, max(Y_LIMITS)*0.85, ['std = ', sprintf('%0.3f', datastd)], 'fontsize', 15, 'color', TEXT_COLOR ) % std
+        text (TEXT_X_POS, max(Y_LIMITS)*0.79, ['p = ', sprintf('%0.3f', pvalue)], 'fontsize', 15, 'color', TEXT_COLOR ) % pvalue
     end
 end
 
