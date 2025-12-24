@@ -9,8 +9,8 @@ condSplitBy = {'recColor'};
 
 % x_limits = time window (in ms), aligned to alignCode, to plot spikes
 % fr_window = time window (in ms) to plot shaded bar to highlight 
-x_limits = [-100,200];
-fr_window = [-50,50];
+x_limits = [-100,1000];
+fr_window = [0,500];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
