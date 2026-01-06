@@ -25,6 +25,8 @@ function [datamean, datastd] = polarHistStyle_KKN(values,varargin)
     addParameter(p, 'FACE_ALPHA', 1, @isnumeric);
     addParameter(p, 'MARK_RAD', [], @isnumeric);
     addParameter(p, 'RLIM', [], @isnumeric);
+    addParameter(p, 'TEXT_Y_POS', [], @isnumeric);
+    addParameter(p, 'TEXT_COLOR', [],  @(x) (isnumeric(x)) && numel(x)==3);
     parse(p, values, varargin{:});
 
     values_deg = p.Results.values(:); % ensure column
@@ -35,6 +37,8 @@ function [datamean, datastd] = polarHistStyle_KKN(values,varargin)
     MARK_RAD = p.Results.MARK_RAD;
     FACE_ALPHA = p.Results.FACE_ALPHA;
     RLIM = p.Results.RLIM;
+    TEXT_Y_POS = p.Results.TEXT_Y_POS;
+    TEXT_COLOR = p.Results.TEXT_COLOR;
 
     if isempty(LINE_COLOR), LINE_COLOR = [0 0 0]; end
     if isempty(FACE_COLOR), FACE_COLOR = [0.8 0.8 0.8]; end
@@ -84,21 +88,29 @@ function [datamean, datastd] = polarHistStyle_KKN(values,varargin)
         title(FIG_NAME)
     end
 
+    if isempty(TEXT_Y_POS)
+        TEXT_Y_POS = 1.05;
+    end
+
+    if isempty(TEXT_COLOR)
+        TEXT_COLOR = [0,0,0];
+    end
+
     % --- Add stats text in top-right corner (normalized coords) ---
     ax = gca;
-    text(ax, 1, 1.05, sprintf('n = %d', numel(values_deg)), ...
-        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color','k');
-    text(ax, 1, 1, sprintf('mean = %.3f°', wrapTo360(datamean)), ...
-        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color','k');
-    text(ax, 1, 0.95, sprintf('std = %.3f°', datastd), ...
-        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color','k');
+    text(ax, 1, TEXT_Y_POS+0.05, sprintf('n = %d', numel(values_deg)), ...
+        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color',TEXT_COLOR);
+    text(ax, 1, TEXT_Y_POS, sprintf('mean = %.2f°', wrapTo360(datamean)), ...
+        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color',TEXT_COLOR);
+    text(ax, 1, TEXT_Y_POS-0.05, sprintf('std = %.2f°', datastd), ...
+        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color',TEXT_COLOR);
 
     if pval < 0.05
-        text(ax, 1, 0.9, sprintf('pval = %.3f°', pval), ...
-        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color','k','FontWeight','bold');
+        text(ax, 1, TEXT_Y_POS-0.1, sprintf('pval = %.3f°', pval), ...
+        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color',TEXT_COLOR,'FontWeight','bold');
     else
-        text(ax, 1, 0.9, sprintf('p = %.3f°', pval), ...
-        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color','k','FontWeight','normal');
+        text(ax, 1, TEXT_Y_POS-0.1, sprintf('p = %.3f°', pval), ...
+        'Units','normalized','HorizontalAlignment','left','FontSize',12,'Color',TEXT_COLOR,'FontWeight','normal');
     end
 
     % summary stats printed in Command Window too
