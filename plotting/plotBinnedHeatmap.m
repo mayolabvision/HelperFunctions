@@ -1,4 +1,4 @@
-function n_bins = plotBinnedHeatmap(x, y, c, varargin)
+function [n_bins, bin_extrema] = plotBinnedHeatmap(x, y, c, varargin)
 % PLOTBINNEDHEATMAP Plots a heatmap from raw x, y values binned by edges
 %
 % n_bins = plotBinnedHeatmap(x, y, c, 'Name', Value, ...)
@@ -48,11 +48,9 @@ end
 [~,~,xBin] = histcounts(x, xEdges);
 [~,~,yBin] = histcounts(y, yEdges);
 
-% Preallocate matrices
+% Compute aggregated value per bin
 heatMat = nan(length(yEdges)-1, length(xEdges)-1);
 n_bins  = zeros(length(yEdges)-1, length(xEdges)-1);
-
-% Compute aggregated value per bin
 for ix = 1:length(xEdges)-1
     for iy = 1:length(yEdges)-1
         inBin = xBin == ix & yBin == iy;
@@ -71,6 +69,25 @@ for ix = 1:length(xEdges)-1
         end
     end
 end
+
+% ---- Find min / max bins (ignore NaNs) ----
+validVals = heatMat(~isnan(heatMat));
+
+[minVal, ~] = min(validVals);
+[maxVal, ~] = max(validVals);
+
+[minIy, minIx] = find(heatMat == minVal, 1);
+[maxIy, maxIx] = find(heatMat == maxVal, 1);
+
+bin_extrema.min.value = minVal;
+bin_extrema.min.bin_index = [minIy, minIx];
+bin_extrema.min.x_edges = xEdges(minIx:minIx+1);
+bin_extrema.min.y_edges = yEdges(minIy:minIy+1);
+
+bin_extrema.max.value = maxVal;
+bin_extrema.max.bin_index = [maxIy, maxIx];
+bin_extrema.max.x_edges = xEdges(maxIx:maxIx+1);
+bin_extrema.max.y_edges = yEdges(maxIy:maxIy+1);
 
 % Plot heatmap
 h = imagesc(xEdges, yEdges, heatMat);

@@ -1,4 +1,4 @@
-function [bin_idx, bin_n, bin_centers, bin_edges] = binXvalues(x, varargin)
+function [bin_idx, bin_n, bin_centers, binEdges] = binXvalues(x, varargin)
 % BINXVALUES Bin a numeric vector into equal-width or quantile bins
 %
 % [bin_idx, bin_n, bin_centers, bin_edges] = binXvalues(x, 'Name', Value, ...)
@@ -19,24 +19,28 @@ function [bin_idx, bin_n, bin_centers, bin_edges] = binXvalues(x, varargin)
 p = inputParser;
 addParameter(p,'NumBins',8,@(v) isnumeric(v) && isscalar(v) && v>0);
 addParameter(p,'BinType','equalwidth',@(s) any(validatestring(s,{'equalwidth','quantile'})));
+addParameter(p,'BinEdges',[],@isnumeric);
 parse(p,varargin{:});
+binEdges = p.Results.BinEdges;
 numBins = p.Results.NumBins;
 binType = p.Results.BinType;
 
 x = x(:);  % ensure column
 
-switch binType
-    case 'equalwidth'
-        bin_edges = linspace(min(x), max(x), numBins+1);
-    case 'quantile'
-        bin_edges = quantile(x, linspace(0,1,numBins+1));
+if isempty(binEdges)
+    switch binType
+        case 'equalwidth'
+            binEdges = linspace(min(x), max(x), numBins+1);
+        case 'quantile'
+            binEdges = quantile(x, linspace(0,1,numBins+1));
+    end
 end
 
 % Assign each value to a bin
-bin_idx = discretize(x, bin_edges);
+bin_idx = discretize(x, binEdges);
 
 % Compute bin statistics
 bin_n = accumarray(bin_idx, 1, [numBins,1]);
-bin_centers = (bin_edges(1:end-1) + bin_edges(2:end))/2;
+bin_centers = (binEdges(1:end-1) + binEdges(2:end))/2;
 
 end
