@@ -1,4 +1,4 @@
-function spks_binned = bin_spktimes(spktimes, varargin)
+function [spks_binned,binStarts] = bin_spktimes(spktimes, varargin)
 % bin_spktimes - Bin spike times into fixed-size or sliding bins.
 %
 % Usage:
