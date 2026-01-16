@@ -82,8 +82,8 @@ function [datamean, datastd] = histStyle_KKN(values,varargin)
     end
 
     % Plot star at MEAN, 0.5 above max of ylim
-    plot (mean(values,'omitnan'), max(Y_LIMITS)-max(Y_LIMITS)/10, '*', 'markersize', 17, 'color', LINE_COLOR)
-    line([mean(values,'omitnan'), mean(values,'omitnan') ], [0 max(Y_LIMITS)-max(Y_LIMITS)/10], 'color', LINE_COLOR, 'linewidth', 3)
+    plot (mean(values,'omitnan'), max(Y_LIMITS)-max(Y_LIMITS)/20, '*', 'markersize', 17, 'color', LINE_COLOR)
+    line([mean(values,'omitnan'), mean(values,'omitnan') ], [0 max(Y_LIMITS)-max(Y_LIMITS)/20], 'color', LINE_COLOR, 'linewidth', 3)
 
     axis square
     
