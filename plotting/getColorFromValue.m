@@ -6,11 +6,14 @@ function rgb = getColorFromValue(val, palette)
     % Define endpoints
     switch upper(palette)
         case 'SPI'
-            color2 = [115, 30, 245];  % SPI = -1 (pursuity, purple)
-            color1 = [245, 50, 30];   % SPI = 1 (saccadey, red)
+            color2 = [242, 127, 57];  % SPI = -1 (pursuity, orange)
+            color1 = [137, 110, 243];   % SPI = 1 (saccadey, purple)
         case 'VMI'
-            color1 = [133, 255, 19];  % VMI = -1 (motor, green)
-            color2 = [19, 133, 255];  % VMI = 1 (visual, blue)
+            color1 = [137, 110, 243];  % VMI = -1 (motor, purple)
+            color2 = [10, 190, 155];  % VMI = 1 (visual, teal)
+        case 'VPI'
+            color1 = [242, 127, 57]; % VPI = -1 (pursuity, orange)
+            color2 = [10, 190, 155]; % VPI = 1 (visual, teal)
         otherwise
             color1 = [255, 255, 255]; % white
             color2 = [0, 0, 0];       % black

@@ -35,22 +35,26 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
 
     p = inputParser;
     addRequired(p, 'tbl', @istable); % tbl with columns: conditions, spikespikes_imec0, and STIM_ON
-    addParameter(p, 'IMEC', 0, @isnumeric); % probe number
+    addParameter(p, 'PROBE_INDEX', 0, @isnumeric); % probe number
     addParameter(p, 'FIRST_BIN', 0, @isnumeric); % first time bin, aligned to STIM_ON
     addParameter(p, 'BIN_WIDTH', 50, @isnumeric); % width of each bin (ms)
     addParameter(p, 'BIN_STEP', 10, @isnumeric); % how much each bin steps/overlaps (ms)
     addParameter(p, 'N_BINS', 24, @isnumeric); % how many bins to plot
     addParameter(p, 'UNITS', [], @isnumeric);
+    addParameter(p, 'IS_FHC', false, @islogical);
+    addParameter(p, 'NET_THRESH', 0, @isnumeric);
 
     % Parse inputs
     parse(p, tbl, varargin{:});
     tbl = p.Results.tbl;
-    IMEC = p.Results.IMEC;
+    PROBE_INDEX = p.Results.PROBE_INDEX;
     FIRST_BIN = p.Results.FIRST_BIN;
     BIN_WIDTH = p.Results.BIN_WIDTH;
     BIN_STEP = p.Results.BIN_STEP;
     N_BINS = p.Results.N_BINS;
     UNITS = p.Results.UNITS;
+    IS_FHC = p.Results.IS_FHC;
+    NET_THRESH = p.Results.NET_THRESH;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -60,10 +64,14 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
 
     bin_edges = arrayfun(@(x) [(FIRST_BIN + ((x*BIN_STEP)-BIN_STEP)),(FIRST_BIN + ((x*BIN_STEP)-BIN_STEP) + BIN_WIDTH)], 1:N_BINS, 'UniformOutput', false);
 
-    imec_name = ['spiketimes_imec' num2str(IMEC)];
+    prb_name = sprintf('spiketimes_%d', PROBE_INDEX);
 
     if isempty(UNITS)
-        UNITS = 1:length(tbl.(imec_name){1});
+        UNITS = 1:length(tbl.(prb_name){1});
+    end
+
+    if IS_FHC
+        UNITS = 1;
     end
 
     all_FRs = cell(length(UNITS),1);
@@ -72,8 +80,13 @@ function [all_FRs, bin_edges, xvals, yvals] = format_tableToRFMap(tbl, varargin)
         for bin = 1:length(bin_edges)
             for trial = 1:height(tbl)
                 stim_ons = tbl.STIM_ON{trial};
-                spks = tbl.(imec_name){trial}{UNITS(unit)};
-                %nets = T.net_labels{trial,unit};
+                if IS_FHC
+                    spks = tbl.(prb_name){trial};
+                    nets = tbl.(sprintf('netlabels_%d',PROBE_INDEX)){trial};
+                    spks = spks(nets >= NET_THRESH);
+                else
+                    spks = tbl.(prb_name){trial}{UNITS(unit)};
+                end
                 for stim = 1:length(stim_ons)
                     aligned_spks = spks-stim_ons(stim);
                     %spk_hz = sum(aligned_spks>bin_edges{bin}(1) & aligned_spks<=bin_edges{bin}(2) & nets>GAMMA)*(1000/range(bin_edges{bin}));

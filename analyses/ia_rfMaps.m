@@ -5,18 +5,22 @@ function ia_rfMaps(data,varargin)
     addRequired(p, 'data',  @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'PROBE_INDEX', 1, @isnumeric);
+    addParameter(p, 'NET_THRESH', 0, @isnumeric);
     addParameter(p, 'JOB_ID', NaN, @isnumeric);
     addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
     addParameter(p, 'CLUSTER', [], @isnumeric);
+    addParameter(p, 'IS_FHC', false, @islogical);
     addParameter(p, 'SAVE_PDF', false, @islogical);
     
     parse(p, data, varargin{:});
     data = p.Results.data;
     FIG_PATH = p.Results.FIG_PATH;
     PROBE_INDEX = p.Results.PROBE_INDEX;
+    NET_THRESH = p.Results.NET_THRESH;
     JOB_ID = p.Results.JOB_ID;
     N_CHUNKS = p.Results.N_CHUNKS;
     CLUSTER = p.Results.CLUSTER;
+    IS_FHC = p.Results.IS_FHC;
     SAVE_PDF = p.Results.SAVE_PDF;
 
     fprintf('\n------------------------------\n')
@@ -28,16 +32,24 @@ function ia_rfMaps(data,varargin)
         S = data;
     end
 
-    units = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.cluster_id; 
+    clusts_all = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.cluster_id;
     if ismember('best_channel',S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.Properties.VariableNames)
         chans =  S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.best_channel;
     else
-        chans = nan(numel(units),1);
+        chans = nan(numel(clusts_all),1);
+    end
+
+    if IS_FHC
+        units = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.unit_id;
+        scodes = S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.sort_code;
+    else
+        units = nan(numel(clusts_all),1);
+        scodes = nan(numel(clusts_all),1);
     end
 
     if isempty(CLUSTER)
         if ~isnan(JOB_ID)
-            all_units = units + 1;
+            all_units = clusts_all + 1;
             % Split into 50 chunks as a cell array
             chunks = arrayfun(@(i) all_units(...
                 floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
@@ -45,16 +57,33 @@ function ia_rfMaps(data,varargin)
                 1:N_CHUNKS, 'UniformOutput', false);
             ids = (chunks{(JOB_ID+1)});
 
-            units = units(ids);
+            clusts = clusts_all(ids);
             chans = chans(ids);
+            units = units(ids);
+            scodes = scodes(ids);
+        else
+            clusts = clusts_all;
+            chans = chans;
+            units = units;
+            scodes = scodes;
         end
     else
-        units = CLUSTER;
-        chans = chans(units==CLUSTER);
+        clusts = CLUSTER;
+        chans = chans(clusts_all==CLUSTER);
+        units = units(clusts_all==CLUSTER);
+        scodes = scodes(clusts_all==CLUSTER);
+    end
+
+    if isempty(chans)
+        fprintf('Error: The value given for CLUSTER is higher than the number of clusters recorded.\n');
+        fprintf('\n------------------------------\n')
+        return;
     end
 
     probe_label = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.probe_label(1));
     hardware_config = string(S.sorting([S.sorting.probe_index] == PROBE_INDEX).clusters.hardware_config(1));
+
+    prb_name = sprintf('spiketimes_%d', PROBE_INDEX);
     
     % Find rfmp or rfMapping fields
     fields = fieldnames(S);
@@ -106,35 +135,66 @@ function ia_rfMaps(data,varargin)
             bg_text = 'white bg';
         end
 
-        for u=1:length(units)
-            unit = units(u); 
-            if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file')  | isempty(FIG_PATH)
-                [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
-            
-                 if ~isempty(FIG_PATH)
-                    f2a = figure('Visible','off');
-                else
-                    f2a = figure('Visible','on');
-                end
-                f2a.Position = [100 100 1800 900];
-                tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
-                
+        for u=1:length(clusts)
+            clust = clusts(u);
+            unit = units(u);
+            scode = scodes(u);
 
-                title(tl,sprintf('%s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, unit, chans(u)),'fontsize',16,'interpreter','none')
-                %subtitle(tl, sprintf('ks_label = %s, snr = %.4f, y_pos = %.2f um', kslabs{u}, snrs(u), depths(u)),'fontsize',12,'interpreter','none')
-                
-                annotation('textbox', [0.77 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
-                           'String', sprintf('N = %d repeats\n%s', min(min(min(cellfun(@length, frs{1})))), bg_text), ...
-                           'FontSize', 14, ...
-                           'EdgeColor', 'none', ...
-                           'HorizontalAlignment', 'right');
-                
-                if ~isempty(FIG_PATH)
-                    print(f2a, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), '-dpng', '-r200');
-                end
-                fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, unit))
+            if IS_FHC
+                names = string(T.trialName);
+                % Extract the two digits after "unit"
+                tokens = regexp(names, 'unit(\d{2})', 'tokens', 'once');
+                unitNums = cellfun(@(x) str2double(x), tokens);
+    
+                T2 = T(unitNums == unit, :);
+                T2.(prb_name) = T2.(prb_name)(:,scode+1);
+                T2.(sprintf('netlabels_%d', PROBE_INDEX)) = T2.(sprintf('netlabels_%d', PROBE_INDEX))(:,scode+1);
             else
-                fprintf(sprintf('\n----PROBE %d, Unit %.4d exists----',PROBE_INDEX, unit))
+                T2 = T;
+            end
+
+            if ~isempty(T2)
+                if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, clust, chans(u))), 'file')  | isempty(FIG_PATH)
+                    if IS_FHC
+                        [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T2, 'PROBE_INDEX', PROBE_INDEX, 'IS_FHC', true, 'NET_THRESH', NET_THRESH);
+                    else
+                        [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T2, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
+                    end
+
+                    if ~isempty(FIG_PATH)
+                        fig = figure('Visible','off');
+                    else
+                        fig = figure('Visible','on');
+                    end
+                    fig.Position = [100 100 1800 900];
+                    tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
+                    
+    
+                    title(tl, {
+                    sprintf('%s --- %s --- unit %d (channel %d)',S.sess_name, probe_label, clust, chans(u));
+                    ''
+                    }, 'fontsize',16,'interpreter','none')
+                
+                 
+                    annotation('textbox', [0.77 0.89 0.2 0.1], ... % [x y w h] in normalized figure units
+                               'String', sprintf('N = %d repeats\n%s', min(min(min(cellfun(@length, frs{1})))), bg_text), ...
+                               'FontSize', 14, ...
+                               'EdgeColor', 'none', ...
+                               'HorizontalAlignment', 'right');
+                    
+                    
+                    if ~isempty(FIG_PATH)
+                        if SAVE_PDF
+                            savebigPDF(fig, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.pdf', probe_label, clust, chans(u))));
+                        else
+                            savebigPNG(fig, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, clust, chans(u))));
+                        end
+                    end
+                    
+                    fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, unit))
+                else
+                    fprintf(sprintf('\n----PROBE %d, Unit %.4d exists----',PROBE_INDEX, unit))
+                end
             end
         end
     else
@@ -167,17 +227,31 @@ function ia_rfMaps(data,varargin)
                 FIG_PATH2 = [];
             end
 
-            for u=1:length(units)
-                unit = units(u); 
-                if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), 'file') | isempty(FIG_PATH)
+            for u=1:length(clusts)
+                clust = clusts(u);
+                unit = units(u);
+                scode = scodes(u);
+    
+                if IS_FHC
+                    names = string(T.trialName);
+                    % Extract the two digits after "unit"
+                    tokens = regexp(names, 'unit(\d{2})', 'tokens', 'once');
+                    unitNums = cellfun(@(x) str2double(x), tokens);
+        
+                    T2 = T(unitNums == unit, :);
+                else
+                    T2 = T;
+                end
+
+                if ~exist(fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, clust, chans(u))), 'file') | isempty(FIG_PATH)
                     [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
 
                     if ~isempty(FIG_PATH)
-                        f2a = figure('Visible','off');
+                        fig = figure('Visible','off');
                     else
-                        f2a = figure('Visible','on');
+                        fig = figure('Visible','on');
                     end
-                    f2a.Position = [100 100 1800 900];
+                    fig.Position = [100 100 1800 900];
                     tl = heatMap_rfOverTime(frs{1},'BIN_EDGES',bin_edges, 'INTERP', false,'X_VALS',xvals, 'Y_VALS',yvals,'PROBE_DUR',stim_duration_ms);
                     
                     title(tl,{sprintf('%s --- %s --- %s --- cluster %d (channel %d)',S.sess_name, probe_label, strjoin(matchingFields(these_rows), '_'), unit, chans(u)); ''},'fontsize',16,'interpreter','none')
@@ -191,9 +265,9 @@ function ia_rfMaps(data,varargin)
                     
                     if ~isempty(FIG_PATH)
                         if SAVE_PDF
-                            savebigPDF(f2a, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))));
+                            savebigPDF(fig, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))));
                         else
-                            print(f2a, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), '-dpng', '-r200');
+                            print(fig, fullfile(FIG_PATH2, sprintf('%s_clust%04d_chan%03d.png', probe_label, unit, chans(u))), '-dpng', '-r200');
                         end
                     end
                     fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, unit))
