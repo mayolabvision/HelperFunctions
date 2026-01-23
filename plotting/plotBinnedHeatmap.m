@@ -1,4 +1,4 @@
-function [n_bins, bin_extrema] = plotBinnedHeatmap(x, y, c, varargin)
+function [n_bins, bin_extrema, heatMat] = plotBinnedHeatmap(x, y, c, varargin)
 % PLOTBINNEDHEATMAP Plots a heatmap from raw x, y values binned by edges
 %
 % n_bins = plotBinnedHeatmap(x, y, c, 'Name', Value, ...)
@@ -22,12 +22,15 @@ addParameter(p,'yEdges',[]);
 addParameter(p,'Type','mean',@(s) any(validatestring(s,{'mean','median','std','count'})));
 addParameter(p,'cmap',parula);
 addParameter(p,'climit',[]);
+addParameter(p, 'RETURN_CELL',false,@islogical);
+
 parse(p,varargin{:});
 xEdges = p.Results.xEdges;
 yEdges = p.Results.yEdges;
 aggType = p.Results.Type;
 cmap = p.Results.cmap;
 climit = p.Results.climit;
+RETURN_CELL = p.Results.RETURN_CELL;
 
 x = x(:); y = y(:);
 if nargin < 3 || isempty(c)
@@ -49,6 +52,23 @@ end
 [~,~,yBin] = histcounts(y, yEdges);
 
 % Compute aggregated value per bin
+if RETURN_CELL
+    heatMat = cell(length(yEdges)-1, length(xEdges)-1);
+    n_bins  = zeros(length(yEdges)-1, length(xEdges)-1);
+    for ix = 1:length(xEdges)-1
+        for iy = 1:length(yEdges)-1
+            inBin = xBin == ix & yBin == iy;
+            n_bins(iy, ix) = sum(inBin); % store count
+            if sum(inBin) > 0
+                heatMat{iy, ix} = c(inBin); % store values
+            end
+        end
+    end
+
+    bin_extrema = [];
+    return
+end
+
 heatMat = nan(length(yEdges)-1, length(xEdges)-1);
 n_bins  = zeros(length(yEdges)-1, length(xEdges)-1);
 for ix = 1:length(xEdges)-1
