@@ -24,7 +24,7 @@ set(gcf,'Color','w');
 
 % Make all plotted lines thicker (optional)
 lines = findall(figureHandle,'type','line');
-set(lines,'LineWidth',2);
+%set(lines,'LineWidth',2);
 
 % Adjust figure size to match paper size
 sz = get(gcf,'Position');
