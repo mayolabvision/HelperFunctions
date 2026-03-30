@@ -158,7 +158,7 @@ function ia_rfMaps(data,varargin)
                     if IS_FHC
                         [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T2, 'PROBE_INDEX', PROBE_INDEX, 'IS_FHC', true, 'NET_THRESH', NET_THRESH);
                     else
-                        [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T2, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (unit+1));
+                        [frs,bin_edges,xvals,yvals] = format_tableToRFMap(T2, 'PROBE_INDEX', PROBE_INDEX, 'UNITS', (clust+1));
                     end
 
                     if ~isempty(FIG_PATH)
@@ -191,9 +191,9 @@ function ia_rfMaps(data,varargin)
                         end
                     end
                     
-                    fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, unit))
+                    fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, clust))
                 else
-                    fprintf(sprintf('\n----PROBE %d, Unit %.4d exists----',PROBE_INDEX, unit))
+                    fprintf(sprintf('\n----PROBE %d, Unit %.4d exists----',PROBE_INDEX, clust))
                 end
             end
         end

@@ -123,6 +123,7 @@ function ia_mdirRasters(data,varargin)
     end
 
     T = T(T.result=='CORRECT',:);
+    T = T(~cellfun(@(v) sum(cellfun(@(q) isempty(q), v, 'uni', 1)) == numel(T.(prb_name){1}), T.(prb_name), 'uni', 1),:);
 
     % line_color = {[123,44,191]./255; [230,34,172]./255; [191,44,44]./255};
     % tick_color = {[98,35,152]./255; [184,27,137]./255; [152,35,35]./255};

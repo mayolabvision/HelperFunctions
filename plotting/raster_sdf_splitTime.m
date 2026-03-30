@@ -1,4 +1,4 @@
-function raster_sdf(spike_times, varargin)
+function raster_sdf_splitTime(spike_times, varargin)
 % RASTER_SDF plots a raster and spike density function (SDF) for a single neuron.
 %
 % Inputs:
@@ -16,24 +16,24 @@ function raster_sdf(spike_times, varargin)
 p = inputParser;
 addRequired(p, 'spike_times', @iscell);
 addOptional(p,'TIME_WINDOW', [-300,500], @(x) isnumeric(x) && length(x) == 2) % ms
-addOptional(p,'FR_WINDOW', [], @isnumeric) % ms
 addOptional(p,'SIGMA', 10, @isnumeric)
 addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'SEM_SHADE', [178 178 178]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
+addOptional(p,'X_SHIFT', 0, @isnumeric)
 
 p.parse(spike_times, varargin{:});
 spike_times = p.Results.spike_times;
 TIME_WINDOW = p.Results.TIME_WINDOW;
-FR_WINDOW = p.Results.FR_WINDOW;
 SIGMA = p.Results.SIGMA;
 LINE_COLOR = p.Results.LINE_COLOR;
 SEM_SHADE  = p.Results.SEM_SHADE;
 TICK_COLOR = p.Results.TICK_COLOR;
 TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
+X_SHIFT = p.Results.X_SHIFT;
 
 if iscell(LINE_COLOR)
     unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
@@ -45,10 +45,8 @@ yyaxis right;
 ax = gca;
 ax.YColor = 'k';
 
-if ~isempty(FR_WINDOW)
-    yl_back = [0 0]; yu_back = [numel(spike_times) numel(spike_times)];
-    fill([FR_WINDOW fliplr(FR_WINDOW)], [yu_back fliplr(yl_back)], [155,155,155]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
-end
+%yl_back = [0 0]; yu_back = [numel(spike_times) numel(spike_times)];
+%fill([FR_WINDOW fliplr(FR_WINDOW)], [yu_back fliplr(yl_back)], [155,155,155]./255, 'linestyle', 'none', 'FaceAlpha', 0.25);
 
 hold on;
 
@@ -57,7 +55,7 @@ for iTrial = 1:length(spike_times)
     if size(spks,2)==1
         spks = spks';
     end
-    xspikes = repmat(spks, 3, 1);
+    xspikes = repmat(spks, 3, 1) + X_SHIFT;
     yspikes = nan(size(xspikes));
     
     if ~isempty(yspikes)
@@ -73,6 +71,9 @@ for iTrial = 1:length(spike_times)
     hold on;
 end
 
+%xline(0, 'k-', 'linewidth', 1);
+%xlim(TIME_WINDOW);
+ylim([0 length(spike_times)]);
 if ~iscell(TICK_COLOR)
     yticks([0 length(spike_times)]);
 else
@@ -86,9 +87,6 @@ else
         xlim([TIME_WINDOW(1) TIME_WINDOW(2)+10])
     end
 end
-xline(0, 'k-', 'linewidth', 1);
-xlim(TIME_WINDOW);
-ylim([0 length(spike_times)]);
 ylabel('trials','Rotation',270);
 prettyFig;
 
@@ -116,7 +114,7 @@ for iTrial = 1:length(spike_times)
 end
 
 % Compute mean and SEM
-x = (1:size(sdf, 2)) + TIME_WINDOW(1);
+x = (1:size(sdf, 2)) + TIME_WINDOW(1) + X_SHIFT;
 
 if ~iscell(LINE_COLOR)
     [mn, ~, yu, yl] = sem_errorbar(sdf .* 1000);
