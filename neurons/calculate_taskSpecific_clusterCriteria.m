@@ -154,11 +154,16 @@ end
 base_fr = base_fr .* (1000/(BASELINE_WINDOW(2)-BASELINE_WINDOW(1)));
 resp_fr = resp_fr .* (1000/(RESPONSE_WINDOW(2)-RESPONSE_WINDOW(1)));
 
+base_fr(base_fr==0) = 1e-6; resp_fr(resp_fr==0) = 1e-6;
+
 % baseFR = mean firing rate during baseline epoch, across all conditions
 Tclust.([EPOCH_NICKNAME, '_baseFR']) = mean(base_fr)';
 
 % mnFR   = mean firing rate during response epoch, across all conditions
 Tclust.([EPOCH_NICKNAME, '_mnFR']) = mean(resp_fr)';
+
+% modIndex = modulation index between response / baseline
+Tclust.([EPOCH_NICKNAME, '_modIndex']) = mean(resp_fr)' ./ mean(base_fr)';
 
 %% ==== Computes discriminability metrics between response and baseline windows ====
 

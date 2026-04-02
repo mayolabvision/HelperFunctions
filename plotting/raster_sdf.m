@@ -19,7 +19,7 @@ addOptional(p,'TIME_WINDOW', [-300,500], @(x) isnumeric(x) && length(x) == 2) % 
 addOptional(p,'FR_WINDOW', [], @isnumeric) % ms
 addOptional(p,'SIGMA', 10, @isnumeric)
 addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
-addOptional(p,'SEM_SHADE', [178 178 178]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
+addOptional(p,'LINE_WIDTH', 3, @isnumeric)
 addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
@@ -30,10 +30,12 @@ TIME_WINDOW = p.Results.TIME_WINDOW;
 FR_WINDOW = p.Results.FR_WINDOW;
 SIGMA = p.Results.SIGMA;
 LINE_COLOR = p.Results.LINE_COLOR;
-SEM_SHADE  = p.Results.SEM_SHADE;
+LINE_WIDTH = p.Results.LINE_WIDTH;
 TICK_COLOR = p.Results.TICK_COLOR;
 TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
+
+SEM_SHADE = (1-0.75)*LINE_COLOR + 0.75*[1 1 1];
 
 if iscell(LINE_COLOR)
     unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
@@ -122,14 +124,14 @@ if ~iscell(LINE_COLOR)
     [mn, ~, yu, yl] = sem_errorbar(sdf .* 1000);
     fill([x fliplr(x)], [yu fliplr(yl)], SEM_SHADE, 'linestyle', 'none', 'FaceAlpha', 0.5);
     hold on;
-    plot(x, mn, '-', 'Color', LINE_COLOR, 'LineWidth', 2);
+    plot(x, mn, '-', 'Color', LINE_COLOR, 'LineWidth', LINE_WIDTH);
 else
     for dd = 1:numel(unique_line_colors)
         sdf2 = sdf(cellfun(@(q) isequal(q, unique_line_colors{dd}), LINE_COLOR),:);
         [mn, ~, yu, yl] = sem_errorbar(sdf2 .* 1000);
         fill([x fliplr(x)], [yu fliplr(yl)], unique_sem_shades{dd}, 'linestyle', 'none', 'FaceAlpha', 0.5);
         hold on;
-        plot(x, mn, '-', 'Color', unique_line_colors{dd}, 'LineWidth', 2);
+        plot(x, mn, '-', 'Color', unique_line_colors{dd}, 'LineWidth', LINE_WIDTH);
 
 
     end
