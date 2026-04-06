@@ -1,5 +1,5 @@
 function ia_pursRasters(data,varargin)
-     p = inputParser;
+    p = inputParser;
     addRequired(p, 'data',  @(x) (ischar(x)) || isstruct(x));
     addParameter(p, 'FIG_PATH', [], @ischar);
     addParameter(p, 'PROBE_INDEX', 1, @isnumeric);
@@ -259,9 +259,9 @@ function ia_pursRasters(data,varargin)
     
                     if numel(speeds)==1
                         if ~isempty(TICK_LENGTH)
-                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
                         else
-                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'SEM_SHADE', sem_shade{1}, 'FR_WINDOW', FR_WIN)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_color{1}, 'FR_WINDOW', FR_WIN)
                         end
                         frs_perAng{ang} = cellfun(@(q) (sum(q>=FR_WIN(1) & q <FR_WIN(2))*(1000/(FR_WIN(2)-FR_WIN(1)))), sptimes, 'uni', 1);
                     else
@@ -275,9 +275,9 @@ function ia_pursRasters(data,varargin)
                         end
     
                         if ~isempty(TICK_LENGTH)
-                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN, 'TICK_LENGTH', TICK_LENGTH)
                         else
-                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'SEM_SHADE', sem_shades, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
+                            raster_sdf(sptimes', 'TIME_WINDOW', X_LIMITS, 'LINE_COLOR', line_colors, 'TICK_COLOR', tick_colors, 'FR_WINDOW', FR_WIN)
                         end
                     end
             

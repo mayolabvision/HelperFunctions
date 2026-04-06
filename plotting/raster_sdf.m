@@ -35,11 +35,8 @@ TICK_COLOR = p.Results.TICK_COLOR;
 TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
 
-SEM_SHADE = (1-0.75)*LINE_COLOR + 0.75*[1 1 1];
-
 if iscell(LINE_COLOR)
     unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
-    unique_sem_shades = num2cell(unique(cell2mat(SEM_SHADE),'rows'),2);
 end
 
 %% Raster Plot
@@ -121,15 +118,17 @@ end
 x = (1:size(sdf, 2)) + TIME_WINDOW(1);
 
 if ~iscell(LINE_COLOR)
+    sem_shade = (1-0.75)*LINE_COLOR + 0.75*[1 1 1];
     [mn, ~, yu, yl] = sem_errorbar(sdf .* 1000);
-    fill([x fliplr(x)], [yu fliplr(yl)], SEM_SHADE, 'linestyle', 'none', 'FaceAlpha', 0.5);
+    fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha', 0.5);
     hold on;
     plot(x, mn, '-', 'Color', LINE_COLOR, 'LineWidth', LINE_WIDTH);
 else
     for dd = 1:numel(unique_line_colors)
+        sem_shade = (1-0.75)*unique_line_colors{dd} + 0.75*[1 1 1];
         sdf2 = sdf(cellfun(@(q) isequal(q, unique_line_colors{dd}), LINE_COLOR),:);
         [mn, ~, yu, yl] = sem_errorbar(sdf2 .* 1000);
-        fill([x fliplr(x)], [yu fliplr(yl)], unique_sem_shades{dd}, 'linestyle', 'none', 'FaceAlpha', 0.5);
+        fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha', 0.5);
         hold on;
         plot(x, mn, '-', 'Color', unique_line_colors{dd}, 'LineWidth', LINE_WIDTH);
 
