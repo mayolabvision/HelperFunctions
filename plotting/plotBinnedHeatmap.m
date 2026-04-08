@@ -11,6 +11,7 @@ addParameter(p,'nBins', 8, @isnumeric);
 addParameter(p,'Type','mean',@(s) any(validatestring(s,{'mean','median','std','count'})));
 addParameter(p,'cmap',parula);
 addParameter(p,'climit',[]);
+addParameter(p,'scaleBins',true,@islogical);
 addParameter(p, 'RETURN_CELL',false,@islogical);
 
 parse(p,varargin{:});
@@ -20,6 +21,7 @@ nBins = p.Results.nBins;
 aggType = p.Results.Type;
 cmap = p.Results.cmap;
 climit = p.Results.climit;
+scaleBins = p.Results.scaleBins;
 RETURN_CELL = p.Results.RETURN_CELL;
 
 x = x(:); y = y(:);
@@ -105,8 +107,21 @@ bin_extrema.max.x_edges = xEdges(maxIx:maxIx+1);
 bin_extrema.max.y_edges = yEdges(maxIy:maxIy+1);
 
 % Plot heatmap
-h = imagesc(xEdges, yEdges, heatMat);
-set(gca,'YDir','normal'); % make y increase upwards
+% ----- Plot heatmap -----
+if scaleBins
+    % TRUE geometric bin scaling
+    [Xgrid, Ygrid] = meshgrid(xEdges, yEdges);
+
+    % pcolor requires one extra row/column
+    heatMat_plot = padarray(heatMat,[1 1],NaN,'post');
+
+    h = pcolor(Xgrid, Ygrid, heatMat_plot);
+    shading flat
+else
+    % Original equal-sized bins
+    h = imagesc(xEdges, yEdges, heatMat);
+    set(gca,'YDir','normal');
+end
 
 % handle NaNs as white
 %colormap([1 1 1; cmap]); % prepend white to colormap

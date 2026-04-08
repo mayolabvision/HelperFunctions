@@ -69,6 +69,11 @@ function ia_mdirRasters(data,varargin)
             chans = chans(ids);
             units = units(ids);
             scodes = scodes(ids);
+        else
+            clusts = clusts_all;
+            chans = chans;
+            units = units;
+            scodes = scodes;
         end
     else
         clusts = CLUSTER;
