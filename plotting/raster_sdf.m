@@ -18,11 +18,13 @@ addRequired(p, 'spike_times', @iscell);
 addOptional(p,'TIME_WINDOW', [-300,500], @(x) isnumeric(x) && length(x) == 2) % ms
 addOptional(p,'FR_WINDOW', [], @isnumeric) % ms
 addOptional(p,'SIGMA', 10, @isnumeric)
-addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
+addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) isnumeric(x) || iscell(x));
 addOptional(p,'LINE_WIDTH', 3, @isnumeric)
-addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
+addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x)) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
+addOptional(p,'SHADE_ERROR', true, @islogical)
+addOptional(p,'TICK_ALPHA', 0.75, @isnumeric)
 
 p.parse(spike_times, varargin{:});
 spike_times = p.Results.spike_times;
@@ -34,6 +36,8 @@ LINE_WIDTH = p.Results.LINE_WIDTH;
 TICK_COLOR = p.Results.TICK_COLOR;
 TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
+SHADE_ERROR = p.Results.SHADE_ERROR;
+TICK_ALPHA = p.Results.TICK_ALPHA;
 
 if iscell(LINE_COLOR)
     unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
@@ -65,9 +69,9 @@ for iTrial = 1:length(spike_times)
     end
     
     if ~iscell(TICK_COLOR)
-        plot(xspikes, yspikes, '-', 'Color', TICK_COLOR, 'LineWidth', TICK_WIDTH);
+        plot(xspikes, yspikes, '-', 'Color', [TICK_COLOR, TICK_ALPHA], 'LineWidth', TICK_WIDTH);
     else
-        plot(xspikes, yspikes, '-', 'Color', TICK_COLOR{iTrial}, 'LineWidth', TICK_WIDTH);
+        plot(xspikes, yspikes, '-', 'Color', [TICK_COLOR{iTrial}, TICK_ALPHA], 'LineWidth', TICK_WIDTH);
     end
     hold on;
 end
@@ -89,7 +93,6 @@ xline(0, 'k-', 'linewidth', 1);
 xlim(TIME_WINDOW);
 ylim([0 length(spike_times)]);
 ylabel('trials','Rotation',270);
-prettyFig;
 
 %% Spike Density Function
 yyaxis left;
@@ -118,21 +121,21 @@ end
 x = (1:size(sdf, 2)) + TIME_WINDOW(1);
 
 if ~iscell(LINE_COLOR)
-    sem_shade = (1-0.75)*LINE_COLOR + 0.75*[1 1 1];
     [mn, ~, yu, yl] = sem_errorbar(sdf .* 1000);
-    fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha', 0.5);
+    if SHADE_ERROR
+        fill([x fliplr(x)], [yu fliplr(yl)], LINE_COLOR, 'linestyle', 'none', 'FaceAlpha', 0.5);
+    end
     hold on;
     plot(x, mn, '-', 'Color', LINE_COLOR, 'LineWidth', LINE_WIDTH);
 else
     for dd = 1:numel(unique_line_colors)
-        sem_shade = (1-0.75)*unique_line_colors{dd} + 0.75*[1 1 1];
         sdf2 = sdf(cellfun(@(q) isequal(q, unique_line_colors{dd}), LINE_COLOR),:);
         [mn, ~, yu, yl] = sem_errorbar(sdf2 .* 1000);
-        fill([x fliplr(x)], [yu fliplr(yl)], sem_shade, 'linestyle', 'none', 'FaceAlpha', 0.5);
+        if SHADE_ERROR
+            fill([x fliplr(x)], [yu fliplr(yl)], unique_line_colors{dd}, 'linestyle', 'none', 'FaceAlpha', 0.5);
+        end
         hold on;
         plot(x, mn, '-', 'Color', unique_line_colors{dd}, 'LineWidth', LINE_WIDTH);
-
-
     end
 end
 

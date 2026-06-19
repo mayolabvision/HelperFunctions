@@ -50,6 +50,7 @@ function [Tclust, Ttask] = calculate_taskSpecific_clusterCriteria(Tclust, Ttask,
 % Epoch modulation:
 %   _baseFR          mean baseline FR (Hz)
 %   _mnFR            mean response FR (Hz)
+%   _mnFR_peakWin    mean FR of the peak 25-ms sub-window within the response epoch (Hz)
 %   _modIndex        response / baseline ratio
 %   _pval_sr         Wilcoxon signed-rank p-value (raw, apply Bonferroni externally)
 %   _exc             true if mean response > mean baseline (excitatory)
@@ -181,14 +182,32 @@ end
 Tclust.([EPOCH_NICKNAME, '_pval_sr']) = pval_sr;
 Tclust.([EPOCH_NICKNAME, '_exc'])     = (mean(resp_fr)' > mean(base_fr)');
 
+%% Peak 25-ms sub-window firing rate  [nClusters × 1, Hz]
+% Slide a 25-ms window across the response epoch in the trial-averaged
+% response, then take the maximum. Converted to Hz.
+PEAK_WIN   = 25;  % ms
+win_starts = RESPONSE_WINDOW(1) : (RESPONSE_WINDOW(2) - PEAK_WIN);
+peak_fr    = nan(height(Tclust), 1);
+for clust = 1:height(Tclust)
+    spk_col = sprintf('spiketimes_%d', Tclust.probe_index(clust));
+    col     = Tclust.cluster_id(clust) + 1;
+    spks    = cellfun(@(q) q{col}, Ttask.(spk_col), 'uni', 0);
+
+    mean_count_per_win = arrayfun(@(s) mean(cellfun(@(u, w) ...
+        sum(w >= (u(1)+s) & w < (u(1)+s+PEAK_WIN)), ...
+        Ttask.(RESPONSE_ALIGNTO), spks)), win_starts);
+    peak_fr(clust) = max(mean_count_per_win) * (1000 / PEAK_WIN);
+end
+
 %% Epoch summary FRs and modulation index
 % Replace exact zeros before division (modIndex only; does not affect d′ or signrank)
 base_fr(base_fr == 0) = 1e-6;
 resp_fr(resp_fr == 0) = 1e-6;
 
-Tclust.([EPOCH_NICKNAME, '_baseFR'])   = mean(base_fr)';
-Tclust.([EPOCH_NICKNAME, '_mnFR'])     = mean(resp_fr)';
-Tclust.([EPOCH_NICKNAME, '_modIndex']) = mean(resp_fr)' ./ mean(base_fr)';
+Tclust.([EPOCH_NICKNAME, '_baseFR'])      = mean(base_fr)';
+Tclust.([EPOCH_NICKNAME, '_mnFR'])        = mean(resp_fr)';
+Tclust.([EPOCH_NICKNAME, '_mnFR_peakWin']) = peak_fr;
+Tclust.([EPOCH_NICKNAME, '_modIndex'])    = mean(resp_fr)' ./ mean(base_fr)';
 
 %% Discriminability (d′) between response and baseline
 
