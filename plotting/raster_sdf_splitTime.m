@@ -23,6 +23,7 @@ addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x) && length(x) == 
 addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
 addOptional(p,'X_SHIFT', 0, @isnumeric)
+addOptional(p,'Y_LIMIT', [], @isnumeric)
 
 p.parse(spike_times, varargin{:});
 spike_times = p.Results.spike_times;
@@ -34,6 +35,7 @@ TICK_COLOR = p.Results.TICK_COLOR;
 TICK_LENGTH = p.Results.TICK_LENGTH;
 TICK_WIDTH = p.Results.TICK_WIDTH;
 X_SHIFT = p.Results.X_SHIFT;
+Y_LIMIT = p.Results.Y_LIMIT;
 
 if iscell(LINE_COLOR)
     unique_line_colors = num2cell(unique(cell2mat(LINE_COLOR),'rows'),2);
@@ -63,6 +65,9 @@ for iTrial = 1:length(spike_times)
         yspikes(2, :) = iTrial;
     end
     
+    xspikes = xspikes(xspikes >= (TIME_WINDOW(1)+X_SHIFT) & xspikes <= (TIME_WINDOW(2)+X_SHIFT));
+    yspikes = yspikes(xspikes >= (TIME_WINDOW(1)+X_SHIFT) & xspikes <= (TIME_WINDOW(2)+X_SHIFT));
+
     if ~iscell(TICK_COLOR)
         plot(xspikes, yspikes, '-', 'Color', TICK_COLOR, 'LineWidth', TICK_WIDTH);
     else
@@ -72,7 +77,7 @@ for iTrial = 1:length(spike_times)
 end
 
 %xline(0, 'k-', 'linewidth', 1);
-%xlim(TIME_WINDOW);
+%xlim(TIME_WINDOW+X_SHIFT);
 ylim([0 length(spike_times)]);
 if ~iscell(TICK_COLOR)
     yticks([0 length(spike_times)]);
@@ -133,6 +138,10 @@ else
     end
 end
 
+if ~isempty(Y_LIMIT)
+    ylim(Y_LIMIT);
+end
+yticks([0,ceil(max(mn))]);
 ylabel('FR [Hz]');
 prettyFig;
 

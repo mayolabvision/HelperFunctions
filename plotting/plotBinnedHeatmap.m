@@ -124,7 +124,7 @@ else
 end
 
 % handle NaNs as white
-%colormap([1 1 1; cmap]); % prepend white to colormap
+colormap(cmap); % prepend white to colormap
 clim([minVal maxVal])   % keep color limits consistent
 colorbar;
 

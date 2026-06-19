@@ -3,8 +3,15 @@ function rgb = radial_colormap(dir, varargin)
 % Usage:
 %   rgb = radial_colormap(dir)
 %   rgb = radial_colormap(dir, 'SHIFT_DEG', 90)
+%   rgb = radial_colormap(dir, 'Style', 'muted')
 %
 % dir can be scalar or vector. Output is Nx3.
+%
+% Optional name-value pairs:
+%   'SHIFT_DEG'  scalar (default 0)     — rotate the whole wheel by this many degrees
+%   'Style'      'vivid' (default) | 'muted'
+%                'vivid'  — saturated rainbow (original palette)
+%                'muted'  — desaturated, pastel-leaning palette, easier on the eyes
 
     % ------------------------------
     % Parse inputs
@@ -12,25 +19,41 @@ function rgb = radial_colormap(dir, varargin)
     p = inputParser;
     addRequired(p, 'dir', @isnumeric);
     addParameter(p, 'SHIFT_DEG', 0, @isnumeric);
+    addParameter(p, 'Style', 'vivid', @(x) ismember(x, {'vivid','muted'}));
     parse(p, dir, varargin{:});
-    dir = p.Results.dir;
+    dir       = p.Results.dir;
     shift_deg = p.Results.SHIFT_DEG;
+    style     = p.Results.Style;
 
     % ------------------------------
     % Define canonical 8-color wheel
     % ------------------------------
     key_angles = [0 45 90 135 180 225 270 315];
 
-    key_colors = [
-        1.00 0.00 0.00   % 0°   red
-        1.00 0.55 0.00   % 45°  orange
-        1.00 1.00 0.00   % 90°  yellow
-        0.00 0.80 0.00   % 135° green
-        0.20 0.80 1.00   % 180° light blue
-        0.00 0.00 0.90   % 225° dark blue
-        0.55 0.00 0.80   % 270° purple
-        1.00 0.40 0.70   % 315° pink
-    ];
+    switch style
+        case 'muted'
+            key_colors = [
+                0.85 0.30 0.30   % 0°   muted red
+                0.88 0.58 0.28   % 45°  muted orange
+                0.80 0.78 0.35   % 90°  muted yellow
+                0.35 0.70 0.45   % 135° muted green
+                0.35 0.68 0.80   % 180° muted sky blue
+                0.30 0.40 0.75   % 225° muted blue
+                0.58 0.38 0.72   % 270° muted purple
+                0.82 0.50 0.65   % 315° muted pink
+            ];
+        otherwise  % 'vivid'
+            key_colors = [
+                1.00 0.00 0.00   % 0°   red
+                1.00 0.55 0.00   % 45°  orange
+                1.00 1.00 0.00   % 90°  yellow
+                0.00 0.80 0.00   % 135° green
+                0.20 0.80 1.00   % 180° light blue
+                0.00 0.00 0.90   % 225° dark blue
+                0.55 0.00 0.80   % 270° purple
+                1.00 0.40 0.70   % 315° pink
+            ];
+    end
 
     % ------------------------------
     % Rotate and sort the key angles
