@@ -81,8 +81,8 @@ addRequired(p,  'Ttask');
 addParameter(p, 'EPOCH_NICKNAME',   'sac',                @ischar);
 addParameter(p, 'RESPONSE_WINDOW',  [-50, 50],            @isnumeric);
 addParameter(p, 'RESPONSE_ALIGNTO', 'saccadeOnset',       @ischar);
-addParameter(p, 'BASELINE_WINDOW',  [-200, -100],         @isnumeric);
-addParameter(p, 'BASELINE_ALIGNTO', 'saccadeOnset',       @ischar);
+addParameter(p, 'BASELINE_WINDOW',  [-100, 0],            @isnumeric);
+addParameter(p, 'BASELINE_ALIGNTO', 'TARG_ON',            @ischar);
 addParameter(p, 'CONDITIONS',       {'angle','distance'}, @iscell);
 parse(p, Tclust, Ttask, varargin{:});
 
@@ -102,26 +102,23 @@ probes = unique(Tclust.probe_index);
 
 %% Remove trials where no unit fired (spike-sorting floor artifacts)
 spikeCols = contains(Ttask.Properties.VariableNames, 'spiketimes');
-n_empty   = sum(cellfun(@(v) sum(cellfun(@isempty, v)), Ttask{:, spikeCols}, 'uni', 1), 2);
-Ttask     = Ttask(n_empty < height(Tclust), :);
+Ttask = Ttask(sum(cellfun(@(v) sum(cellfun(@(q) isempty(q), v, 'uni', 1)), Ttask{:,spikeCols}, 'uni', 1) == height(Ttask),2)==0,:);
 
 %% Remove trials with population firing rate > 3 SD from session mean
 % Compute response-window spike count matrix: [nTrials × nClusters]
-pop_fr = nan(height(Ttask), height(Tclust));
-for clust = 1:height(Tclust)
-    spks = cellfun(@(q) q{Tclust.cluster_id(clust)+1}, ...
-        Ttask.(sprintf('spiketimes_%d', Tclust.probe_index(clust))), 'uni', 0);
-    pop_fr(:,clust) = cellfun(@(u,w) sum(w >= (u(1)+RESPONSE_WINDOW(1)) & ...
-                                          w <  (u(1)+RESPONSE_WINDOW(2))), ...
-        Ttask.(RESPONSE_ALIGNTO), spks, 'uni', 1);
-end
-pop_fr = pop_fr .* (1000 / diff(RESPONSE_WINDOW));
-
-% Identify outlier trials: population mean FR > ±3 SD of the session distribution
-trl_mean = mean(pop_fr, 2);      % mean across clusters per trial [nTrials × 1]
-sess_mu  = mean(trl_mean);
-sess_sd  = std(trl_mean);
-Ttask    = Ttask(abs(trl_mean - sess_mu) <= 3*sess_sd, :);
+%resp_fr = nan(height(Ttask),height(Tclust));
+%for clust = 1:height(Tclust)
+%    spks = cellfun(@(q) q{Tclust.cluster_id(clust)+1}, Ttask.(sprintf('spiketimes_%d',Tclust.probe_index(clust))), 'uni', 0);
+%    resp_fr(:,clust) = cellfun(@(u,w) sum(w>=(u(1)+RESPONSE_WINDOW(1)) & w<(u(1)+RESPONSE_WINDOW(2))), Ttask.(RESPONSE_ALIGNTO), spks, 'uni', 1);
+%end
+%resp_fr = resp_fr .* (1000/(RESPONSE_WINDOW(2)-RESPONSE_WINDOW(1)));
+%
+%resp_mean = mean(resp_fr,2);
+%resp_std = std(resp_fr,[],2);
+%resp_idx = resp_mean < (resp_mean - resp_std .* 3) | resp_mean > (resp_mean + resp_std .* 3);
+%
+%Ttask = Ttask(~resp_idx, :);
+%disp(height(Ttask));
 
 %% Cluster depth relative to brain surface  (negative = deeper)
 Tclust.cluster_depth_mm = ...
@@ -138,9 +135,7 @@ blk_ids   = assign_blocks(Ttask{:, CONDITIONS});
 blk_conds = Ttask{:, CONDITIONS};
 
 [Tclust.([EPOCH_NICKNAME, '_nBlocks']),      ...
- Tclust.([EPOCH_NICKNAME, '_blkPresRatio']), ...
- Tclust.([EPOCH_NICKNAME, '_condSlope']),    ...
- Tclust.([EPOCH_NICKNAME, '_fracCP'])]       = deal(nan(height(Tclust), 1));
+ Tclust.([EPOCH_NICKNAME, '_blkPresRatio'])]       = deal(nan(height(Tclust), 1));
 
 for clust = 1:height(Tclust)
     spk_col = sprintf('spiketimes_%d', Tclust.probe_index(clust));
@@ -153,8 +148,6 @@ for clust = 1:height(Tclust)
 
     [Tclust.([EPOCH_NICKNAME, '_blkPresRatio'])(clust), ...
      Tclust.([EPOCH_NICKNAME, '_nBlocks'])(clust)]     = block_presence_ratio(fr_trl, blk_ids);
-    [Tclust.([EPOCH_NICKNAME, '_condSlope'])(clust),   ...
-     Tclust.([EPOCH_NICKNAME, '_fracCP'])(clust)]       = condition_stability(fr_trl, blk_conds);
 end
 
 %% Baseline and response firing rates  [nTrials × nClusters, Hz]
@@ -169,7 +162,7 @@ for clust = 1:height(Tclust)
     resp_fr(:,clust) = cellfun(@(u,w) sum(w >= (u(1)+RESPONSE_WINDOW(1)) & w < (u(1)+RESPONSE_WINDOW(2))), ...
         Ttask.(RESPONSE_ALIGNTO), spks, 'uni', 1);
 end
-base_fr = base_fr .* (1000 / abs(diff(BASELINE_WINDOW)));
+base_fr = base_fr .* (1000 / diff(BASELINE_WINDOW));
 resp_fr = resp_fr .* (1000 / diff(RESPONSE_WINDOW));
 
 %% Wilcoxon signed-rank test: response vs baseline
@@ -306,6 +299,10 @@ function block_ids = assign_blocks(conditions)
 % Assign trials to sequential blocks. A new block begins whenever any
 % condition repeats within the current block.
     n         = size(conditions, 1);
+    if n == 0
+        block_ids = zeros(0,1);
+        return;
+    end
     block_ids = ones(n, 1);
     block_num = 1;
     seen      = conditions(1, :);
@@ -321,69 +318,27 @@ function block_ids = assign_blocks(conditions)
     end
 end
 
-
 % =========================================================================
 function [ratio, n_blocks] = block_presence_ratio(fr_series, block_ids)
-% Returns the min/max block presence ratio: the fraction of trials in
-% which the unit fired at least once, taken as minimum across blocks.
-% A value of 1 means the unit fired on every trial in every block.
+% Fraction of qualifying blocks in which the unit fired at least once.
+% Blocks with fewer than MIN_TRIALS trials are skipped.
+%   1 = fired in every qualifying block
+%   0 = never fired in any qualifying block
+    MIN_TRIALS = 5;
+
+    if isempty(fr_series)
+        ratio = NaN; n_blocks = 0; return;
+    end
     blocks   = unique(block_ids);
-    n_blocks = numel(blocks);
-    pr       = nan(n_blocks, 1);
-    for b = 1:n_blocks
-        pr(b) = mean(fr_series(block_ids == blocks(b)) > 0);
+    pr       = nan(numel(blocks), 1);
+    for b = 1:numel(blocks)
+        trials = fr_series(block_ids == blocks(b));
+        if numel(trials) < MIN_TRIALS, continue; end
+        pr(b) = any(trials > 0);
     end
-    ratio = min(pr, [], 'omitnan') / max(max(pr, [], 'omitnan'), eps);
+    n_blocks = sum(~isnan(pr));   % only qualifying blocks count
+    ratio    = mean(pr, 'omitnan');
 end
-
-
-% =========================================================================
-function [mean_slope, frac_cp] = condition_stability(fr_series, conditions)
-% Assesses firing rate stability across repetitions of each condition.
-%
-% mean_slope : mean fractional FR change per repetition (0 = flat)
-% frac_cp    : fraction of conditions containing a detected change point
-%
-% Constants below were chosen to minimize false positives on short
-% per-condition sequences; tune after inspecting population distributions.
-    SMOOTH_WIN = 3;    % repetitions to smooth before change-point detection
-    MIN_REPS   = 4;    % skip conditions with fewer repetitions than this
-    CP_THRESH  = 5;    % minimum FR shift (Hz) to count as a change point
-
-    unique_conds = unique(conditions, 'rows');
-    n_conds      = size(unique_conds, 1);
-    slopes       = nan(n_conds, 1);
-    has_cp       = false(n_conds, 1);
-
-    for c = 1:n_conds
-        cond_mask = all(conditions == unique_conds(c,:), 2);
-        fr_cond   = fr_series(cond_mask);
-
-        if numel(fr_cond) < MIN_REPS, continue; end
-
-        % Normalized slope: fractional FR change per repetition
-        mn_fr = mean(fr_cond, 'omitnan');
-        if mn_fr > 0
-            x         = (1:numel(fr_cond))';
-            b         = [ones(size(x)), x] \ fr_cond;
-            slopes(c) = b(2) / mn_fr;
-        end
-
-        % Change-point detection on smoothed series
-        % MinThreshold derived from CP_THRESH (Hz) and sequence length
-        if numel(fr_cond) >= SMOOTH_WIN * 2
-            smoothed   = movmean(fr_cond, SMOOTH_WIN);
-            min_thresh = (CP_THRESH^2) * numel(smoothed) / 4;
-            ipt        = findchangepts(smoothed', 'Statistic', 'mean', ...
-                                       'MinThreshold', min_thresh);
-            has_cp(c)  = ~isempty(ipt);
-        end
-    end
-
-    mean_slope = mean(slopes, 'omitnan');
-    frac_cp    = mean(has_cp, 'omitnan');
-end
-
 
 % =========================================================================
 function hemi = assign_hemi(is_right_dir, probe_label)
