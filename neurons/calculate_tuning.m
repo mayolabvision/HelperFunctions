@@ -64,21 +64,27 @@ function [sel_dir,pref_dir,rhoLst,rhoUst,frs_per_ang,pval_dir] = calculate_tunin
 
     nUnits = size(frs_per_ang,2);
     t0 = tic;
+    [t_extract, t_tuning, t_shuffle, t_sigtest] = deal(0);
     for unit = 1:nUnits
+        tStep = tic;
         frs_perAng2 = cellfun(@(x) [x; nan(maxLength - numel(x), 1)]', frs_per_ang(:,unit), 'uni', 0);
-                        
+
         %--------------- For a single unit -------------%
         % stimrate: trials × directions
-        stimrate = vertcat(frs_perAng2{:})'; 
-       
+        stimrate = vertcat(frs_perAng2{:})';
+        t_extract = t_extract + toc(tStep);
+
+        tStep = tic;
         % --- True direction tuning ---
         [ds, dp] = tuningbias(theta,mean(stimrate,'omitnan'));
-        sel_dir(unit) = ds; 
+        sel_dir(unit) = ds;
         pref_dir(unit) = dp;
-    
+
         % Observed mean firing rate per direction
         mnFR_obs = mean(stimrate,'omitnan');
+        t_tuning = t_tuning + toc(tStep);
 
+        tStep = tic;
         % Shuffle null (vectorized across all nShuffles at once, instead of
         % looping and calling randperm/reshape/mean nShuffles times).
         % Each row of permIdx is an independent random permutation of
@@ -98,7 +104,9 @@ function [sel_dir,pref_dir,rhoLst,rhoUst,frs_per_ang,pval_dir] = calculate_tunin
         if WITH_MAXSTAT
             stat_null = max(mnFR_null, [], 2) - min(mnFR_null, [], 2);
         end
-    
+        t_shuffle = t_shuffle + toc(tStep);
+
+        tStep = tic;
         % ================================
         % --- SIGNIFICANCE TEST OPTIONS ---
         % ================================
@@ -135,9 +143,11 @@ function [sel_dir,pref_dir,rhoLst,rhoUst,frs_per_ang,pval_dir] = calculate_tunin
             % Any-direction logic
             pval_dir(unit) = double(any(mnFR_obs < rhoLst{unit} | mnFR_obs > rhoUst{unit}));
         end
+        t_sigtest = t_sigtest + toc(tStep);
 
         if mod(unit,25)==0 || unit==nUnits
-            fprintf('    [calculate_tuning] unit %d/%d (%.1fs)\n', unit, nUnits, toc(t0));
+            fprintf('    [calculate_tuning] unit %d/%d (%.1fs total | extract=%.1fs tuning=%.1fs shuffle=%.1fs sigtest=%.1fs) [T=%d D=%d]\n', ...
+                unit, nUnits, toc(t0), t_extract, t_tuning, t_shuffle, t_sigtest, T, D);
         end
     end
 
