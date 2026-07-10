@@ -93,6 +93,9 @@ BASELINE_WINDOW  = p.Results.BASELINE_WINDOW;
 BASELINE_ALIGNTO = p.Results.BASELINE_ALIGNTO;
 CONDITIONS       = p.Results.CONDITIONS;
 
+t0 = tic;
+fprintf('  [%s] start: %d clusters, %d trials\n', EPOCH_NICKNAME, height(Tclust), height(Ttask));
+
 % Convert numeric alignment columns to cell arrays if needed
 % (cellfun below uses u(1) to extract the scalar timestamp from each cell)
 if ~iscell(Ttask.(RESPONSE_ALIGNTO)), Ttask.(RESPONSE_ALIGNTO) = num2cell(Ttask.(RESPONSE_ALIGNTO)); end
@@ -103,6 +106,7 @@ probes = unique(Tclust.probe_index);
 %% Remove trials where no unit fired (spike-sorting floor artifacts)
 spikeCols = contains(Ttask.Properties.VariableNames, 'spiketimes');
 Ttask = Ttask(sum(cellfun(@(v) sum(cellfun(@(q) isempty(q), v, 'uni', 1)), Ttask{:,spikeCols}, 'uni', 1) == height(Ttask),2)==0,:);
+fprintf('  [%s] trial filtering done: %d trials remain (%.1fs)\n', EPOCH_NICKNAME, height(Ttask), toc(t0));
 
 %% Remove trials with population firing rate > 3 SD from session mean
 % Compute response-window spike count matrix: [nTrials × nClusters]
@@ -149,6 +153,7 @@ for clust = 1:height(Tclust)
     [Tclust.([EPOCH_NICKNAME, '_blkPresRatio'])(clust), ...
      Tclust.([EPOCH_NICKNAME, '_nBlocks'])(clust)]     = block_presence_ratio(fr_trl, blk_ids);
 end
+fprintf('  [%s] presence/FR/block-stability loop done (%.1fs)\n', EPOCH_NICKNAME, toc(t0));
 
 %% Baseline and response firing rates  [nTrials × nClusters, Hz]
 [base_fr, resp_fr] = deal(nan(height(Ttask), height(Tclust)));
@@ -164,6 +169,7 @@ for clust = 1:height(Tclust)
 end
 base_fr = base_fr .* (1000 / diff(BASELINE_WINDOW));
 resp_fr = resp_fr .* (1000 / diff(RESPONSE_WINDOW));
+fprintf('  [%s] baseline/response FR computed (%.1fs)\n', EPOCH_NICKNAME, toc(t0));
 
 %% Wilcoxon signed-rank test: response vs baseline
 % Stores raw (uncorrected) p-values. Apply Bonferroni/Holm across the three
@@ -174,6 +180,7 @@ for clust = 1:height(Tclust)
 end
 Tclust.([EPOCH_NICKNAME, '_pval_sr']) = pval_sr;
 Tclust.([EPOCH_NICKNAME, '_exc'])     = (mean(resp_fr)' > mean(base_fr)');
+fprintf('  [%s] signrank test done (%.1fs)\n', EPOCH_NICKNAME, toc(t0));
 
 %% Peak 25-ms sub-window firing rate  [nClusters × 1, Hz]
 % Slide a 25-ms window across the response epoch in the trial-averaged
@@ -191,6 +198,7 @@ for clust = 1:height(Tclust)
         Ttask.(RESPONSE_ALIGNTO), spks)), win_starts);
     peak_fr(clust) = max(mean_count_per_win) * (1000 / PEAK_WIN);
 end
+fprintf('  [%s] peak sub-window FR done (%.1fs)\n', EPOCH_NICKNAME, toc(t0));
 
 %% Epoch summary FRs and modulation index
 % Replace exact zeros before division (modIndex only; does not affect d′ or signrank)
@@ -209,30 +217,34 @@ dp = (mean(resp_fr,1) - mean(base_fr,1)) ./ sqrt(0.5*(var(resp_fr,0) + var(base_
 Tclust.([EPOCH_NICKNAME, '_dp'])    = dp';
 Tclust.([EPOCH_NICKNAME, '_dpAbs']) = (mean(abs(resp_fr-base_fr),1) ./ ...
     sqrt(0.5*(var(resp_fr,0) + var(base_fr,0))))';
+fprintf('  [%s] overall d-prime done (%.1fs)\n', EPOCH_NICKNAME, toc(t0));
 
 % Per-condition d′, permutation p-value, variability, and Fano factor
-condVals     = Ttask{:, CONDITIONS};
-unique_conds = unique(condVals, 'rows');
-n_conds      = size(unique_conds, 1);
-
-[dp_perCond, pv_perCond, std_perCond, ff_perCond] = deal(nan(height(Tclust), n_conds));
-for cond = 1:n_conds
-    mask = ismember(condVals, unique_conds(cond,:), 'rows');
-    bfr  = base_fr(mask, :);
-    rfr  = resp_fr(mask, :);
-
-    [dp_obs, p_val]     = cellfun(@(v,b) compute_dprime_perm(v,b), num2cell(rfr,1), num2cell(bfr,1), 'uni', 1);
-    dp_perCond(:,cond)  = dp_obs';
-    pv_perCond(:,cond)  = p_val';
-    std_perCond(:,cond) = std(rfr)';
-    ff_perCond(:,cond)  = (var(rfr) ./ mean(rfr))';
-end
-
-Tclust.([EPOCH_NICKNAME, '_dpPerCond'])  = num2cell(dp_perCond,  2);
-Tclust.([EPOCH_NICKNAME, '_pvPerCond'])  = num2cell(pv_perCond,  2);
-Tclust.([EPOCH_NICKNAME, '_pvalDP'])     = min(pv_perCond, [], 2) < 0.05;
-Tclust.([EPOCH_NICKNAME, '_stdPerCond']) = num2cell(std_perCond, 2);
-Tclust.([EPOCH_NICKNAME, '_ffPerCond'])  = num2cell(ff_perCond,  2);
+% NOT CURRENTLY USED downstream (dpPerCond/pvPerCond/pvalDP/stdPerCond/ffPerCond) —
+% commented out to skip the compute_dprime_perm permutation loop, which was the
+% main driver of long/variable runtimes across sessions.
+% condVals     = Ttask{:, CONDITIONS};
+% unique_conds = unique(condVals, 'rows');
+% n_conds      = size(unique_conds, 1);
+%
+% [dp_perCond, pv_perCond, std_perCond, ff_perCond] = deal(nan(height(Tclust), n_conds));
+% for cond = 1:n_conds
+%     mask = ismember(condVals, unique_conds(cond,:), 'rows');
+%     bfr  = base_fr(mask, :);
+%     rfr  = resp_fr(mask, :);
+%
+%     [dp_obs, p_val]     = cellfun(@(v,b) compute_dprime_perm(v,b), num2cell(rfr,1), num2cell(bfr,1), 'uni', 1);
+%     dp_perCond(:,cond)  = dp_obs';
+%     pv_perCond(:,cond)  = p_val';
+%     std_perCond(:,cond) = std(rfr)';
+%     ff_perCond(:,cond)  = (var(rfr) ./ mean(rfr))';
+% end
+%
+% Tclust.([EPOCH_NICKNAME, '_dpPerCond'])  = num2cell(dp_perCond,  2);
+% Tclust.([EPOCH_NICKNAME, '_pvPerCond'])  = num2cell(pv_perCond,  2);
+% Tclust.([EPOCH_NICKNAME, '_pvalDP'])     = min(pv_perCond, [], 2) < 0.05;
+% Tclust.([EPOCH_NICKNAME, '_stdPerCond']) = num2cell(std_perCond, 2);
+% Tclust.([EPOCH_NICKNAME, '_ffPerCond'])  = num2cell(ff_perCond,  2);
 
 %% Direction tuning
 % Tuning significance: tested separately per non-direction condition (e.g., per amplitude
@@ -243,6 +255,8 @@ nonDir_conds = CONDITIONS(~ismember(CONDITIONS, 'angle'));
 condVals     = Ttask{:, nonDir_conds};
 unique_conds = unique(condVals, 'rows');
 
+fprintf('  [%s] starting tuning-significance loop: %d condition(s) x %d probe(s) (%.1fs)\n', ...
+    EPOCH_NICKNAME, numel(unique_conds), numel(probes), toc(t0));
 pval_perCond = nan(height(Tclust), numel(unique_conds));
 for cond = 1:numel(unique_conds)
     pvals = cell(numel(probes), 1);
@@ -251,6 +265,8 @@ for cond = 1:numel(unique_conds)
             Ttask(ismember(condVals, unique_conds(cond,:), 'rows'), :), ...
             'PROBE_INDEX', probes(prb), 'FR_WIN', RESPONSE_WINDOW, 'ALIGN_TO', RESPONSE_ALIGNTO);
         pvals{prb} = pval_dir;
+        fprintf('  [%s] tuning-significance: condition %d/%d, probe %d/%d done (%.1fs)\n', ...
+            EPOCH_NICKNAME, cond, numel(unique_conds), prb, numel(probes), toc(t0));
     end
     pval_perCond(:,cond) = vertcat(pvals{:});
 end
@@ -260,6 +276,7 @@ Tclust.([EPOCH_NICKNAME, '_pvalDir']) = any(pval_perCond, 2);
 uniqueAngs = sort(unique(Ttask.angle));
 [sel_dir, pref_dir, rhoLst, rhoUst, frs_per_ang, hemi] = deal(cell(numel(probes), 1));
 
+fprintf('  [%s] starting tuning-curve loop: %d probe(s) (%.1fs)\n', EPOCH_NICKNAME, numel(probes), toc(t0));
 for prb = 1:numel(probes)
     [sld, pd, rl, ru, fpa, ~] = calculate_tuning(Ttask, 'WITH_MAXSTAT', false, ...
         'PROBE_INDEX', probes(prb), 'FR_WIN', RESPONSE_WINDOW, 'ALIGN_TO', RESPONSE_ALIGNTO);
@@ -274,6 +291,7 @@ for prb = 1:numel(probes)
     rhoUst{prb}      = ru;
     frs_per_ang{prb} = fpa';
     hemi{prb}        = assign_hemi(is_right, prb_label);
+    fprintf('  [%s] tuning-curve: probe %d/%d done (%.1fs)\n', EPOCH_NICKNAME, prb, numel(probes), toc(t0));
 end
 
 Tclust.([EPOCH_NICKNAME, '_selDir'])     = vertcat(sel_dir{:});
@@ -290,6 +308,8 @@ Tclust.([EPOCH_NICKNAME, '_mnFR_perAng']) = cellfun(@(q) mean(q), ...
 [mxFR, mxIdx] = max(Tclust.([EPOCH_NICKNAME, '_mnFR_perAng']), [], 2);
 Tclust.([EPOCH_NICKNAME, '_mxFR'])    = mxFR;
 Tclust.([EPOCH_NICKNAME, '_bestDir']) = uniqueAngs(mxIdx);
+
+fprintf('  [%s] done (%.1fs total)\n', EPOCH_NICKNAME, toc(t0));
 
 end
 
