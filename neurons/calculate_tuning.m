@@ -51,7 +51,8 @@ function [sel_dir,pref_dir,rhoLst,rhoUst,frs_per_ang,pval_dir] = calculate_tunin
                 this_ang.(ALIGN_TO), 'uni', 0);
         end
            
-        frs_per_ang(a,:) = num2cell(cell2mat(vertcat(FR{:})),1);
+        %frs_per_ang(a,:) = num2cell(cell2mat(vertcat(FR{:})),1);
+        frs_per_ang(a,:) = num2cell(cell2mat(horzcat(FR{:}))',1);
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
