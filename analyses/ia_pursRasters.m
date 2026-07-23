@@ -162,14 +162,14 @@ function ia_pursRasters(data,varargin)
     %angle_order = [6,3,2,1,4,7,8,9];
     %speeds = sort(unique(T.speed));
 
-    if PROBE_INDEX==1 % purples/pinks
-        line_color = {[123,44,191]./255; [230,34,172]./255};
-        tick_color = {[98,35,152]./255; [184,27,137]./255};
-        sem_shade = {[228,212,242]./255; [250,210,238]./255};
-    else % greens/blues
+    if PROBE_INDEX==1 % blues/greens
         line_color = {[42,157,143]./255; [42,114,157]./255};
         tick_color = {[25,94,85]./255; [25,68,94]./255};
         sem_shade = {[212,235,232]./255; [212,226,235]./255};
+    else % purples/pinks
+        line_color = {[123,44,191]./255; [230,34,172]./255};
+        tick_color = {[98,35,152]./255; [184,27,137]./255};
+        sem_shade = {[228,212,242]./255; [250,210,238]./255};
     end
 
     prb_name = ['spiketimes_' num2str(PROBE_INDEX)];
