@@ -103,26 +103,22 @@ if ~iscell(Ttask.(BASELINE_ALIGNTO)), Ttask.(BASELINE_ALIGNTO) = num2cell(Ttask.
 
 probes = unique(Tclust.probe_index);
 
-%% Remove trials where no unit fired (spike-sorting floor artifacts)
-spikeCols = contains(Ttask.Properties.VariableNames, 'spiketimes');
-Ttask = Ttask(sum(cellfun(@(v) sum(cellfun(@(q) isempty(q), v, 'uni', 1)), Ttask{:,spikeCols}, 'uni', 1) == height(Ttask),2)==0,:);
-fprintf('  [%s] trial filtering done: %d trials remain (%.1fs)\n', EPOCH_NICKNAME, height(Ttask), toc(t0));
-
 %% Remove trials with population firing rate > 3 SD from session mean
-% Compute response-window spike count matrix: [nTrials × nClusters]
-%resp_fr = nan(height(Ttask),height(Tclust));
-%for clust = 1:height(Tclust)
-%    spks = cellfun(@(q) q{Tclust.cluster_id(clust)+1}, Ttask.(sprintf('spiketimes_%d',Tclust.probe_index(clust))), 'uni', 0);
-%    resp_fr(:,clust) = cellfun(@(u,w) sum(w>=(u(1)+RESPONSE_WINDOW(1)) & w<(u(1)+RESPONSE_WINDOW(2))), Ttask.(RESPONSE_ALIGNTO), spks, 'uni', 1);
-%end
-%resp_fr = resp_fr .* (1000/(RESPONSE_WINDOW(2)-RESPONSE_WINDOW(1)));
-%
-%resp_mean = mean(resp_fr,2);
-%resp_std = std(resp_fr,[],2);
-%resp_idx = resp_mean < (resp_mean - resp_std .* 3) | resp_mean > (resp_mean + resp_std .* 3);
-%
-%Ttask = Ttask(~resp_idx, :);
-%disp(height(Ttask));
+% Uses each trial's full-duration firing rate (not just the response window)
+% as the population activity signal, so the criterion isn't epoch-specific.
+pop_fr = nan(height(Ttask), height(Tclust));
+for clust = 1:height(Tclust)
+    spks = cellfun(@(q) q{Tclust.cluster_id(clust)+1}, ...
+        Ttask.(sprintf('spiketimes_%d', Tclust.probe_index(clust))), 'uni', 0);
+    pop_fr(:,clust) = cellfun(@(q,t) numel(q)/t*1000, spks, num2cell(Ttask.END_TRIAL), 'uni', 1);
+end
+
+% Identify outlier trials: population mean FR > ±3 SD of the session distribution
+trl_mean = mean(pop_fr, 2);      % mean across clusters per trial [nTrials × 1]
+sess_mu  = mean(trl_mean);
+sess_sd  = std(trl_mean);
+Ttask    = Ttask(abs(trl_mean - sess_mu) <= 3*sess_sd, :);
+fprintf('  [%s] population-FR outlier removal done: %d trials remain (%.1fs)\n', EPOCH_NICKNAME, height(Ttask), toc(t0));
 
 %% Cluster depth relative to brain surface  (negative = deeper)
 Tclust.cluster_depth_mm = ...
