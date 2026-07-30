@@ -127,13 +127,6 @@ if isempty(thisTbl)
     error('No RF flashes fall in [%d, %d] ms relative to %s -- nothing to plot.', TIME_BIN(1), TIME_BIN(2), alignStr);
 end
 
-% Save each ALIGN_TO/TIME_BIN combo to its own subfolder of FIG_PATH, so
-% re-running this analysis with different bins doesn't overwrite past runs
-if ~isempty(FIG_PATH)
-    binTag = sprintf('%s_%dto%dms', alignStr, TIME_BIN(1), TIME_BIN(2));
-    FIG_PATH = fullfile(FIG_PATH, binTag);
-end
-
 % Identify clusters/units for this probe, same convention as ia_rfMaps
 if ~isfield(S, 'sorting')
     error('S.sorting not found -- spike sorting data is required to compute firing rates.');
@@ -173,6 +166,15 @@ if isempty(chans)
 end
 
 probe_label = string(sortEntry.clusters.probe_label(1));
+hardware_config = string(sortEntry.clusters.hardware_config(1));
+
+% Save each ALIGN_TO/TIME_BIN combo to its own subfolder, same layout as
+% ia_rfMaps' FIG_PATH2 (<hardware_config>_<probe_label>/rfsa_heatmaps/<bin tag>),
+% so re-running this analysis with different bins doesn't overwrite past runs
+if ~isempty(FIG_PATH)
+    binTag = sprintf('%s_%dto%dms', ALIGN_TO, TIME_BIN(1), TIME_BIN(2));
+    FIG_PATH = fullfile(FIG_PATH, sprintf('%s_%s', hardware_config, probe_label), 'rfsa_heatmaps', binTag);
+end
 
 for u = 1:numel(clusts)
     clust = clusts(u);
