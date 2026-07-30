@@ -19,6 +19,8 @@ addParameter(p, 'BIN_STEP', 10, @isnumeric);
 addParameter(p, 'N_BINS', 24, @isnumeric);
 addParameter(p, 'FIG_PATH', [], @ischar);
 addParameter(p, 'SAVE_PDF', false, @islogical);
+addParameter(p, 'JOB_ID', NaN, @isnumeric);
+addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
 
 parse(p, data, varargin{:});
 data = p.Results.data;
@@ -33,6 +35,8 @@ BIN_STEP = p.Results.BIN_STEP;
 N_BINS = p.Results.N_BINS;
 FIG_PATH = p.Results.FIG_PATH;
 SAVE_PDF = p.Results.SAVE_PDF;
+JOB_ID = p.Results.JOB_ID;
+N_CHUNKS = p.Results.N_CHUNKS;
 
 fprintf('\n------------------------------\n')
 if ischar(data)
@@ -123,6 +127,13 @@ if isempty(thisTbl)
     error('No RF flashes fall in [%d, %d] ms relative to %s -- nothing to plot.', TIME_BIN(1), TIME_BIN(2), alignStr);
 end
 
+% Save each ALIGN_TO/TIME_BIN combo to its own subfolder of FIG_PATH, so
+% re-running this analysis with different bins doesn't overwrite past runs
+if ~isempty(FIG_PATH)
+    binTag = sprintf('%s_%dto%dms', alignStr, TIME_BIN(1), TIME_BIN(2));
+    FIG_PATH = fullfile(FIG_PATH, binTag);
+end
+
 % Identify clusters/units for this probe, same convention as ia_rfMaps
 if ~isfield(S, 'sorting')
     error('S.sorting not found -- spike sorting data is required to compute firing rates.');
@@ -139,7 +150,20 @@ else
 end
 
 if isempty(CLUSTER)
-    clusts = clusts_all;
+    if ~isnan(JOB_ID)
+        all_units = clusts_all + 1;
+        % Split into N_CHUNKS chunks as a cell array, one chunk per SLURM array task
+        chunks = arrayfun(@(i) all_units(...
+            floor((i-1)*numel(all_units)/N_CHUNKS)+1 : ...
+            floor(i*numel(all_units)/N_CHUNKS)), ...
+            1:N_CHUNKS, 'UniformOutput', false);
+        ids = chunks{(JOB_ID+1)};
+
+        clusts = clusts_all(ids);
+        chans = chans(ids);
+    else
+        clusts = clusts_all;
+    end
 else
     clusts = CLUSTER;
     chans = chans(clusts_all==CLUSTER);
