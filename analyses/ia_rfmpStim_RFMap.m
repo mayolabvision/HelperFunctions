@@ -1,10 +1,105 @@
 function ia_rfmpStim_RFMap(data, varargin)
-% Receptive field map of mean firing rate for the rfsa* RF-mapping stimuli
-% (stimPos/STIM_ON), restricted to only the RF flashes that occurred in a
-% given time window relative to an alignment event (e.g. the first TARG_ON),
-% so flashes that happen later in the trial are excluded entirely. Produces
-% the same sliding-window-over-time heatmap as ia_rfMaps, via
-% format_tableToRFMap + heatMap_rfOverTime.
+% ia_rfmpStim_RFMap — Sliding-window receptive field map of mean firing rate
+% for the rfsa* RF-mapping stimuli (stimPos/STIM_ON), restricted to only the
+% RF flashes that occurred in a given time window relative to an alignment
+% event (e.g. the first TARG_ON), so flashes that happen later in the trial
+% are excluded entirely. Produces the same sliding-window-over-time heatmap
+% as ia_rfMaps, via format_tableToRFMap + heatMap_rfOverTime.
+%
+%%% Required Input: %%%
+%   data  -  Either:
+%              - a char/string path to a session .mat file containing a
+%                struct 'S' (the file is loaded internally), or
+%              - the already-loaded session struct S itself.
+%            S must contain:
+%              - one or more fields whose name contains 'rfsa' (e.g. rfsa1,
+%                rfsa2, ...), each with a '.tbl' table of trials. Tables
+%                across multiple rfsa fields are combined automatically.
+%                Each table needs (at minimum): result, angle, stimPos,
+%                STIM_ON, an alignment-event column (default TARG_ON), and
+%                params (used to convert stimPos from pixels to degrees).
+%              - S.sorting: a struct array, one entry per probe, with
+%                .probe_index and .clusters (a table with cluster_id, and
+%                optionally best_channel/probe_label/hardware_config).
+%              - a spiketimes_<PROBE_INDEX> column in the rfsa table(s),
+%                merged in during spike-sorting (this function does not sort
+%                spikes itself -- if that column is missing you'll get a
+%                clear error telling you so).
+%
+%%% Example Usage: %%%
+%   1. Load S into the workspace
+%   load('/Volumes/lab_NHPdata-processed/kendra_scrappy_0177a_g0/tables/kendra_scrappy_0177a_g0-1b86ffd01dc9c878.mat');
+%
+%   2. Run function to create RF map
+%   ia_rfmpStim_RFMap(S, 'PROBE_INDEX', 1, 'CLUSTER', 0);
+%
+%   % or pass the file path directly instead of loading it yourself first:
+%   ia_rfmpStim_RFMap('PATH/TO/DATA/kendra_scrappy_0177a_g0-1b86ffd01dc9c878.mat', ...
+%       'PROBE_INDEX', 1, 'CLUSTER', 0);
+%
+%%% Optional Name-Value Pair Arguments: %%%
+%   'PROBE_INDEX' -  Which probe to use (default 1). This is MATLAB's
+%                    1-indexed probe number as stored in S.sorting.probe_index,
+%                    so it can never be lower than 1. Check
+%                    unique([S.sorting.probe_index]) if you're not sure how
+%                    many probes a session has or what indices they use.
+%   'CLUSTER'     -  Which cluster ID to plot (default: [], i.e. unset).
+%                    Cluster IDs are 0-indexed (as output by the spike
+%                    sorter), so CLUSTER=0 is a real, valid cluster -- not
+%                    the same thing as leaving CLUSTER unspecified. If you
+%                    leave CLUSTER empty, the function loops through and
+%                    plots EVERY cluster recorded on PROBE_INDEX, which can
+%                    be hundreds to thousands of clusters and take a long
+%                    time. Specify a single CLUSTER while exploring; only
+%                    leave it empty once you actually want the full batch
+%                    (see JOB_ID/N_CHUNKS below for splitting that batch
+%                    across a SLURM array job instead of running it all in
+%                    one call).
+%   'ALIGN_TO'    -  Column in the trial table to align STIM_ON to (default
+%                    'TARG_ON'). Can be a column holding a single numeric
+%                    time per trial (e.g. 'SACCADE'), or a column holding a
+%                    cell array of multiple times per trial (e.g. 'TARG_ON',
+%                    which can fire more than once) -- see ALIGN_IND below
+%                    for the latter case.
+%   'ALIGN_IND'   -  If ALIGN_TO is a cell-per-trial column, which value
+%                    within that trial's cell to align to (default 1, i.e.
+%                    the first occurrence).
+%   'TIME_BIN'    -  [start end] in ms, relative to ALIGN_TO(ALIGN_IND)
+%                    (default [-400 0]). Only RF flashes whose STIM_ON falls
+%                    in this window are used to build the map -- e.g. the
+%                    default only uses flashes from 400ms before up to the
+%                    moment of the first TARG_ON, i.e. before anything
+%                    task-related has happened yet.
+%   'FIRST_BIN'   -  Sliding-window PSTH parameters (ms), passed straight
+%   'BIN_WIDTH'      through to format_tableToRFMap: FIRST_BIN is the first
+%   'BIN_STEP'       bin's start time relative to each individual flash's own
+%   'N_BINS'         onset (default 0), BIN_WIDTH is each bin's width
+%                    (default 50), BIN_STEP is the step between consecutive
+%                    bins (default 10), and N_BINS is how many bins to
+%                    compute (default 24) -- so by default this produces 24
+%                    overlapping 50ms-wide bins spanning 0 to 280ms
+%                    post-flash.
+%   'ANGLE'       -  If specified, only use trials where thisTbl.angle
+%                    equals this value (default NaN, meaning use all
+%                    angles).
+%   'FIG_PATH'    -  If given, saves each cluster's figure as a .png (or
+%                    .pdf, see SAVE_PDF) instead of displaying it on screen,
+%                    under
+%                    FIG_PATH/<hardware_config>_<probe_label>/rfsa_heatmaps/<ALIGN_TO>_<TIME_BIN(1)>to<TIME_BIN(2)>ms/.
+%                    Default [] (no path), which instead pops up a visible
+%                    figure per cluster -- fine when CLUSTER is a single ID,
+%                    but avoid leaving both FIG_PATH and CLUSTER empty at
+%                    the same time, since that would try to pop up one
+%                    figure window per cluster in the whole batch.
+%   'SAVE_PDF'    -  If true, saves as .pdf instead of .png (default false).
+%                    Only relevant when FIG_PATH is given.
+%   'JOB_ID'      -  For splitting the full cluster list across a SLURM array
+%   'N_CHUNKS'       job: JOB_ID is the 0-indexed task ID (e.g.
+%                    $SLURM_ARRAY_TASK_ID), N_CHUNKS is the total number of
+%                    tasks in the array (e.g. $SLURM_ARRAY_TASK_COUNT). Only
+%                    used when CLUSTER is left empty; ignored otherwise.
+%                    Default NaN for both, meaning "run every cluster on
+%                    PROBE_INDEX in this one call."
 
 p = inputParser;
 addRequired(p, 'data', @(x) ischar(x) || isstruct(x));
