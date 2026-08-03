@@ -21,6 +21,7 @@ addParameter(p, 'FIG_PATH', [], @ischar);
 addParameter(p, 'SAVE_PDF', false, @islogical);
 addParameter(p, 'JOB_ID', NaN, @isnumeric);
 addParameter(p, 'N_CHUNKS', NaN, @isnumeric);
+addParameter(p, 'ANGLE', NaN, @isnumeric); % if specified, only use trials where thisTbl.angle == ANGLE
 
 parse(p, data, varargin{:});
 data = p.Results.data;
@@ -37,6 +38,7 @@ FIG_PATH = p.Results.FIG_PATH;
 SAVE_PDF = p.Results.SAVE_PDF;
 JOB_ID = p.Results.JOB_ID;
 N_CHUNKS = p.Results.N_CHUNKS;
+ANGLE = p.Results.ANGLE;
 
 fprintf('\n------------------------------\n')
 if ischar(data)
@@ -61,7 +63,20 @@ for i = 1:numel(rfsaFields)
 end
 thisTbl = vertcat(rfsaTbls{:});
 thisTbl = thisTbl(thisTbl.result=='CORRECT',:);
+
+if ~isnan(ANGLE)
+    if ~ismember(ANGLE, thisTbl.angle)
+        error('ANGLE %g not found among thisTbl.angle values: %s', ANGLE, mat2str(unique(thisTbl.angle)'));
+    end
+    thisTbl = thisTbl(thisTbl.angle==ANGLE,:);
+    fprintf('Restricting to angle == %g (%d trials)\n', ANGLE, height(thisTbl));
+end
 nTrialsTotal = height(thisTbl);
+
+% stimPos is stored in screen pixels -- convert to degrees of visual angle
+screenDist = thisTbl.params(1,1).block.screenDistance;
+pixPerCM = thisTbl.params(1,1).block.pixPerCM;
+thisTbl.stimPos = cellfun(@(pos) pix2deg(pos, screenDist, pixPerCM), thisTbl.stimPos, 'UniformOutput', false);
 
 prb_name = sprintf('spiketimes_%d', PROBE_INDEX);
 if ~ismember(prb_name, thisTbl.Properties.VariableNames)
@@ -190,9 +205,14 @@ for u = 1:numel(clusts)
     fig.Position = [100 100 1800 900];
     tl = heatMap_rfOverTime(frs{1}, 'BIN_EDGES', bin_edges, 'INTERP', false, 'X_VALS', xvals, 'Y_VALS', yvals);
 
+    if isnan(ANGLE)
+        angleTitleStr = 'all angles';
+    else
+        angleTitleStr = sprintf('angle = %g', ANGLE);
+    end
     title(tl, {
         sprintf('%s --- %s --- unit %d (channel %d)', S.sess_name, probe_label, clust, chans(u));
-        sprintf('RF flashes restricted to [%d, %d] ms relative to %s', TIME_BIN(1), TIME_BIN(2), alignStr)
+        sprintf('RF flashes restricted to [%d, %d] ms relative to %s, %s', TIME_BIN(1), TIME_BIN(2), alignStr, angleTitleStr)
         }, 'fontsize',16,'interpreter','none')
 
     annotation('textbox', [0.77 0.89 0.2 0.1], ...
@@ -203,10 +223,14 @@ for u = 1:numel(clusts)
 
     if ~isempty(FIG_PATH)
         if ~exist(FIG_PATH, 'dir'), mkdir(FIG_PATH); end
+        fileBase = sprintf('%s_clust%04d_chan%03d', probe_label, clust, chans(u));
+        if ~isnan(ANGLE)
+            fileBase = sprintf('%s_ang%03d', fileBase, ANGLE);
+        end
         if SAVE_PDF
-            savebigPDF(fig, fullfile(FIG_PATH, sprintf('%s_clust%04d_chan%03d.pdf', probe_label, clust, chans(u))));
+            savebigPDF(fig, fullfile(FIG_PATH, [fileBase '.pdf']));
         else
-            savebigPNG(fig, fullfile(FIG_PATH, sprintf('%s_clust%04d_chan%03d.png', probe_label, clust, chans(u))));
+            savebigPNG(fig, fullfile(FIG_PATH, [fileBase '.png']));
         end
     end
     fprintf(sprintf('\n----PROBE %d, Unit %.4d COMPLETE----',PROBE_INDEX, clust))
