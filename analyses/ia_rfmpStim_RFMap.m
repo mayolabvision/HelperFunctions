@@ -47,19 +47,20 @@ else
     S = data;
 end
 
-% Combine every task struct whose field name contains 'rfsa' (rfsa1, rfsa2, ...)
-sFields = fieldnames(S);
-rfsaFields = sFields(contains(sFields, 'rfsa', 'IgnoreCase', true));
-if isempty(rfsaFields)
-    error('No fields containing ''rfsa'' were found in the data struct.');
-end
-fprintf('Combining %d rfsa table(s): %s\n', numel(rfsaFields), strjoin(rfsaFields, ', '));
+%sFields = fieldnames(S);
+%rfFields = sFields(contains(sFields, {'rfsa','rfpu'}, 'IgnoreCase', true));
+%if isempty(rfFields)
+%    error('No fields containing ''rfsa'' or ''rfpu'' were found in the data struct.');
+%end
+%fprintf('Combining %d rf table(s): %s\n', numel(rfFields), strjoin(rfFields, ', '));
+%
+%rfTbls = cell(numel(rfFields),1);
+%for i = 1:numel(rfFields)
+%    rfTbls{i} = S.(rfFields{i}).tbl;
+%end
+%thisTbl = vertcat(rfTbls{:});
 
-rfsaTbls = cell(numel(rfsaFields),1);
-for i = 1:numel(rfsaFields)
-    rfsaTbls{i} = S.(rfsaFields{i}).tbl;
-end
-thisTbl = vertcat(rfsaTbls{:});
+thisTbl = S.rfpu2.tbl;
 thisTbl = thisTbl(thisTbl.result=='CORRECT',:);
 nTrialsTotal = height(thisTbl);
 
