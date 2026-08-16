@@ -9,7 +9,11 @@ function [datamean, datastd] = histStyle_KKN(values, varargin)
 %   values       - numeric vector
 %
 % Optional name-value parameters:
-%   'BIN_WIDTH'  - scalar bin width (default: auto, ~10 bins); ignored when LOG_X is true
+%   'BIN_WIDTH'  - scalar bin width (default: auto, ~10 bins); ignored when LOG_X or BIN_EDGES is set
+%   'BIN_EDGES'  - explicit numeric vector of bin edges, e.g. min(values):w:max(values)+w.
+%                  Takes priority over BIN_WIDTH; lets you pin the first edge
+%                  to a specific value (e.g. the data minimum) instead of
+%                  wherever auto-binning happens to land. Ignored when LOG_X is true.
 %   'NORM'       - normalization passed to histogram() (default: 'count')
 %   'FIG_NAME'   - axes title string
 %   'X_LABEL'    - x-axis label
@@ -31,6 +35,7 @@ function [datamean, datastd] = histStyle_KKN(values, varargin)
     p = inputParser;
     addRequired(p,  'values',     @isnumeric);
     addParameter(p, 'BIN_WIDTH',  [],        @isnumeric);
+    addParameter(p, 'BIN_EDGES',  [],        @(x) isempty(x) || (isnumeric(x) && numel(x)>=2));
     addParameter(p, 'NORM',       'count',   @ischar);
     addParameter(p, 'FIG_NAME',   [],        @ischar);
     addParameter(p, 'X_LABEL',    [],        @ischar);
@@ -48,6 +53,7 @@ function [datamean, datastd] = histStyle_KKN(values, varargin)
 
     values     = p.Results.values;
     BIN_WIDTH  = p.Results.BIN_WIDTH;
+    BIN_EDGES  = p.Results.BIN_EDGES;
     NORM       = p.Results.NORM;
     FIG_NAME   = p.Results.FIG_NAME;
     X_LABEL    = p.Results.X_LABEL;
@@ -74,6 +80,9 @@ function [datamean, datastd] = histStyle_KKN(values, varargin)
         h = histogram(pos_vals, log_edges, 'LineWidth', 2, ...
             'FaceColor', FACE_COLOR, 'FaceAlpha', FACE_ALPHA, 'Normalization', NORM);
         set(gca, 'XScale', 'log');
+    elseif ~isempty(BIN_EDGES)
+        h = histogram(values, BIN_EDGES, 'LineWidth', 2, ...
+            'FaceColor', FACE_COLOR, 'FaceAlpha', FACE_ALPHA, 'Normalization', NORM);
     else
         if isempty(BIN_WIDTH)
             val = (max(values) - min(values)) / 10;

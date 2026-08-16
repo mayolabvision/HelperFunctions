@@ -21,10 +21,10 @@ addOptional(p,'SIGMA', 10, @isnumeric)
 addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) isnumeric(x) || iscell(x));
 addOptional(p,'LINE_WIDTH', 3, @isnumeric)
 addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x)) || (iscell(x) && length(x) == length(spike_times)));
-addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
+addOptional(p,'TICK_LENGTH', max(1, ceil(numel(spike_times)/50)), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
 addOptional(p,'SHADE_ERROR', true, @islogical)
-addOptional(p,'TICK_ALPHA', 0.75, @isnumeric)
+addOptional(p,'TICK_ALPHA', 1, @isnumeric)
 
 p.parse(spike_times, varargin{:});
 spike_times = p.Results.spike_times;

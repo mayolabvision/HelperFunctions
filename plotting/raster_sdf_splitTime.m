@@ -20,7 +20,7 @@ addOptional(p,'SIGMA', 10, @isnumeric)
 addOptional(p,'LINE_COLOR', [0 0 0]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'SEM_SHADE', [178 178 178]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
 addOptional(p,'TICK_COLOR', [30 30 30]./255, @(x) (isnumeric(x) && length(x) == 3) || (iscell(x) && length(x) == length(spike_times)));
-addOptional(p,'TICK_LENGTH', ceil(numel(spike_times)/50), @isnumeric)
+addOptional(p,'TICK_LENGTH', max(1, ceil(numel(spike_times)/40)), @isnumeric)
 addOptional(p,'TICK_WIDTH', 1.5, @isnumeric)
 addOptional(p,'X_SHIFT', 0, @isnumeric)
 addOptional(p,'Y_LIMIT', [], @isnumeric)
