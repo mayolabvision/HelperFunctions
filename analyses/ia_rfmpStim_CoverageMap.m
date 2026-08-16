@@ -41,6 +41,11 @@ thisTbl = vertcat(rfsaTbls{:});
 thisTbl = thisTbl(thisTbl.result=='CORRECT',:);
 nTrialsTotal = height(thisTbl);
 
+% stimPos is stored in screen pixels -- convert to degrees of visual angle
+screenDist = thisTbl.params(1,1).block.screenDistance;
+pixPerCM = thisTbl.params(1,1).block.pixPerCM;
+thisTbl.stimPos = cellfun(@(pos) pix2deg(pos, screenDist, pixPerCM), thisTbl.stimPos, 'UniformOutput', false);
+
 % ALIGN_TO must be on the same ms clock as STIM_ON. It can either hold a
 % single scalar per trial (e.g. SACCADE), or a cell array of multiple
 % values per trial (e.g. TARG_ON, which can fire more than once) -- in the
@@ -128,8 +133,8 @@ for a = 1:nAngles
     axis square;
     colorbar;
     colormap(gca, 'parula');
-    xlabel('X Position');
-    ylabel('Y Position');
+    xlabel('X Position (deg)');
+    ylabel('Y Position (deg)');
     title(sprintf('Angle = %s (n = %d trials)', angleStr, nTrialsByAngle(a)));
     prettyFig;
 end

@@ -1,4 +1,4 @@
-function tl = heatMap_rfOverTime(frs, varargin)
+function [tl, ax] = heatMap_rfOverTime(frs, varargin)
     % Generates a heatmap visualization of receptive fields (RF) over time.
     %
     % This function takes an array of firing rates (FRs) measured over a grid 
@@ -35,6 +35,7 @@ function tl = heatMap_rfOverTime(frs, varargin)
     %%% Output: %%%
     %   tl  -  Tiled layout object, allowing additional customization
     %          (e.g., adding titles or annotations).
+    %   ax  -  1xN array of axes handles, one per time bin, in bin order.
     %
     %%% Example Usage: %%%
     %   tl = heatMap_rfOverTime(frs,'BIN_EDGES',bin_edges, 'INTERP', false,...
