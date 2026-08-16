@@ -22,11 +22,11 @@ function [tl, ax] = heatMap_rfOverTime(frs, varargin)
     %
     %   'X_VALS'     -  Numeric array for x-axis labels (spatial positions).
     %                   Example: [-30 -25 -20 ... 25 30] (degrees).
-    %                   Default: 1:size(frs,1).
+    %                   Default: 1:size(frs,2).
     %
     %   'Y_VALS'     -  Numeric array for y-axis labels (spatial positions).
     %                   Example: [-30 -25 -20 ... 25 30] (degrees).
-    %                   Default: 1:size(frs,2).
+    %                   Default: 1:size(frs,1).
     %
     %   'INTERP'     -  Logical flag (true/false) for enabling heatmap interpolation.
     %                   If true, smooths the heatmap using interpolation.
@@ -42,16 +42,16 @@ function [tl, ax] = heatMap_rfOverTime(frs, varargin)
     %                           'X_VALS',xvals, 'Y_VALS', yvals);
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    defaultXVals = 1:size(frs,1);
-    defaultYVals = 1:size(frs,2);
+    defaultXVals = 1:size(frs,2);
+    defaultYVals = 1:size(frs,1);
     defaultInterp = false;
 
     % Create an input parser
     p = inputParser;
     addRequired(p, 'frs', @(x) ((isnumeric(x) || iscell(x)) && numel(size(x)) == 3));
     addParameter(p, 'BIN_EDGES', [], @(x) (iscell(x) && numel(x) == size(frs,3)));
-    addParameter(p, 'X_VALS', defaultXVals, @(x) (isnumeric(x) && numel(x) == size(frs,1)));
-    addParameter(p, 'Y_VALS', defaultYVals, @(x) (isnumeric(x) && numel(x) == size(frs,2)));
+    addParameter(p, 'X_VALS', defaultXVals, @(x) (isnumeric(x) && numel(x) == size(frs,2)));
+    addParameter(p, 'Y_VALS', defaultYVals, @(x) (isnumeric(x) && numel(x) == size(frs,1)));
     addParameter(p, 'INTERP', defaultInterp, @(x) (islogical(x)));
     addParameter(p, 'PROBE_DUR', [], @isnumeric);
 
@@ -115,7 +115,7 @@ function [tl, ax] = heatMap_rfOverTime(frs, varargin)
             end
         end
     
-        axis square;
+        axis equal tight;
         prettyFig;
     end
     

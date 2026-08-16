@@ -144,20 +144,20 @@ else
     S = data;
 end
 
-%sFields = fieldnames(S);
-%rfFields = sFields(contains(sFields, {'rfsa','rfpu'}, 'IgnoreCase', true));
-%if isempty(rfFields)
-%    error('No fields containing ''rfsa'' or ''rfpu'' were found in the data struct.');
-%end
-%fprintf('Combining %d rf table(s): %s\n', numel(rfFields), strjoin(rfFields, ', '));
-%
-%rfTbls = cell(numel(rfFields),1);
-%for i = 1:numel(rfFields)
-%    rfTbls{i} = S.(rfFields{i}).tbl;
-%end
-%thisTbl = vertcat(rfTbls{:});
+sFields = fieldnames(S);
+rfFields = sFields(contains(sFields, {'rfsa','rfpu'}, 'IgnoreCase', true));
+if isempty(rfFields)
+   error('No fields containing ''rfsa'' or ''rfpu'' were found in the data struct.');
+end
+fprintf('Combining %d rf table(s): %s\n', numel(rfFields), strjoin(rfFields, ', '));
 
-thisTbl = S.rfpu2.tbl;
+rfTbls = cell(numel(rfFields),1);
+for i = 1:numel(rfFields)
+   rfTbls{i} = S.(rfFields{i}).tbl;
+end
+thisTbl = vertcat(rfTbls{:});
+
+% thisTbl = S.rfpu2.tbl;
 thisTbl = thisTbl(thisTbl.result=='CORRECT',:);
 
 if ~isnan(ANGLE)
